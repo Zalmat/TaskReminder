@@ -81,32 +81,41 @@ src/main/java/com/reminder/
 
 ### Сборка и запуск через Gradle
 
-# Сборка проекта
+- Сборка проекта
+```
 ./gradlew clean build
-
-# Запуск приложения
+```
+- Запуск приложения
+```
 ./gradlew run
-
-# Сборка fat JAR
+```
+- Сборка fat JAR
+```
 ./gradlew shadowJar
-
-### Запуск JAR файла
-
+```
+- Запуск JAR файла
+```
 java -jar build/libs/TaskReminder-1.0.0-all.jar
+```
+# Создание нативного установщика
 
-### Создание нативного установщика
-
-# Windows (создает .exe)
+- Windows (создает .exe)
+```
 ./gradlew createInstaller
+```
 
-# macOS (создает .dmg)
+- macOS (создает .dmg)
+```
 ./gradlew createInstaller
+```
 
-# Linux (создает .deb)
+- Linux (создает .deb)
+```
 ./gradlew createInstaller
+```
 
 ## 📝 Пример YAML файла для загрузки задач
-
+```
 tasks:
   - project: "Проект Альфа"
     taskName: "Разработка бэкенда"
@@ -120,7 +129,7 @@ tasks:
   - project: "Проект Бета"
     taskName: "Встречи с заказчиком"
     type: "Коммуникация"
-
+```
 ## ⚙️ Системные требования
 
 - **Java 17** или выше
@@ -142,8 +151,9 @@ tasks:
 4. Запустите приложение
 
 ### Linux (Debian/Ubuntu)
+```
 sudo dpkg -i TaskReminder-1.0.0.deb
-
+```
 ## 🎯 Лимиты времени
 
 - **Дневной лимит**: 8 часов
