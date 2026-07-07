@@ -88,15 +88,6 @@ src/main/java/com/reminder/
 - Запуск приложения
 ```
 ./gradlew run
-```
-- Сборка fat JAR
-```
-./gradlew shadowJar
-```
-- Запуск JAR файла
-```
-java -jar build/libs/TaskReminder-1.0.0-all.jar
-```
 
 
 ## 📝 Пример YAML файла для загрузки задач
@@ -123,10 +114,7 @@ tasks:
 
 ## 📦 Установка
 
-### Linux (Debian/Ubuntu)
-```
-sudo dpkg -i TaskReminder-1.0.0.deb
-```
+
 ## 🎯 Лимиты времени
 
 - **Дневной лимит**: 8 часов
