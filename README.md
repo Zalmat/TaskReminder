@@ -44,21 +44,36 @@
 ## 📁 Структура проекта
 
 src/main/java/com/reminder/
-├── App.java                 # Точка входа
-├── models/                  # Модели данных
+├── App.java     # Точка входа
+
+├── models/     # Модели данных
+
 │   ├── Task.java
+
 │   ├── WorkEntry.java
+
 │   ├── Reminder.java
+
 │   └── WeekEntry.java
-├── services/                # Сервисный слой
+
+├── services/    # Сервисный слой
+
 │   ├── TaskService.java
+
 │   ├── ReminderService.java
+
 │   ├── ExportService.java
+
 │   └── YamlLoaderService.java
-├── controllers/            # Контроллеры
+
+├── controllers/      # Контроллеры
+
 │   └── MainController.java
-└── components/             # UI компоненты
+
+└── components/       # UI компоненты
+
     ├── WeekEntryCell.java
+    
     └── WeekTotalCell.java
 
 ## 🚀 Запуск проекта
