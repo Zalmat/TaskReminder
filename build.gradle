@@ -1,0 +1,74 @@
+plugins {
+    id 'java'
+    id 'application'
+    id 'org.openjfx.javafxplugin' version '0.0.13'
+    id 'com.github.johnrengelman.shadow' version '7.1.2'
+}
+
+group = 'com.reminder'
+version = '1.0.0'
+
+repositories {
+    mavenCentral()
+}
+
+javafx {
+    version = "17.0.6"
+    modules = ['javafx.controls', 'javafx.fxml', 'javafx.media']  // Добавлен javafx.media
+}
+
+dependencies {
+    // JavaFX
+    implementation 'org.openjfx:javafx-controls:17.0.6'
+    implementation 'org.openjfx:javafx-fxml:17.0.6'
+    implementation 'org.openjfx:javafx-media:17.0.6'  // Добавлено
+
+    // YAML парсер
+    implementation 'org.yaml:snakeyaml:2.0'
+
+    // Excel экспорт
+    implementation 'org.apache.poi:poi-ooxml:5.2.3'
+
+    // JSON
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    // Логирование
+    implementation 'org.slf4j:slf4j-simple:2.0.7'
+
+    // Тестирование
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.9.2'
+    testImplementation 'org.mockito:mockito-core:5.1.1'
+}
+
+application {
+    mainClass = 'com.reminder.App'
+    applicationDefaultJvmArgs = ['--add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED']
+}
+
+jar {
+    manifest {
+        attributes(
+                'Main-Class': 'com.reminder.App',
+                'Implementation-Title': project.name,
+                'Implementation-Version': project.version
+        )
+    }
+}
+
+shadowJar {
+    archiveFileName = "${project.name}-${project.version}-all.jar"
+    mergeServiceFiles()
+    manifest {
+        attributes 'Main-Class': 'com.reminder.App'
+    }
+}
+
+test {
+    useJUnitPlatform()
+}
+
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+}
