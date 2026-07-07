@@ -97,22 +97,7 @@ src/main/java/com/reminder/
 ```
 java -jar build/libs/TaskReminder-1.0.0-all.jar
 ```
-# Создание нативного установщика
 
-- Windows (создает .exe)
-```
-./gradlew createInstaller
-```
-
-- macOS (создает .dmg)
-```
-./gradlew createInstaller
-```
-
-- Linux (создает .deb)
-```
-./gradlew createInstaller
-```
 
 ## 📝 Пример YAML файла для загрузки задач
 ```
@@ -137,18 +122,6 @@ tasks:
 - **Операционная система**: Windows, macOS, Linux
 
 ## 📦 Установка
-
-### Windows
-1. Скачайте TaskReminder-1.0.0.exe
-2. Запустите установщик
-3. Следуйте инструкциям
-4. Запустите приложение из меню Пуск
-
-### macOS
-1. Скачайте TaskReminder-1.0.0.dmg
-2. Откройте DMG файл
-3. Перетащите приложение в папку Applications
-4. Запустите приложение
 
 ### Linux (Debian/Ubuntu)
 ```
