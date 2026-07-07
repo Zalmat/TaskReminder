@@ -44,6 +44,7 @@
 ## 📁 Структура проекта
 
 src/main/java/com/reminder/
+
 ├── App.java     # Точка входа
 
 ├── models/     # Модели данных
