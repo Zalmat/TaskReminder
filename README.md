@@ -115,9 +115,17 @@ tasks:
 - **Оперативная память**: от 512 MB
 - **Операционная система**: Windows, macOS, Linux
 
-## 📦 Установка
-
-
+## 📦 Сборка
+```
+jpackage --name TaskReminder `
+    --input build\libs `
+    --main-jar TaskReminder-1.0.0-all.jar `
+    --main-class com.reminder.App `
+    --type app-image `
+    --dest build\installer `
+    --module-path "C:\tools\javafx-jmods-17.0.19" `
+    --add-modules javafx.controls,javafx.fxml
+```
 ## 🎯 Лимиты времени
 
 - **Дневной лимит**: 8 часов
