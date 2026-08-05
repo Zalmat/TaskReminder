@@ -1,15 +1,16 @@
-package com.reminder.components;
+package com.reminder.ui.component;
 
-import com.reminder.models.WeekEntry;
+import com.reminder.model.WeekEntry;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 
 import java.time.LocalDate;
 
+/** Редактируемая ячейка с количеством часов для недельного режима. */
 public class WeekEntryCell extends TableCell<WeekEntry, Integer> {
     private TextField textField;
-    private LocalDate currentDate;
+    private final LocalDate currentDate;
 
     public WeekEntryCell(LocalDate currentDate) {
         this.currentDate = currentDate;

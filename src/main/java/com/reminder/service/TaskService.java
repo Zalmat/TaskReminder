@@ -1,35 +1,71 @@
-package com.reminder.services;
+package com.reminder.service;
 
-import com.reminder.models.Task;
-import com.reminder.models.WorkEntry;
-import java.io.*;
+import com.reminder.model.Task;
+import com.reminder.model.WorkEntry;
+import com.reminder.storage.DataStore;
+import com.reminder.storage.LegacyMigrator;
+
 import java.time.LocalDate;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
+/** Доступ к данным о работе и предзаданных задачах (хранение в JSON/UTF-8). */
 public class TaskService {
-    private List<WorkEntry> entries = new ArrayList<>();
-    private List<Task> predefinedTasks = new ArrayList<>();
-    private static final String DATA_FILE = "work_entries.dat";
-    private static final String TASKS_FILE = "predefined_tasks.dat";
-    public static final double MAX_HOURS_PER_DAY = 8.0;
+
+    private static final String ENTRIES_FILE = "work_entries.json";
+    private static final String TASKS_FILE = "predefined_tasks.json";
+
+    private final DataStore store;
+    private List<WorkEntry> entries;
+    private List<Task> predefinedTasks;
 
     public TaskService() {
-        loadEntries();
-        loadPredefinedTasks();
+        this.store = new DataStore();
+        migrateLegacy();
+        this.entries = store.loadList(ENTRIES_FILE, WorkEntry.class);
+        this.predefinedTasks = store.loadList(TASKS_FILE, Task.class);
+    }
+
+    private void migrateLegacy() {
+        LegacyMigrator migrator = new LegacyMigrator(store);
+        migrator.migrate("work_entries.dat", ENTRIES_FILE);
+        migrator.migrate("predefined_tasks.dat", TASKS_FILE);
     }
 
     public boolean addWorkEntry(WorkEntry entry) {
-        if (entry.getHours() <= 0) {
+        if (entry == null || entry.getHours() <= 0) {
             return false;
         }
-
-        double totalHours = getTotalHoursForDate(entry.getDate());
-        if (totalHours + entry.getHours() > MAX_HOURS_PER_DAY) {
+        if (getTotalHoursForDate(entry.getDate()) + entry.getHours() > WorkTimeService.MAX_DAILY_HOURS) {
             return false;
         }
-
         entries.add(entry);
+        saveEntries();
+        return true;
+    }
+
+    /** Заменяет существующую запись, сохраняя время создания. */
+    public boolean updateWorkEntry(WorkEntry original, WorkEntry updated) {
+        int idx = entries.indexOf(original);
+        if (idx < 0) {
+            return false;
+        }
+        if (updated.getHours() <= 0) {
+            return false;
+        }
+        double otherTotal = entries.stream()
+                .filter(e -> !e.equals(original) && e.getDate().equals(updated.getDate()))
+                .mapToDouble(WorkEntry::getHours)
+                .sum();
+        if (otherTotal + updated.getHours() > WorkTimeService.MAX_DAILY_HOURS) {
+            return false;
+        }
+        updated.setCreatedAt(original.getCreatedAt());
+        entries.set(idx, updated);
         saveEntries();
         return true;
     }
@@ -50,7 +86,7 @@ public class TaskService {
     }
 
     public double getRemainingHoursForDate(LocalDate date) {
-        return MAX_HOURS_PER_DAY - getTotalHoursForDate(date);
+        return WorkTimeService.MAX_DAILY_HOURS - getTotalHoursForDate(date);
     }
 
     public List<WorkEntry> getEntriesForDate(LocalDate date) {
@@ -92,7 +128,7 @@ public class TaskService {
     }
 
     public void addPredefinedTask(Task task) {
-        if (!predefinedTasks.contains(task)) {
+        if (task != null && !predefinedTasks.contains(task)) {
             predefinedTasks.add(task);
             savePredefinedTasks();
         }
@@ -107,49 +143,17 @@ public class TaskService {
         saveEntries();
     }
 
-    private void saveEntries() {
-        try (ObjectOutputStream oos = new ObjectOutputStream(
-                new FileOutputStream(DATA_FILE))) {
-            oos.writeObject(entries);
-        } catch (IOException e) {
-            System.err.println("Ошибка сохранения записей: " + e.getMessage());
-        }
+    public void clearEntriesForDates(List<LocalDate> dates) {
+        Set<LocalDate> set = new HashSet<>(dates);
+        entries.removeIf(e -> set.contains(e.getDate()));
+        saveEntries();
     }
 
-    @SuppressWarnings("unchecked")
-    private void loadEntries() {
-        File file = new File(DATA_FILE);
-        if (file.exists()) {
-            try (ObjectInputStream ois = new ObjectInputStream(
-                    new FileInputStream(file))) {
-                entries = (List<WorkEntry>) ois.readObject();
-            } catch (IOException | ClassNotFoundException e) {
-                entries = new ArrayList<>();
-                System.err.println("Ошибка загрузки записей: " + e.getMessage());
-            }
-        }
+    private void saveEntries() {
+        store.saveList(ENTRIES_FILE, entries);
     }
 
     private void savePredefinedTasks() {
-        try (ObjectOutputStream oos = new ObjectOutputStream(
-                new FileOutputStream(TASKS_FILE))) {
-            oos.writeObject(predefinedTasks);
-        } catch (IOException e) {
-            System.err.println("Ошибка сохранения задач: " + e.getMessage());
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void loadPredefinedTasks() {
-        File file = new File(TASKS_FILE);
-        if (file.exists()) {
-            try (ObjectInputStream ois = new ObjectInputStream(
-                    new FileInputStream(file))) {
-                predefinedTasks = (List<Task>) ois.readObject();
-            } catch (IOException | ClassNotFoundException e) {
-                predefinedTasks = new ArrayList<>();
-                System.err.println("Ошибка загрузки задач: " + e.getMessage());
-            }
-        }
+        store.saveList(TASKS_FILE, predefinedTasks);
     }
 }

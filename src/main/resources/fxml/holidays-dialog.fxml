@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<DialogPane fx:id="dialogPane"
+            fx:controller="com.reminder.ui.controller.HolidaysDialogController"
+            xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            prefWidth="420" prefHeight="380"
+            headerText="Добавьте или удалите праздничные дни">
+    <content>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <Label fx:id="countLabel" text="Праздничные дни (всего: 0):"/>
+            <ListView fx:id="holidayList" VBox.vgrow="ALWAYS"/>
+
+            <Separator/>
+
+            <Label text="Добавить праздничный день:"/>
+            <HBox spacing="10" alignment="CENTER_LEFT">
+                <DatePicker fx:id="holidayPicker"/>
+                <Button fx:id="addHolidayButton" text="➕ Добавить"
+                        style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
+            </HBox>
+            <Button fx:id="deleteHolidayButton" text="🗑️ Удалить выбранный" maxWidth="Infinity"
+                    style="-fx-background-color: #f44336; -fx-text-fill: white;"/>
+        </VBox>
+    </content>
+</DialogPane>

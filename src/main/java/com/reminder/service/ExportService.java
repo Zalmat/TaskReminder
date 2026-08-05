@@ -1,6 +1,6 @@
-package com.reminder.services;
+package com.reminder.service;
 
-import com.reminder.models.WorkEntry;
+import com.reminder.model.WorkEntry;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -9,13 +9,24 @@ import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.yaml.snakeyaml.Yaml;
 
-import java.io.*;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
+/** Экспорт данных. Весь текст пишется в кодировке UTF-8 (данные — Unicode). */
 public class ExportService {
+
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
@@ -23,7 +34,6 @@ public class ExportService {
         try (Workbook workbook = new XSSFWorkbook()) {
             Sheet sheet = workbook.createSheet("Рабочее время");
 
-            // Создаем стиль для заголовков
             CellStyle headerStyle = workbook.createCellStyle();
             Font headerFont = workbook.createFont();
             headerFont.setBold(true);
@@ -36,7 +46,6 @@ public class ExportService {
             headerStyle.setBorderLeft(BorderStyle.THIN);
             headerStyle.setBorderRight(BorderStyle.THIN);
 
-            // Создаем заголовки
             Row headerRow = sheet.createRow(0);
             String[] headers = {"Дата", "День недели", "Проект", "Задача", "Тип", "Часы", "Комментарий"};
             for (int i = 0; i < headers.length; i++) {
@@ -45,7 +54,6 @@ public class ExportService {
                 cell.setCellStyle(headerStyle);
             }
 
-            // Заполняем данные
             int rowNum = 1;
             for (WorkEntry entry : entries) {
                 Row row = sheet.createRow(rowNum++);
@@ -58,7 +66,6 @@ public class ExportService {
                 row.createCell(6).setCellValue(entry.getComment() != null ? entry.getComment() : "");
             }
 
-            // Автоширина колонок
             for (int i = 0; i < headers.length; i++) {
                 sheet.autoSizeColumn(i);
                 if (sheet.getColumnWidth(i) < 3000) {
@@ -66,7 +73,6 @@ public class ExportService {
                 }
             }
 
-            // Создаем итоговую строку
             Row totalRow = sheet.createRow(rowNum + 1);
             Cell totalLabel = totalRow.createCell(0);
             totalLabel.setCellValue("Итого часов:");
@@ -86,10 +92,6 @@ public class ExportService {
     public void exportToJson(List<WorkEntry> entries, String filePath) throws IOException {
         Gson gson = new GsonBuilder()
                 .setPrettyPrinting()
-                .registerTypeAdapter(LocalDate.class,
-                        (com.google.gson.JsonSerializer<LocalDate>)
-                                (src, typeOfSrc, context) ->
-                                        context.serialize(src.format(DATE_FORMATTER)))
                 .create();
 
         JsonObject root = new JsonObject();
@@ -111,13 +113,16 @@ public class ExportService {
         }
         root.add("entries", entriesArray);
 
-        try (Writer writer = new FileWriter(filePath)) {
+        try (Writer writer = utf8Writer(filePath)) {
             gson.toJson(root, writer);
         }
     }
 
     public void exportToCsv(List<WorkEntry> entries, String filePath) throws IOException {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(filePath))) {
+        try (Writer w = utf8Writer(filePath);
+             PrintWriter writer = new PrintWriter(w)) {
+            // BOM для корректного открытия UTF-8 в Excel.
+            writer.print('\uFEFF');
             writer.println("Дата,День недели,Проект,Задача,Тип,Часы,Комментарий");
 
             for (WorkEntry entry : entries) {
@@ -137,7 +142,6 @@ public class ExportService {
         }
     }
 
-    // Новый метод для экспорта в YAML
     public void exportToYaml(List<WorkEntry> entries, String filePath) throws IOException {
         Map<String, Object> data = new LinkedHashMap<>();
         data.put("exportDate", LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
@@ -159,12 +163,11 @@ public class ExportService {
         data.put("entries", entryList);
 
         Yaml yaml = new Yaml();
-        try (Writer writer = new FileWriter(filePath)) {
+        try (Writer writer = utf8Writer(filePath)) {
             yaml.dump(data, writer);
         }
     }
 
-    // Новый метод для экспорта в XML
     public void exportToXml(List<WorkEntry> entries, String filePath) throws IOException {
         try {
             javax.xml.parsers.DocumentBuilderFactory docFactory =
@@ -201,18 +204,19 @@ public class ExportService {
                     javax.xml.transform.TransformerFactory.newInstance();
             javax.xml.transform.Transformer transformer = transformerFactory.newTransformer();
             transformer.setOutputProperty(javax.xml.transform.OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(javax.xml.transform.OutputKeys.ENCODING, "UTF-8");
             transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 
             javax.xml.transform.dom.DOMSource source = new javax.xml.transform.dom.DOMSource(doc);
             javax.xml.transform.stream.StreamResult result =
-                    new javax.xml.transform.stream.StreamResult(new File(filePath));
+                    new javax.xml.transform.stream.StreamResult(
+                            new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8));
             transformer.transform(source, result);
         } catch (Exception e) {
             throw new IOException("Ошибка экспорта в XML: " + e.getMessage(), e);
         }
     }
 
-    // Вспомогательный метод для XML
     private void addXmlElement(org.w3c.dom.Document doc, org.w3c.dom.Element parent, String name, String value) {
         org.w3c.dom.Element element = doc.createElement(name);
         element.appendChild(doc.createTextNode(value != null ? value : ""));
@@ -225,5 +229,9 @@ public class ExportService {
             return "\"" + value.replace("\"", "\"\"") + "\"";
         }
         return value;
+    }
+
+    private Writer utf8Writer(String filePath) throws IOException {
+        return new OutputStreamWriter(Files.newOutputStream(Paths.get(filePath)), StandardCharsets.UTF_8);
     }
 }

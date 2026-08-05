@@ -1,0 +1,118 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.reminder.ui.controller.MainController">
+    <padding>
+        <Insets top="10" right="10" bottom="10" left="10"/>
+    </padding>
+
+    <fx:define>
+        <ToggleGroup fx:id="viewGroup"/>
+    </fx:define>
+
+    <top>
+        <VBox spacing="10" style="-fx-padding: 5 0 10 0;">
+            <Label fx:id="titleLabel" text="📋 Учет рабочего времени"
+                   style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+
+            <HBox fx:id="controlBox" alignment="CENTER_LEFT" spacing="10">
+                <RadioButton fx:id="dayRadio" text="📅 День" selected="true" toggleGroup="$viewGroup"/>
+                <RadioButton fx:id="weekRadio" text="📊 Неделя" toggleGroup="$viewGroup"/>
+                <Button fx:id="prevButton" text="◀"/>
+                <DatePicker fx:id="datePicker"/>
+                <Button fx:id="nextButton" text="▶"/>
+                <Button fx:id="todayButton" text="Сегодня"/>
+                <Separator orientation="VERTICAL"/>
+                <Button fx:id="holidayButton" text="📅 Праздники"/>
+            </HBox>
+        </VBox>
+    </top>
+
+    <left>
+        <VBox spacing="10" prefWidth="320" style="-fx-background-color: #f5f5f5; -fx-border-color: #ddd; -fx-border-width: 1px;">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+            <Label text="➕ Добавить работу" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+
+            <Label text="Проект:"/>
+            <ComboBox fx:id="projectChoice" editable="true" promptText="Введите или выберите проект" maxWidth="Infinity"/>
+
+            <Label text="Задача:"/>
+            <ComboBox fx:id="taskChoice" editable="true" promptText="Введите или выберите задачу" maxWidth="Infinity"/>
+
+            <Label text="Тип работ:"/>
+            <ComboBox fx:id="typeChoice" promptText="Выберите тип работы" maxWidth="Infinity"/>
+
+            <VBox fx:id="hoursContainer" spacing="5" managed="true">
+                <Label text="Длительность (часы):"/>
+                <TextField fx:id="hoursField" promptText="Например: 1, 2, 3..."/>
+            </VBox>
+
+            <Label text="Комментарий:"/>
+            <TextArea fx:id="commentArea" prefRowCount="3" wrapText="true" promptText="Дополнительная информация..."/>
+
+            <Button fx:id="addButton" text="✅ Добавить" maxWidth="Infinity"
+                    style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;"/>
+
+            <Separator/>
+
+            <Button fx:id="loadYamlButton" text="📂 Загрузить задачи из YAML" maxWidth="Infinity"/>
+            <Button fx:id="clearButton" text="🗑️ Очистить" maxWidth="Infinity"
+                    style="-fx-background-color: #f44336; -fx-text-fill: white;"/>
+        </VBox>
+    </left>
+
+    <center>
+        <StackPane fx:id="centerStack">
+            <VBox fx:id="dayPanel" spacing="10" visible="true" style="-fx-padding: 0 10 0 10;">
+                <HBox spacing="20" alignment="CENTER_LEFT">
+                    <Label fx:id="dayTotalLabel" text="Загружено: 0.0 ч"
+                           style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+                    <Label fx:id="dayRemainingLabel" text="Осталось: 8.0 ч"
+                           style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+                </HBox>
+                <TableView fx:id="dayTableView" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="dayProjectColumn" text="Проект" prefWidth="120"/>
+                        <TableColumn fx:id="dayTaskColumn" text="Задача" prefWidth="150"/>
+                        <TableColumn fx:id="dayTypeColumn" text="Тип" prefWidth="100"/>
+                        <TableColumn fx:id="dayHoursColumn" text="Часы" prefWidth="70"/>
+                        <TableColumn fx:id="dayCommentColumn" text="Комментарий" prefWidth="200"/>
+                    </columns>
+                </TableView>
+            </VBox>
+
+            <VBox fx:id="weekPanel" spacing="8" visible="false" style="-fx-padding: 0 10 0 10;">
+                <HBox spacing="20" alignment="CENTER_LEFT">
+                    <Label fx:id="weekTotalLabel" text="Неделя: 0 / 48 ч"
+                           style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #2196F3;"/>
+                    <Label text="(двойной клик для редактирования)"
+                           style="-fx-font-size: 11px; -fx-text-fill: #888;"/>
+                </HBox>
+                <TableView fx:id="weekTableView" editable="true" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="weekProjectColumn" text="Проект" prefWidth="120"/>
+                        <TableColumn fx:id="weekTaskColumn" text="Задача" prefWidth="150"/>
+                        <TableColumn fx:id="weekTypeColumn" text="Тип работ" prefWidth="100"/>
+                        <TableColumn fx:id="weekCommentColumn" text="Комментарий" prefWidth="150"/>
+                        <TableColumn fx:id="weekTotalColumn" text="Всего" prefWidth="70"/>
+                    </columns>
+                </TableView>
+            </VBox>
+        </StackPane>
+    </center>
+
+    <bottom>
+        <HBox fx:id="statusPanel" spacing="10" alignment="CENTER_RIGHT" style="-fx-padding: 10 0 0 0;">
+            <Button fx:id="reminderButton" text="⏰ Напоминания"/>
+            <Button fx:id="exportButton" text="📊 Экспорт"/>
+            <Region HBox.hgrow="ALWAYS"/>
+            <Label fx:id="clockLabel" text=""/>
+        </HBox>
+    </bottom>
+</BorderPane>

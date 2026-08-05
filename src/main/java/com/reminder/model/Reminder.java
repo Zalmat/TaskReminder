@@ -1,21 +1,22 @@
-package com.reminder.models;
+package com.reminder.model;
 
 import java.io.Serializable;
-import java.time.LocalTime;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.format.DateTimeFormatter;
+import java.util.UUID;
 
 public class Reminder implements Serializable {
     private static final long serialVersionUID = 1L;
-
     private String id;
     private LocalTime time;
     private String text;
     private boolean active;
-    private LocalDateTime snoozeUntil;
     private boolean repeatDaily;
+    private LocalDateTime snoozeUntil;
 
     public Reminder() {
-        this.id = java.util.UUID.randomUUID().toString();
+        this.id = UUID.randomUUID().toString();
         this.active = true;
         this.repeatDaily = false;
     }
@@ -31,7 +32,6 @@ public class Reminder implements Serializable {
         this.repeatDaily = repeatDaily;
     }
 
-    // Геттеры и сеттеры
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 
@@ -44,23 +44,41 @@ public class Reminder implements Serializable {
     public boolean isActive() { return active; }
     public void setActive(boolean active) { this.active = active; }
 
-    public LocalDateTime getSnoozeUntil() { return snoozeUntil; }
-    public void setSnoozeUntil(LocalDateTime snoozeUntil) { this.snoozeUntil = snoozeUntil; }
-
     public boolean isRepeatDaily() { return repeatDaily; }
     public void setRepeatDaily(boolean repeatDaily) { this.repeatDaily = repeatDaily; }
 
+    public LocalDateTime getSnoozeUntil() { return snoozeUntil; }
+    public void setSnoozeUntil(LocalDateTime snoozeUntil) { this.snoozeUntil = snoozeUntil; }
+
+    /**
+     * Напоминание срабатывает, если активно, не отложено и наступил его минутный интервал.
+     * Окно срабатывания — одна минута [time, time+1min).
+     */
     public boolean shouldTrigger() {
         if (!active) return false;
         if (snoozeUntil != null && LocalDateTime.now().isBefore(snoozeUntil)) {
             return false;
         }
         LocalTime now = LocalTime.now();
-        // Проверяем с точностью до минуты
-        return Math.abs(now.toSecondOfDay() - time.toSecondOfDay()) < 60;
+        int nowSec = now.toSecondOfDay();
+        int targetSec = time.toSecondOfDay();
+        return nowSec >= targetSec && nowSec < targetSec + 60;
     }
 
     public String getFormattedTime() {
-        return time.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"));
+        return time != null ? time.format(DateTimeFormatter.ofPattern("HH:mm")) : "";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Reminder reminder = (Reminder) o;
+        return id != null && id.equals(reminder.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return id != null ? id.hashCode() : 0;
     }
 }

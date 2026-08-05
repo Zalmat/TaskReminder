@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<DialogPane fx:id="dialogPane"
+            fx:controller="com.reminder.ui.controller.RemindersDialogController"
+            xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            prefWidth="680" prefHeight="640"
+            headerText="Добавьте новое или управляйте существующими напоминаниями">
+    <content>
+        <VBox spacing="10">
+            <padding>
+                <Insets top="10" right="10" bottom="10" left="10"/>
+            </padding>
+
+            <TitledPane text="➕ Добавить новое напоминание" expanded="true">
+                <GridPane hgap="10" vgap="10">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding>
+                    <Label text="Время:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+                    <HBox GridPane.rowIndex="0" GridPane.columnIndex="1" spacing="5">
+                        <Spinner fx:id="hourSpinner" editable="true" maxWidth="80"/>
+                        <Label text=":"/>
+                        <Spinner fx:id="minuteSpinner" editable="true" maxWidth="80"/>
+                    </HBox>
+                    <Label text="Текст:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+                    <TextArea fx:id="textArea" GridPane.rowIndex="1" GridPane.columnIndex="1"
+                              prefRowCount="2" wrapText="true" promptText="Введите текст напоминания..."/>
+                    <CheckBox fx:id="repeatCheckBox" text="Повторять ежедневно"
+                              GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+                    <Button fx:id="addButton" text="✅ Добавить" maxWidth="Infinity"
+                            GridPane.rowIndex="3" GridPane.columnIndex="1"
+                            style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                </GridPane>
+            </TitledPane>
+
+            <TitledPane text="📋 Список напоминаний" expanded="true">
+                <VBox spacing="10">
+                    <TableView fx:id="remindersTable" prefHeight="220" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="timeColumn" text="Время" prefWidth="80"/>
+                            <TableColumn fx:id="textColumn" text="Текст" prefWidth="280"/>
+                            <TableColumn fx:id="activeColumn" text="Активно" prefWidth="80"/>
+                            <TableColumn fx:id="repeatColumn" text="Ежедневно" prefWidth="90"/>
+                        </columns>
+                    </TableView>
+                    <HBox spacing="10" alignment="CENTER">
+                        <Button fx:id="editButton" text="✏️ Редактировать"/>
+                        <Button fx:id="deleteButton" text="🗑️ Удалить"
+                                style="-fx-background-color: #f44336; -fx-text-fill: white;"/>
+                        <Button fx:id="toggleButton" text="🔄 Переключить активность"/>
+                    </HBox>
+                </VBox>
+            </TitledPane>
+        </VBox>
+    </content>
+</DialogPane>

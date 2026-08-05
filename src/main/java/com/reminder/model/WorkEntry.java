@@ -1,4 +1,6 @@
-package com.reminder.models;
+package com.reminder.model;
+
+import com.reminder.util.RussianDays;
 
 import java.io.Serializable;
 import java.time.LocalDate;
@@ -7,7 +9,6 @@ import java.time.format.DateTimeFormatter;
 
 public class WorkEntry implements Serializable {
     private static final long serialVersionUID = 1L;
-
     private LocalDate date;
     private String project;
     private String taskName;
@@ -40,7 +41,6 @@ public class WorkEntry implements Serializable {
         this.comment = task.getComment();
     }
 
-    // Геттеры и сеттеры
     public LocalDate getDate() { return date; }
     public void setDate(LocalDate date) { this.date = date; }
 
@@ -62,8 +62,9 @@ public class WorkEntry implements Serializable {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
+    /** Русское название дня недели для отчётов (например «Понедельник»). */
     public String getDayOfWeek() {
-        return date.getDayOfWeek().toString();
+        return RussianDays.fullName(date.getDayOfWeek());
     }
 
     public String getFormattedDate() {

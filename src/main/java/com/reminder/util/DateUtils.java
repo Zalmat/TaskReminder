@@ -1,15 +1,34 @@
-package com.reminder.utils;
+package com.reminder.util;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 import java.util.Set;
 
-public class DateUtils {
+public final class DateUtils {
+
+    public static final Locale RUSSIAN = Locale.forLanguageTag("ru-RU");
+
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final DateTimeFormatter COMPACT_FORMATTER =
+            DateTimeFormatter.ofPattern("dd.MM");
+
+    private DateUtils() {
+    }
 
     public static String formatDate(LocalDate date) {
         return date != null ? date.format(DATE_FORMATTER) : "";
+    }
+
+    public static String formatShort(LocalDate date) {
+        return date != null ? date.format(COMPACT_FORMATTER) : "";
+    }
+
+    /** Начало недели — всегда понедельник (не зависит от локали системы). */
+    public static LocalDate startOfWeek(LocalDate date) {
+        return date.with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
     }
 
     public static boolean isWeekend(LocalDate date) {
@@ -17,7 +36,7 @@ public class DateUtils {
     }
 
     public static boolean isHoliday(LocalDate date, Set<LocalDate> holidays) {
-        return holidays.contains(date);
+        return holidays != null && holidays.contains(date);
     }
 
     public static double calculateWorkingDays(LocalDate start, LocalDate end, Set<LocalDate> holidays) {

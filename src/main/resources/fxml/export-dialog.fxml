@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<DialogPane fx:id="dialogPane"
+            fx:controller="com.reminder.ui.controller.ExportDialogController"
+            xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            prefWidth="430"
+            headerText="Выберите период и формат для экспорта">
+    <content>
+        <GridPane hgap="10" vgap="15">
+            <padding>
+                <Insets top="20" right="20" bottom="20" left="20"/>
+            </padding>
+            <Label text="Начало:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <DatePicker fx:id="startDate" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
+            <Label text="Конец:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <DatePicker fx:id="endDate" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
+            <Label text="Формат:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+            <ComboBox fx:id="formatChoice" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
+        </GridPane>
+    </content>
+</DialogPane>

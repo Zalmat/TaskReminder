@@ -45,8 +45,16 @@
     -fx-background-color: #fafafa;
 }
 
-.table-row-cell:selected {
+.table-row-cell:selected,
+.table-row-cell:selected .table-cell {
     -fx-background-color: #e3f2fd;
+    -fx-text-fill: black;
+}
+
+.table-row-cell:focused:selected,
+.table-row-cell:focused:selected .table-cell {
+    -fx-background-color: #bfe3f5;
+    -fx-text-fill: black;
 }
 
 .choice-box, .date-picker, .text-field, .text-area {

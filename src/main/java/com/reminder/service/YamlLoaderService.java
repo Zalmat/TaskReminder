@@ -1,9 +1,20 @@
-package com.reminder.services;
+package com.reminder.service;
 
-import com.reminder.models.Task;
+import com.reminder.model.Task;
 import org.yaml.snakeyaml.Yaml;
-import java.io.*;
-import java.util.*;
+
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 public class YamlLoaderService {
 
@@ -13,26 +24,34 @@ public class YamlLoaderService {
         Yaml yaml = new Yaml();
 
         try (InputStream inputStream = new FileInputStream(filePath)) {
-            Map<String, Object> data = yaml.load(inputStream);
-
-            if (data != null && data.containsKey("tasks")) {
-                List<Map<String, String>> taskList = (List<Map<String, String>>) data.get("tasks");
-                for (Map<String, String> taskMap : taskList) {
-                    Task task = new Task(
-                            taskMap.getOrDefault("project", "Неизвестный проект"),
-                            taskMap.getOrDefault("taskName", "Неизвестная задача"),
-                            taskMap.getOrDefault("type", "Другое")
-                    );
-                    tasks.add(task);
+            Object loaded = yaml.load(inputStream);
+            if (!(loaded instanceof Map<?, ?> data)) {
+                return tasks;
+            }
+            Object tasksObj = data.get("tasks");
+            if (tasksObj instanceof List<?> taskList) {
+                for (Object item : taskList) {
+                    if (!(item instanceof Map<?, ?> map)) {
+                        continue;
+                    }
+                    String project = asString(map.get("project"), "Неизвестный проект");
+                    String taskName = asString(map.get("taskName"), "Неизвестная задача");
+                    String type = asString(map.get("type"), "Другое");
+                    tasks.add(new Task(project, taskName, type));
                 }
             }
+            tasks.removeIf(t -> t.getTaskName() == null && t.getProject() == null);
         }
         return tasks;
     }
 
+    private static String asString(Object value, String fallback) {
+        return value != null ? String.valueOf(value) : fallback;
+    }
+
     public void saveTasksToYaml(String filePath, List<Task> tasks) throws IOException {
         Yaml yaml = new Yaml();
-        Map<String, Object> data = new HashMap<>();
+        Map<String, Object> data = new LinkedHashMap<>();
         List<Map<String, String>> taskList = new ArrayList<>();
 
         for (Task task : tasks) {
@@ -45,7 +64,8 @@ public class YamlLoaderService {
 
         data.put("tasks", taskList);
 
-        try (Writer writer = new FileWriter(filePath)) {
+        try (Writer writer = new OutputStreamWriter(
+                Files.newOutputStream(Paths.get(filePath)), StandardCharsets.UTF_8)) {
             yaml.dump(data, writer);
         }
     }

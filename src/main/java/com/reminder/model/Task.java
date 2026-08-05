@@ -1,10 +1,10 @@
-package com.reminder.models;
+package com.reminder.model;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 public class Task implements Serializable {
     private static final long serialVersionUID = 1L;
-
     private String project;
     private String taskName;
     private String type;
@@ -29,7 +29,6 @@ public class Task implements Serializable {
         this.comment = comment;
     }
 
-    // Геттеры и сеттеры
     public String getProject() { return project; }
     public void setProject(String project) { this.project = project; }
 
@@ -55,8 +54,13 @@ public class Task implements Serializable {
         if (this == obj) return true;
         if (obj == null || getClass() != obj.getClass()) return false;
         Task task = (Task) obj;
-        return project.equals(task.project) &&
-                taskName.equals(task.taskName) &&
-                type.equals(task.type);
+        return Objects.equals(project, task.project)
+                && Objects.equals(taskName, task.taskName)
+                && Objects.equals(type, task.type);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(project, taskName, type);
     }
 }

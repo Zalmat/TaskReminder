@@ -5,6 +5,13 @@ build/
 !**/src/test/**/build/
 .kotlin
 
+### Данные приложения (рабочая папка) ###
+work_entries.json
+predefined_tasks.json
+reminders.json
+*.dat.legacy
+*.json.tmp
+
 ### IntelliJ IDEA ###
 .idea/modules.xml
 .idea/jarRepositories.xml

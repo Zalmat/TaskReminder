@@ -42,7 +42,10 @@ dependencies {
 
 application {
     mainClass = 'com.reminder.App'
-    applicationDefaultJvmArgs = ['--add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED']
+    applicationDefaultJvmArgs = [
+        '--add-opens=javafx.graphics/com.sun.javafx.application=ALL-UNNAMED',
+        '-Dfile.encoding=UTF-8'
+    ]
 }
 
 jar {

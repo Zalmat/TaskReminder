@@ -1,8 +1,9 @@
-package com.reminder.components;
+package com.reminder.ui.component;
 
-import com.reminder.models.WeekEntry;
+import com.reminder.model.WeekEntry;
 import javafx.scene.control.TableCell;
 
+/** Ячейка итогов по задаче за неделю с подсветкой превышения лимита. */
 public class WeekTotalCell extends TableCell<WeekEntry, Integer> {
 
     @Override
