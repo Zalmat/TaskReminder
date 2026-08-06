@@ -109,6 +109,7 @@
 
     <bottom>
         <HBox fx:id="statusPanel" spacing="10" alignment="CENTER_RIGHT" style="-fx-padding: 10 0 0 0;">
+            <Button fx:id="updateButton" text="🔍 Проверить обновления"/>
             <Button fx:id="reminderButton" text="⏰ Напоминания"/>
             <Button fx:id="exportButton" text="📊 Экспорт"/>
             <Region HBox.hgrow="ALWAYS"/>

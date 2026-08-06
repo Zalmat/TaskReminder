@@ -1,6 +1,7 @@
 package com.reminder;
 
 import com.reminder.ui.controller.MainController;
+import com.reminder.util.VersionInfo;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
@@ -25,7 +26,7 @@ public class App extends Application {
             Scene scene = new Scene(root, 1200, 800);
             scene.getStylesheets().add(getClass().getResource("/styles/style.css").toExternalForm());
 
-            primaryStage.setTitle("📋 Напоминалка - Учет рабочего времени");
+            primaryStage.setTitle("📋 Напоминалка - Учет рабочего времени  v" + VersionInfo.load().version());
             primaryStage.setScene(scene);
             primaryStage.setMinWidth(1000);
             primaryStage.setMinHeight(700);

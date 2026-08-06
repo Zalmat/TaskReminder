@@ -2,20 +2,24 @@ package com.reminder.ui.controller;
 
 import com.reminder.model.Reminder;
 import com.reminder.model.Task;
+import com.reminder.model.UpdateInfo;
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
 import com.reminder.service.ExportService;
 import com.reminder.service.ReminderService;
 import com.reminder.service.TaskService;
+import com.reminder.service.UpdateCheckService;
 import com.reminder.service.WorkTimeService;
 import com.reminder.service.YamlLoaderService;
 import com.reminder.ui.component.WeekEntryCell;
 import com.reminder.ui.component.WeekTotalCell;
 import com.reminder.util.DateUtils;
 import com.reminder.util.RussianDays;
+import com.reminder.util.VersionInfo;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -53,8 +57,10 @@ import javafx.stage.FileChooser;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
 
+import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -62,6 +68,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.prefs.Preferences;
 
 /** Контроллер главного окна. Собирает слой UI поверх сервисов бизнес-логики. */
 public class MainController {
@@ -103,12 +110,14 @@ public class MainController {
     @FXML private Button holidayButton;
     @FXML private Button reminderButton;
     @FXML private Button exportButton;
+    @FXML private Button updateButton;
 
     private final TaskService taskService = new TaskService();
     private final WorkTimeService workTimeService = new WorkTimeService();
     private final ReminderService reminderService = new ReminderService();
     private final ExportService exportService = new ExportService();
     private final YamlLoaderService yamlLoaderService = new YamlLoaderService();
+    private final UpdateCheckService updateCheckService = new UpdateCheckService();
 
     private final ObservableList<WorkEntry> dayEntries = FXCollections.observableArrayList();
     private final ObservableList<WeekEntry> weekEntries = FXCollections.observableArrayList();
@@ -131,6 +140,7 @@ public class MainController {
 
         setupHolidays();
         setupReminders();
+        setupUpdateCheck();
         startClock();
 
         updateDayView(datePicker.getValue());
@@ -917,6 +927,69 @@ public class MainController {
             reminderService.addReminder(reminder);
         }
         reminderService.setOnReminderFire(this::showReminderDialog);
+    }
+
+    // ==================== ОБНОВЛЕНИЯ ====================
+
+    private void setupUpdateCheck() {
+        updateButton.setOnAction(e -> checkForUpdates(true));
+        checkForUpdates(false);
+    }
+
+    /** Проверяет наличие обновлений. При manual=true всегда показывает результат. */
+    private void checkForUpdates(boolean manual) {
+        updateCheckService.checkLatest().thenAccept(update ->
+                Platform.runLater(() -> handleUpdateResult(update, manual)));
+    }
+
+    private void handleUpdateResult(UpdateInfo update, boolean manual) {
+        if (update.newer()) {
+            showUpdateDialog(update, manual);
+        } else if (manual) {
+            showAlert("Обновления", "✅ У вас установлена актуальная версия v" + VersionInfo.load().version());
+        }
+    }
+
+    private void showUpdateDialog(UpdateInfo update, boolean manual) {
+        String latestKey = "v" + update.version();
+        Preferences prefs = Preferences.userRoot().node("com/reminder");
+        if (!manual && latestKey.equals(prefs.get("lastSeenVersion", ""))) {
+            return;
+        }
+        prefs.put("lastSeenVersion", latestKey);
+
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Доступно обновление");
+        alert.setHeaderText("Доступна новая версия " + latestKey);
+        String current = "v" + VersionInfo.load().version();
+        alert.setContentText("Текущая версия: " + current + "\nНовая версия: " + latestKey);
+
+        ButtonType downloadButton = new ButtonType("Скачать zip", ButtonBar.ButtonData.OK_DONE);
+        ButtonType releaseButton = new ButtonType("Открыть релиз");
+        ButtonType closeButton = new ButtonType("Закрыть", ButtonBar.ButtonData.CANCEL_CLOSE);
+        alert.getButtonTypes().setAll(downloadButton, releaseButton, closeButton);
+
+        Optional<ButtonType> result = alert.showAndWait();
+        if (result.isPresent()) {
+            if (result.get() == downloadButton) {
+                String url = !update.downloadUrl().isEmpty() ? update.downloadUrl() : update.releaseUrl();
+                openLink(url);
+            } else if (result.get() == releaseButton) {
+                openLink(update.releaseUrl());
+            }
+        }
+    }
+
+    private void openLink(String url) {
+        if (url == null || url.isEmpty()) {
+            showAlert("Ошибка", "Ссылка недоступна");
+            return;
+        }
+        try {
+            Desktop.getDesktop().browse(URI.create(url));
+        } catch (Exception e) {
+            showAlert("Ошибка", "Не удалось открыть ссылку: " + e.getMessage());
+        }
     }
 
     private void showAlert(String title, String content) {

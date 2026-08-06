@@ -1,5 +1,4 @@
 @echo off
-REM Deprecated wrapper: now delegates to build-release.ps1.
 chcp 65001 > nul
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0build-release.ps1" %*
 pause
