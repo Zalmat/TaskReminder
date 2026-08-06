@@ -1003,4 +1003,14 @@ public class MainController {
     public void shutdown() {
         reminderService.shutdown();
     }
+
+    @FXML
+    private void openGithubIssues() {
+        try {
+            String url = "https://github.com/Zalmat/TaskReminder/issues";
+            Desktop.getDesktop().browse(new URI(url));
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

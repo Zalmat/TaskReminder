@@ -4,6 +4,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
+<?import javafx.scene.effect.InnerShadow?>
+<?import javafx.scene.effect.DropShadow?>
 <BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.reminder.ui.controller.MainController">
     <padding>
@@ -113,6 +115,11 @@
             <Button fx:id="reminderButton" text="⏰ Напоминания"/>
             <Button fx:id="exportButton" text="📊 Экспорт"/>
             <Region HBox.hgrow="ALWAYS"/>
+            <Hyperlink text="GitHub Issues" onAction="#openGithubIssues" style="-fx-padding: 0; -fx-text-fill: #f2f2f2; -fx-underline: false; -fx-font-weight: bold;">
+                <effect>
+                    <DropShadow radius="1" offsetX="1" offsetY="-1" color="#c2c2c2" />
+                </effect>
+            </Hyperlink>
             <Label fx:id="clockLabel" text=""/>
         </HBox>
     </bottom>
