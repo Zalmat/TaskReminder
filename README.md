@@ -23,6 +23,10 @@
 - Управление активностью напоминаний
 - Редактирование и удаление существующих напоминаний
 
+### 🔍 Проверка обновлений
+- Кнопка «Проверить обновления» проверяет наличие новых версий через GitHub Releases
+- Показывает ссылку на скачивание новой версии
+
 ### 📂 Загрузка задач из YAML
 - Импорт списка задач из YAML файла
 - Автоматическое добавление в список задач
@@ -43,39 +47,39 @@
 
 ## 📁 Структура проекта
 
+```
 src/main/java/com/reminder/
-
-├── App.java     # Точка входа
-
-├── models/     # Модели данных
-
+├── App.java                      # Точка входа
+├── model/                        # Модели данных
 │   ├── Task.java
-
 │   ├── WorkEntry.java
-
+│   ├── WeekEntry.java
 │   ├── Reminder.java
-
-│   └── WeekEntry.java
-
-├── services/    # Сервисный слой
-
+│   └── UpdateInfo.java
+├── service/                      # Бизнес-логика
 │   ├── TaskService.java
-
+│   ├── WorkTimeService.java
 │   ├── ReminderService.java
-
 │   ├── ExportService.java
-
-│   └── YamlLoaderService.java
-
-├── controllers/      # Контроллеры
-
-│   └── MainController.java
-
-└── components/       # UI компоненты
-
-    ├── WeekEntryCell.java
-    
-    └── WeekTotalCell.java
+│   ├── YamlLoaderService.java
+│   └── UpdateCheckService.java
+├── storage/                      # Хранение/миграция данных
+│   ├── DataStore.java
+│   └── LegacyMigrator.java
+├── ui/
+│   ├── controller/               # Контроллеры (FXML)
+│   │   ├── MainController.java
+│   │   ├── RemindersDialogController.java
+│   │   ├── ExportDialogController.java
+│   │   └── HolidaysDialogController.java
+│   └── component/                # UI-компоненты
+│       ├── WeekEntryCell.java
+│       └── WeekTotalCell.java
+└── util/                         # Утилиты
+    ├── DateUtils.java
+    ├── RussianDays.java
+    └── VersionInfo.java
+```
 
 ## 🚀 Запуск проекта
 
@@ -109,7 +113,8 @@ build/release/
 
 - Версия берётся из git-тега вида `v1.2.3`; если тегов нет — `1.0.0` + короткий хэш коммита.
 - JavaFX jmods: берутся из `$env:JAVAFX_JMODS`, затем из `C:\tools\javafx-jmods-*`; если их нет — автоматически скачиваются с сайта Gluon. Нужен только установленный JDK 17.
-- Для публикации обновлений создайте Release в GitHub (`v1.0.0` и т.д.) и прикрепите к нему файл `TaskReminder-<версия>-win-x64.zip`. В приложении кнопка «Проверить обновления» покажет уведомление о новой версии.
+- В приложение включён модуль проверки обновлений: для публикации новой версии создайте Release в GitHub (`v1.0.1` и т.д.) и прикрепите к нему `TaskReminder-<версия>-win-x64.zip`. Кнопка «Проверить обновления» покажет уведомление о новой версии.
+- Готовая сборка предназначена для **Windows x64**.
 
 ## 📝 Пример YAML файла для загрузки задач
 
@@ -136,17 +141,6 @@ tasks:
 - **Оперативная память**: от 512 MB
 - **Операционная система**: Windows, macOS, Linux
 
-## 📦 Сборка
-```
-jpackage --name TaskReminder `
-    --input build\libs `
-    --main-jar TaskReminder-1.0.0-all.jar `
-    --main-class com.reminder.App `
-    --type app-image `
-    --dest build\installer `
-    --module-path "C:\tools\javafx-jmods-17.0.19" `
-    --add-modules javafx.controls,javafx.fxml
-```
 ## 🎯 Лимиты времени
 
 - **Дневной лимит**: 8 часов
