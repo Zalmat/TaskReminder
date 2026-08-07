@@ -51,7 +51,7 @@ public class UpdateCheckService {
                     return UpdateInfo.none();
                 }
                 if (response.statusCode() != 200) {
-                    return UpdateInfo.none();
+                    return UpdateInfo.error();
                 }
 
                 JsonObject json = JsonParser.parseString(response.body()).getAsJsonObject();
@@ -65,12 +65,12 @@ public class UpdateCheckService {
                         && latest.compareToIgnoreCase(currentVersion) != 0
                         && compareVersions(latest, normalize(currentVersion)) > 0;
 
-                return new UpdateInfo(latest, releaseUrl, downloadUrl, name, newer);
+                return new UpdateInfo(latest, releaseUrl, downloadUrl, name, newer, false);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                return UpdateInfo.none();
+                return UpdateInfo.error();
             } catch (IOException | RuntimeException e) {
-                return UpdateInfo.none();
+                return UpdateInfo.error();
             }
         });
     }

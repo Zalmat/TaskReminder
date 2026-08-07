@@ -943,7 +943,11 @@ public class MainController {
     }
 
     private void handleUpdateResult(UpdateInfo update, boolean manual) {
-        if (update.newer()) {
+        if (update.failed()) {
+            if (manual) {
+                showAlert("Обновления", "⚠ Не удалось проверить обновления (нет интернета или проблема с GitHub API).");
+            }
+        } else if (update.newer()) {
             showUpdateDialog(update, manual);
         } else if (manual) {
             showAlert("Обновления", "✅ У вас установлена актуальная версия v" + VersionInfo.load().version());
