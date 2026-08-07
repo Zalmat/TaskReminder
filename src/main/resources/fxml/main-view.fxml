@@ -38,9 +38,14 @@
         <VBox spacing="10" prefWidth="320" style="-fx-background-color: #f5f5f5; -fx-border-color: #ddd; -fx-border-width: 1px;">
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>
-            </padding>
-            <Label text="➕ Добавить работу" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
-
+            </padding> <!-- Внутри шутка
+            <Label text="➕ Добавить работу ➕" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+                -->
+            <Label fx:id="addJobLabel"
+                   text="Добавить работу"
+                   onMouseClicked="#handleLabelClick"
+                   style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+            <!-- Конец шутки -->
             <Label text="Проект:"/>
             <ComboBox fx:id="projectChoice" editable="true" promptText="Введите или выберите проект" maxWidth="Infinity"/>
 
@@ -63,8 +68,8 @@
 
             <Separator/>
 
-            <Button fx:id="loadYamlButton" text="📂 Загрузить задачи из YAML" maxWidth="Infinity"/>
-            <Button fx:id="clearButton" text="🗑️ Очистить" maxWidth="Infinity"
+            <Button fx:id="loadYamlButton" text="📂 Загрузить категории задач из YAML" maxWidth="Infinity"/>
+            <Button fx:id="clearButton" text="🗑️ Очистить таблицу" maxWidth="Infinity"
                     style="-fx-background-color: #f44336; -fx-text-fill: white;"/>
         </VBox>
     </left>

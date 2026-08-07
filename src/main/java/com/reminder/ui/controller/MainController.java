@@ -1013,4 +1013,38 @@ public class MainController {
             e.printStackTrace();
         }
     }
+
+    // Шутка начало
+    @FXML
+    private Label addJobLabel;
+    private int clickCount = 0;
+    private Timeline resetTimeline;
+
+
+    @FXML
+    private void handleLabelClick() {
+        // Инициализируем таймер при первом нажатии
+        if (resetTimeline == null) {
+            resetTimeline = new Timeline(new KeyFrame(Duration.seconds(1.0), event -> {
+                clickCount = 0; // Время вышло, обнуляем
+            }));
+            resetTimeline.setCycleCount(1);
+        }
+        resetTimeline.stop();
+        clickCount++;
+        resetTimeline.play();
+        if (clickCount == 20) {
+            resetTimeline.stop();
+            clickCount = 0;
+            showAlertWithJoke();
+        }
+    }
+    private void showAlertWithJoke() {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle("Пасхалка!");
+        alert.setHeaderText("Кто-то знатно заспамил кнопку...");
+        alert.setContentText("— Алло, это техподдержка?\n— Да.\n— Я тут 20 раз подряд нажал на текст, и у меня открылось это окно. Что мне делать?\n— Поздравляем, вы прошли тест на стрессоустойчивость!");
+        alert.showAndWait();
+    }
+    //ШУтка конец
 }
