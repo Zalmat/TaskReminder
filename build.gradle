@@ -74,7 +74,8 @@ def extractSemver(String text) {
 def releaseCommit = gitOutput(['rev-parse', '--short', 'HEAD'])
 def releaseDescribe = gitOutput(['describe', '--tags', '--always'])
 def tagVersion = extractSemver(releaseDescribe)
-def releaseVersion = tagVersion ?: (releaseCommit ? "${project.version}-${releaseCommit}" : project.version)
+def haveGit = releaseCommit != '' || releaseDescribe != ''
+def releaseVersion = tagVersion ?: (haveGit ? "${project.version}-${releaseCommit}" : "${project.version}-src")
 def releaseNumeric = extractSemver(releaseVersion) ?: project.version
 
 def generatedVersionDir = file("$buildDir/generated-resources/version")
