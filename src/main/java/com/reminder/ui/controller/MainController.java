@@ -53,6 +53,7 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
+import javafx.scene.media.AudioClip;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
 import javafx.util.StringConverter;
@@ -138,7 +139,6 @@ public class MainController {
         loadTypeChoices();
         refreshChoices();
 
-        setupHolidays();
         setupReminders();
         setupUpdateCheck();
         startClock();
@@ -777,6 +777,7 @@ public class MainController {
     }
 
     private void showReminderDialog(Reminder reminder) {
+        playReminderSound();
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle("⏰ Напоминание");
         alert.setHeaderText("Время напоминания!");
@@ -801,6 +802,16 @@ public class MainController {
                 reminder.setActive(false);
                 reminderService.updateReminder(reminder);
             }
+        }
+    }
+
+    /** Воспроизводит встроенный звук напоминания. */
+    private void playReminderSound() {
+        try {
+            String url = getClass().getResource("/sounds/reminder.wav").toExternalForm();
+            new AudioClip(url).play();
+        } catch (Exception e) {
+            System.err.println("Cannot play reminder sound: " + e.getMessage());
         }
     }
 
@@ -913,10 +924,6 @@ public class MainController {
         taskChoice.setValue(null);
         projectChoice.setPromptText("Введите или выберите проект");
         taskChoice.setPromptText("Введите или выберите задачу");
-    }
-
-    private void setupHolidays() {
-        workTimeService.setDefaultHolidays();
     }
 
     private void setupReminders() {

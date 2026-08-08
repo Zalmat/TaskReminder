@@ -2,6 +2,7 @@ package com.reminder.service;
 
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
+import com.reminder.storage.DataStore;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -14,14 +15,26 @@ import java.util.TreeSet;
 
 /**
  * Бизнес-логика учёта рабочего времени: лимиты, итоги и агрегация недели.
- * Слой не зависит от UI.
+ * Слой не зависит от UI. Праздники сохраняются в holidays.json.
  */
 public class WorkTimeService {
 
     public static final double MAX_DAILY_HOURS = 8.0;
     public static final double MAX_WEEKLY_HOURS = 48.0;
 
+    private static final String HOLIDAYS_FILE = "holidays.json";
+
     private final Set<LocalDate> holidays = new TreeSet<>();
+    private final DataStore store;
+
+    public WorkTimeService() {
+        this(new DataStore());
+    }
+
+    public WorkTimeService(DataStore store) {
+        this.store = store;
+        loadHolidays();
+    }
 
     // ==================== Праздники ====================
 
@@ -34,23 +47,46 @@ public class WorkTimeService {
     }
 
     public boolean addHoliday(LocalDate date) {
-        return date != null && holidays.add(date);
+        if (date != null && holidays.add(date)) {
+            persistHolidays();
+            return true;
+        }
+        return false;
     }
 
     public boolean removeHoliday(LocalDate date) {
-        return date != null && holidays.remove(date);
+        if (date != null && holidays.remove(date)) {
+            persistHolidays();
+            return true;
+        }
+        return false;
     }
 
-    public void setDefaultHolidays() {
-        holidays.clear();
-        holidays.add(LocalDate.of(2026, 1, 1));
-        holidays.add(LocalDate.of(2026, 1, 7));
-        holidays.add(LocalDate.of(2026, 2, 23));
-        holidays.add(LocalDate.of(2026, 3, 8));
-        holidays.add(LocalDate.of(2026, 5, 1));
-        holidays.add(LocalDate.of(2026, 5, 9));
-        holidays.add(LocalDate.of(2026, 6, 12));
-        holidays.add(LocalDate.of(2026, 11, 4));
+    /** Загружает сохранённые праздники; при отсутствии данных заполняет стандартные. */
+    private void loadHolidays() {
+        List<LocalDate> saved = store.loadList(HOLIDAYS_FILE, LocalDate.class);
+        if (saved.isEmpty()) {
+            seedDefaultHolidays();
+            persistHolidays();
+        } else {
+            holidays.addAll(saved);
+        }
+    }
+
+    private void seedDefaultHolidays() {
+        int year = LocalDate.now().getYear();
+        holidays.add(LocalDate.of(year, 1, 1));
+        holidays.add(LocalDate.of(year, 1, 7));
+        holidays.add(LocalDate.of(year, 2, 23));
+        holidays.add(LocalDate.of(year, 3, 8));
+        holidays.add(LocalDate.of(year, 5, 1));
+        holidays.add(LocalDate.of(year, 5, 9));
+        holidays.add(LocalDate.of(year, 6, 12));
+        holidays.add(LocalDate.of(year, 11, 4));
+    }
+
+    private void persistHolidays() {
+        store.saveList(HOLIDAYS_FILE, new ArrayList<>(holidays));
     }
 
     // ==================== Итоги ====================

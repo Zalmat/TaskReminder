@@ -6,6 +6,7 @@ import com.reminder.storage.DataStore;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -29,7 +30,7 @@ public class ReminderService {
 
     public ReminderService() {
         this.store = new DataStore();
-        this.reminders = store.loadList(REMINDERS_FILE, Reminder.class);
+        this.reminders = new CopyOnWriteArrayList<>(store.loadList(REMINDERS_FILE, Reminder.class));
         this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "reminder-monitor");
             t.setDaemon(true);
