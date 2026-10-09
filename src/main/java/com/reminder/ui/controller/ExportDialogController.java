@@ -4,6 +4,7 @@ import com.reminder.model.WorkEntry;
 import com.reminder.service.ExportService;
 import com.reminder.service.TaskService;
 import com.reminder.util.DateUtils;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
@@ -12,6 +13,7 @@ import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.DialogPane;
 import javafx.stage.FileChooser;
+import javafx.stage.Window;
 import javafx.util.StringConverter;
 
 import java.io.File;
@@ -30,14 +32,16 @@ public class ExportDialogController {
 
     private TaskService taskService;
     private ExportService exportService;
+    private Window owner;
     private BiConsumer<String, String> alert;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     public void init(TaskService taskService, ExportService exportService,
-                     LocalDate currentDate, boolean weekView, BiConsumer<String, String> alert) {
+                     LocalDate currentDate, boolean weekView, Window owner, BiConsumer<String, String> alert) {
         this.taskService = taskService;
         this.exportService = exportService;
+        this.owner = owner;
         this.alert = alert;
 
         StringConverter<LocalDate> converter = new StringConverter<>() {
@@ -75,7 +79,10 @@ public class ExportDialogController {
         ButtonType exportType = new ButtonType("Экспорт", ButtonBar.ButtonData.OK_DONE);
         dialogPane.getButtonTypes().setAll(exportType, ButtonType.CANCEL);
         Button exportButton = (Button) dialogPane.lookupButton(exportType);
-        exportButton.setOnAction(e -> doExport());
+        exportButton.addEventFilter(ActionEvent.ACTION, event -> {
+            event.consume();
+            doExport();
+        });
     }
 
     private void doExport() {
@@ -115,7 +122,7 @@ public class ExportDialogController {
             fileChooser.setInitialFileName(String.format("work_report_%s_%s.xml", timestamp, dateRange));
         }
 
-        File file = fileChooser.showSaveDialog(dialogPane.getScene().getWindow());
+        File file = fileChooser.showSaveDialog(owner);
         if (file == null) return;
 
         try {

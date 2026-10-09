@@ -740,7 +740,7 @@ public class MainController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/export-dialog.fxml"));
             DialogPane pane = loader.load();
             ExportDialogController ctrl = loader.getController();
-            ctrl.init(taskService, exportService, datePicker.getValue(), isWeekView, this::showAlert);
+            ctrl.init(taskService, exportService, datePicker.getValue(), isWeekView, datePicker.getScene().getWindow(), this::showAlert);
 
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle("📊 Экспорт данных");
