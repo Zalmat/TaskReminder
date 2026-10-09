@@ -1,8 +1,10 @@
 package com.reminder;
 
+import com.reminder.ui.TrayService;
 import com.reminder.ui.controller.MainController;
 import com.reminder.util.VersionInfo;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -15,6 +17,7 @@ import java.util.Locale;
 public class App extends Application {
 
     private MainController mainController;
+    private TrayService tray;
 
     @Override
     public void start(Stage primaryStage) {
@@ -33,8 +36,10 @@ public class App extends Application {
 
             primaryStage.setOnCloseRequest(e -> {
                 e.consume();
-                handleCloseRequest(primaryStage);
+                quit();
             });
+
+            setupTray(primaryStage);
 
             primaryStage.show();
         } catch (Exception e) {
@@ -43,18 +48,40 @@ public class App extends Application {
         }
     }
 
-    private void handleCloseRequest(Stage stage) {
+    private void setupTray(Stage primaryStage) {
+        if (!TrayService.isSupported()) {
+            return;
+        }
+        Platform.setImplicitExit(false);
+        tray = new TrayService();
+        tray.install(primaryStage, this::quit);
+
+        primaryStage.iconifiedProperty().addListener((obs, wasIconified, isIconified) -> {
+            if (Boolean.TRUE.equals(isIconified)) {
+                Platform.runLater(() -> {
+                    primaryStage.hide();
+                    if (tray != null) {
+                        tray.showMessage("Напоминалка", "Приложение свёрнуто в трей");
+                    }
+                });
+            }
+        });
+    }
+
+    private void quit() {
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
         alert.setTitle("Выход");
         alert.setHeaderText("Вы уверены, что хотите выйти?");
         alert.setContentText("Все данные будут сохранены.");
 
-        ButtonType result = alert.showAndWait().orElse(ButtonType.CANCEL);
-        if (result == ButtonType.OK) {
+        if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
             if (mainController != null) {
                 mainController.shutdown();
             }
-            stage.close();
+            if (tray != null) {
+                tray.remove();
+            }
+            Platform.exit();
         }
     }
 
