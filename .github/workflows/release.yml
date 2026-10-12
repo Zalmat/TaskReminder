@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout (full history for git describe)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check release notes
+        shell: pwsh
+        run: |
+          $tag = "${{ github.ref_name }}"
+          $notes = "release-notes/$tag.md"
+          if (-not (Test-Path $notes)) {
+            throw "Release notes not found: $notes. Create this file before pushing the tag."
+          }
+          $content = (Get-Content $notes -Raw).Trim()
+          if ([string]::IsNullOrWhiteSpace($content)) {
+            throw "Release notes file $notes is empty."
+          }
+          $prevTag = git describe --tags --abbrev=0 "$tag~1" 2>$null
+          if ($LASTEXITCODE -eq 0 -and $prevTag) {
+            $prevNotes = "release-notes/$prevTag.md"
+            if (Test-Path $prevNotes) {
+              $prevContent = (Get-Content $prevNotes -Raw).Trim()
+              if ($prevContent -eq $content) {
+                throw "Release notes identical to previous release ($prevTag). Update the notes before publishing."
+              }
+            }
+          }
+
+      - name: Set up JDK 17 (Zulu)
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+
+      - name: Build release (gradle + jpackage + zip)
+        shell: pwsh
+        run: .\build-release.ps1
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: TaskReminder ${{ github.ref_name }}
+          body_path: release-notes/${{ github.ref_name }}.md
+          files: |
+            build/release/*.zip
+            build/release/*.sha256
+          fail_on_unmatched_files: true
