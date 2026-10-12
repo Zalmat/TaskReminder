@@ -32,29 +32,17 @@ public class WorkEntry implements Serializable {
         this.hours = hours;
     }
 
-    public WorkEntry(Task task) {
-        this();
-        this.project = task.getProject();
-        this.taskName = task.getTaskName();
-        this.type = task.getType();
-        this.hours = task.getHours();
-        this.comment = task.getComment();
-    }
-
     public LocalDate getDate() { return date; }
     public void setDate(LocalDate date) { this.date = date; }
 
     public String getProject() { return project; }
-    public void setProject(String project) { this.project = project; }
 
     public String getTaskName() { return taskName; }
-    public void setTaskName(String taskName) { this.taskName = taskName; }
 
     public String getType() { return type; }
     public void setType(String type) { this.type = type; }
 
     public double getHours() { return hours; }
-    public void setHours(double hours) { this.hours = hours; }
 
     public String getComment() { return comment; }
     public void setComment(String comment) { this.comment = comment; }

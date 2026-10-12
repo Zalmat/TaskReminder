@@ -20,8 +20,8 @@ public class TaskService {
     private static final String TASKS_FILE = "predefined_tasks.json";
 
     private final DataStore store;
-    private List<WorkEntry> entries;
-    private List<Task> predefinedTasks;
+    private final List<WorkEntry> entries;
+    private final List<Task> predefinedTasks;
 
     public TaskService() {
         this.store = new DataStore();
@@ -34,10 +34,6 @@ public class TaskService {
         LegacyMigrator migrator = new LegacyMigrator(store);
         migrator.migrate("work_entries.dat", ENTRIES_FILE);
         migrator.migrate("predefined_tasks.dat", TASKS_FILE);
-    }
-
-    public boolean addWorkEntry(WorkEntry entry) {
-        return addWorkEntry(entry, false);
     }
 
     /** Добавляет запись. При allowOvertime пропускается проверка дневного лимита. */
@@ -54,11 +50,6 @@ public class TaskService {
         return true;
     }
 
-    /** Заменяет существующую запись, сохраняя время создания. */
-    public boolean updateWorkEntry(WorkEntry original, WorkEntry updated) {
-        return updateWorkEntry(original, updated, false);
-    }
-
     /** Заменяет запись. При allowOvertime пропускается проверка дневного лимита. */
     public boolean updateWorkEntry(WorkEntry original, WorkEntry updated, boolean allowOvertime) {
         int idx = entries.indexOf(original);
@@ -72,7 +63,9 @@ public class TaskService {
                 .filter(e -> !e.equals(original) && e.getDate().equals(updated.getDate()))
                 .mapToDouble(WorkEntry::getHours)
                 .sum();
-        if (!allowOvertime && otherTotal + updated.getHours() > WorkTimeService.MAX_DAILY_HOURS) {
+        double newTotal = otherTotal + updated.getHours();
+        double currentTotal = otherTotal + original.getHours();
+        if (!allowOvertime && newTotal > WorkTimeService.MAX_DAILY_HOURS && newTotal > currentTotal) {
             return false;
         }
         updated.setCreatedAt(original.getCreatedAt());

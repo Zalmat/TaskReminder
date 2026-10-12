@@ -4,9 +4,8 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<?import javafx.scene.effect.InnerShadow?>
 <?import javafx.scene.effect.DropShadow?>
-<BorderPane fx:id="rootPane" xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.reminder.ui.controller.MainController">
     <padding>
         <Insets top="10" right="10" bottom="10" left="10"/>
@@ -18,10 +17,10 @@
 
     <top>
         <VBox spacing="10" style="-fx-padding: 5 0 10 0;">
-            <Label fx:id="titleLabel" text="📋 Учет рабочего времени"
+            <Label text="📋 Учет рабочего времени"
                    style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
 
-            <HBox fx:id="controlBox" alignment="CENTER_LEFT" spacing="10">
+            <HBox alignment="CENTER_LEFT" spacing="10">
                 <RadioButton fx:id="dayRadio" text="📅 День" selected="true" toggleGroup="$viewGroup"/>
                 <RadioButton fx:id="weekRadio" text="📊 Неделя" toggleGroup="$viewGroup"/>
                 <Button fx:id="prevButton" text="◀"/>
@@ -41,7 +40,7 @@
             </padding> <!-- Внутри шутка
             <Label text="➕ Добавить работу ➕" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
                 -->
-            <Label fx:id="addJobLabel"
+            <Label
                    text="Добавить работу"
                    onMouseClicked="#handleLabelClick"
                    style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
@@ -55,7 +54,7 @@
             <Label text="Тип работ:"/>
             <ComboBox fx:id="typeChoice" promptText="Выберите тип работы" maxWidth="Infinity"/>
 
-            <VBox fx:id="hoursContainer" spacing="5" managed="true">
+            <VBox fx:id="hoursContainer" spacing="5">
                 <Label text="Длительность (часы):"/>
                 <TextField fx:id="hoursField" promptText="Например: 1, 2, 3..."/>
             </VBox>
@@ -76,8 +75,8 @@
     </left>
 
     <center>
-        <StackPane fx:id="centerStack">
-            <VBox fx:id="dayPanel" spacing="10" visible="true" style="-fx-padding: 0 10 0 10;">
+        <StackPane>
+            <VBox fx:id="dayPanel" spacing="10" style="-fx-padding: 0 10 0 10;">
                 <HBox spacing="20" alignment="CENTER_LEFT">
                     <Label fx:id="dayTotalLabel" text="Загружено: 0.0 ч"
                            style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
@@ -118,7 +117,7 @@
     </center>
 
     <bottom>
-        <HBox fx:id="statusPanel" spacing="10" alignment="CENTER_RIGHT" style="-fx-padding: 10 0 0 0;">
+        <HBox spacing="10" alignment="CENTER_RIGHT" style="-fx-padding: 10 0 0 0;">
             <Button fx:id="updateButton" text="🔍 Проверить обновления"/>
             <Button fx:id="reminderButton" text="⏰ Напоминания"/>
             <Button fx:id="exportButton" text="📊 Экспорт"/>
@@ -128,7 +127,7 @@
                     <DropShadow radius="1" offsetX="1" offsetY="-1" color="#c2c2c2" />
                 </effect>
             </Hyperlink>
-            <Label fx:id="clockLabel" text=""/>
+            <Label fx:id="clockLabel"/>
         </HBox>
     </bottom>
 </BorderPane>

@@ -3,11 +3,8 @@ package com.reminder.util;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
 
 public final class DateUtils {
-
-    public static final Locale RUSSIAN = Locale.forLanguageTag("ru-RU");
 
     private static final DateTimeFormatter DATE_FORMATTER =
             DateTimeFormatter.ofPattern("dd.MM.yyyy");

@@ -11,15 +11,15 @@ public final class Dialogs {
     }
 
     public static void info(String title, String content) {
-        show(Alert.AlertType.INFORMATION, title, null, content);
+        show(Alert.AlertType.INFORMATION, title, content);
     }
 
     public static void warn(String title, String content) {
-        show(Alert.AlertType.WARNING, title, null, content);
+        show(Alert.AlertType.WARNING, title, content);
     }
 
     public static void error(String title, String content) {
-        show(Alert.AlertType.ERROR, title, null, content);
+        show(Alert.AlertType.ERROR, title, content);
     }
 
     /** Подтверждение. Возвращает true, если пользователь нажал OK. */
@@ -52,22 +52,22 @@ public final class Dialogs {
         for (Throwable c = t; c != null; c = c.getCause()) {
             String msg = c.getMessage();
             if (msg != null && !msg.isBlank()) {
-                if (sb.length() > 0) {
+                if (!sb.isEmpty()) {
                     sb.append(" → ");
                 }
                 sb.append(msg);
             }
         }
-        if (sb.length() == 0) {
+        if (sb.isEmpty()) {
             return t.getClass().getSimpleName() + " (" + t + ")";
         }
         return sb.toString();
     }
 
-    private static void show(Alert.AlertType type, String title, String header, String content) {
+    private static void show(Alert.AlertType type, String title, String content) {
         Alert alert = new Alert(type);
         alert.setTitle(title);
-        alert.setHeaderText(header);
+        alert.setHeaderText(null);
         alert.setContentText(content);
         alert.showAndWait();
     }

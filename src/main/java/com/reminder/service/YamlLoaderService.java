@@ -12,7 +12,6 @@ import java.util.Map;
 
 public class YamlLoaderService {
 
-    @SuppressWarnings("unchecked")
     public List<Task> loadTasksFromYaml(String filePath) throws IOException {
         List<Task> tasks = new ArrayList<>();
         Yaml yaml = new Yaml();

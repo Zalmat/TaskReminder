@@ -5,16 +5,9 @@ import javafx.scene.control.TableCell;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 
-import java.time.LocalDate;
-
 /** Редактируемая ячейка с количеством часов для недельного режима. */
 public class WeekEntryCell extends TableCell<WeekEntry, Integer> {
     private TextField textField;
-    private final LocalDate currentDate;
-
-    public WeekEntryCell(LocalDate currentDate) {
-        this.currentDate = currentDate;
-    }
 
     @Override
     public void startEdit() {
@@ -80,10 +73,7 @@ public class WeekEntryCell extends TableCell<WeekEntry, Integer> {
     private Integer parseValue(String value) {
         try {
             if (value == null || value.trim().isEmpty()) return 0;
-            int val = Integer.parseInt(value.trim());
-            if (val < 0) return 0;
-            if (val > 24) return 24;
-            return val;
+            return Math.max(0, Math.min(24, Integer.parseInt(value.trim())));
         } catch (NumberFormatException e) {
             return 0;
         }

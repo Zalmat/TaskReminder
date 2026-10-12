@@ -1,5 +1,6 @@
 package com.reminder.ui.dialog;
 
+import com.reminder.util.TaskValidationUtils;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.scene.control.ButtonBar;
@@ -63,9 +64,9 @@ public final class EntryEditDialog {
         dialog.setResultConverter(dialogButton -> {
             if (dialogButton != saveType) return null;
             String p = projectField.getText().trim();
-            String t = taskField.getText().trim();
+            String t = TaskValidationUtils.getSafeTaskName(taskField.getText());
             String ty = typeField.getValue() != null ? typeField.getValue().trim() : "";
-            if (p.isEmpty() || t.isEmpty() || ty.isEmpty()) return null;
+            if (p.isEmpty() || ty.isEmpty()) return null;
             return new EntryEditResult(p, t, ty,
                     withHours ? hoursFieldDialog.getText().trim() : null,
                     commentField.getText().trim());

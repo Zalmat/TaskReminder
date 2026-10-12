@@ -48,7 +48,6 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.control.Tooltip;
-import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.AudioClip;
 import javafx.stage.FileChooser;
@@ -71,7 +70,6 @@ import java.util.Optional;
 /** Контроллер главного окна. Собирает слой UI поверх сервисов бизнес-логики. */
 public class MainController {
 
-    @FXML private StackPane centerStack;
     @FXML private VBox dayPanel;
     @FXML private VBox weekPanel;
     @FXML private VBox hoursContainer;
@@ -275,7 +273,7 @@ public class MainController {
             col.setPrefWidth(70);
             col.setStyle("-fx-alignment: CENTER;");
             col.setEditable(true);
-            col.setCellFactory(cf -> new WeekEntryCell(col.date()));
+            col.setCellFactory(cf -> new WeekEntryCell());
             col.setOnEditCommit(this::handleWeekCellEdit);
             weekDayColumns.add(col);
         }
@@ -551,8 +549,10 @@ public class MainController {
         boolean allowOvertime = false;
         double otherTotal = workTimeService.getDayTotal(
                 taskService.getEntriesForDate(selected.getDate()), selected.getDate()) - selected.getHours();
-        if (otherTotal + hours > WorkTimeService.MAX_DAILY_HOURS) {
-            int overtime = (int) (otherTotal + hours) - (int) WorkTimeService.MAX_DAILY_HOURS;
+        double currentTotal = otherTotal + selected.getHours();
+        double newTotal = otherTotal + hours;
+        if (newTotal > WorkTimeService.MAX_DAILY_HOURS && newTotal > currentTotal) {
+            int overtime = (int) newTotal - (int) WorkTimeService.MAX_DAILY_HOURS;
             allowOvertime = Dialogs.yesNo("Переработка",
                     String.format("Превышен лимит %.0f ч", WorkTimeService.MAX_DAILY_HOURS),
                     String.format("Переработка %d ч. Зарегистрировать?", overtime));
@@ -690,7 +690,7 @@ public class MainController {
         }
 
         entry.getDayHours().put(day, newValue);
-        saveWeekEntryToService(entry, entry, allowOvertime);
+        saveWeekEntryToService(entry, entry);
         updateWeekTotals();
         highlightOvertimeDays();
         weekTableView.refresh();
@@ -714,7 +714,7 @@ public class MainController {
 
         int idx = weekEntries.indexOf(selected);
         weekEntries.set(idx, updated);
-        saveWeekEntryToService(updated, selected, true);
+        saveWeekEntryToService(updated, selected);
         taskService.addPredefinedTask(new Task(result.project(), result.taskName(), result.type()));
 
         refreshChoices();
@@ -749,7 +749,7 @@ public class MainController {
     }
 
     /** Сохраняет недельную задачу в записи: удаляет старые (previous) и пишет новые. */
-    private void saveWeekEntryToService(WeekEntry entry, WeekEntry previous, boolean allowOvertime) {
+    private void saveWeekEntryToService(WeekEntry entry, WeekEntry previous) {
         removeRecordsFor(previous);
         removeRecordsFor(entry);
 
@@ -760,7 +760,7 @@ public class MainController {
                         entry.getProject(), entry.getTaskName(), entry.getType(), hours);
                 workEntry.setDate(day);
                 workEntry.setComment(entry.getComment());
-                taskService.addWorkEntry(workEntry, allowOvertime);
+                taskService.addWorkEntry(workEntry, true);
             }
         }
     }
@@ -985,9 +985,6 @@ public class MainController {
     }
 
     // Шутка (обработчик вынесен в EasterEgg)
-    @FXML
-    private Label addJobLabel;
-
     @FXML
     private void handleLabelClick() {
         easterEgg.onLabelClick();
