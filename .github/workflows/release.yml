@@ -31,8 +31,9 @@ jobs:
 
           $prevTag = git describe --tags --abbrev=0 "$tag~1" 2>$null
           if ($LASTEXITCODE -eq 0 -and $prevTag) {
-            $prevContent = (git show "${prevTag}:release-notes.md") -join "`n"
+            git cat-file -e "${prevTag}:release-notes.md" 2>$null
             if ($LASTEXITCODE -eq 0) {
+              $prevContent = (git show "${prevTag}:release-notes.md") -join "`n"
               $prevTrimmed = $prevContent.Trim()
               if ($prevTrimmed -eq $content) {
                 throw "Release notes are the same as for the previous release ($prevTag). Update release-notes.md before publishing."
