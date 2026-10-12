@@ -66,7 +66,7 @@ public class WeekEntryCell extends TableCell<WeekEntry, Integer> {
             }
         });
         textField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-            if (!isNowFocused) {
+            if (!isNowFocused && isEditing()) {
                 commitEdit(parseValue(textField.getText()));
             }
         });

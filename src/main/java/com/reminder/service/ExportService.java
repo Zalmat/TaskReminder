@@ -1,6 +1,7 @@
 package com.reminder.service;
 
 import com.reminder.model.WorkEntry;
+import com.reminder.util.DateUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
@@ -26,9 +27,6 @@ import java.util.Map;
 
 /** Экспорт данных. Весь текст пишется в кодировке UTF-8 (данные — Unicode). */
 public class ExportService {
-
-    private static final DateTimeFormatter DATE_FORMATTER =
-            DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     public void exportToExcel(List<WorkEntry> entries, String filePath) throws IOException {
         try (Workbook workbook = new XSSFWorkbook()) {
@@ -57,7 +55,7 @@ public class ExportService {
             int rowNum = 1;
             for (WorkEntry entry : entries) {
                 Row row = sheet.createRow(rowNum++);
-                row.createCell(0).setCellValue(entry.getDate().format(DATE_FORMATTER));
+                row.createCell(0).setCellValue(DateUtils.formatDate(entry.getDate()));
                 row.createCell(1).setCellValue(entry.getDayOfWeek());
                 row.createCell(2).setCellValue(entry.getProject());
                 row.createCell(3).setCellValue(entry.getTaskName());
@@ -95,14 +93,14 @@ public class ExportService {
                 .create();
 
         JsonObject root = new JsonObject();
-        root.addProperty("exportDate", LocalDate.now().format(DATE_FORMATTER));
+        root.addProperty("exportDate", DateUtils.formatDate(LocalDate.now()));
         root.addProperty("totalEntries", entries.size());
         root.addProperty("totalHours", entries.stream().mapToDouble(WorkEntry::getHours).sum());
 
         JsonArray entriesArray = new JsonArray();
         for (WorkEntry entry : entries) {
             JsonObject entryObj = new JsonObject();
-            entryObj.addProperty("date", entry.getDate().format(DATE_FORMATTER));
+            entryObj.addProperty("date", DateUtils.formatDate(entry.getDate()));
             entryObj.addProperty("dayOfWeek", entry.getDayOfWeek());
             entryObj.addProperty("project", entry.getProject());
             entryObj.addProperty("task", entry.getTaskName());
@@ -127,7 +125,7 @@ public class ExportService {
 
             for (WorkEntry entry : entries) {
                 writer.printf("%s,%s,%s,%s,%s,%.1f,%s%n",
-                        entry.getDate().format(DATE_FORMATTER),
+                        DateUtils.formatDate(entry.getDate()),
                         entry.getDayOfWeek(),
                         escapeCsv(entry.getProject()),
                         escapeCsv(entry.getTaskName()),
@@ -151,7 +149,7 @@ public class ExportService {
         List<Map<String, Object>> entryList = new ArrayList<>();
         for (WorkEntry entry : entries) {
             Map<String, Object> entryMap = new LinkedHashMap<>();
-            entryMap.put("date", entry.getDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")));
+            entryMap.put("date", DateUtils.formatDate(entry.getDate()));
             entryMap.put("dayOfWeek", entry.getDayOfWeek());
             entryMap.put("project", entry.getProject());
             entryMap.put("task", entry.getTaskName());
@@ -187,7 +185,7 @@ public class ExportService {
             org.w3c.dom.Element entriesElement = doc.createElement("entries");
             for (WorkEntry entry : entries) {
                 org.w3c.dom.Element entryElement = doc.createElement("entry");
-                entryElement.setAttribute("date", entry.getDate().format(DateTimeFormatter.ofPattern("dd.MM.yyyy")));
+                entryElement.setAttribute("date", DateUtils.formatDate(entry.getDate()));
                 entryElement.setAttribute("dayOfWeek", entry.getDayOfWeek());
 
                 addXmlElement(doc, entryElement, "project", entry.getProject());

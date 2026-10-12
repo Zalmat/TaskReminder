@@ -30,9 +30,10 @@
 ### 📂 Загрузка задач из YAML
 - Импорт списка задач из YAML файла
 - Автоматическое добавление в список задач
+- Кнопка «Скачать шаблон YAML» сохраняет пример файла для заполнения
 
 ### 📊 Экспорт данных
-- Поддерживаемые форматы: Excel (.xlsx), JSON, YAML, XML
+- Поддерживаемые форматы: Excel (.xlsx), CSV (.csv), JSON, YAML, XML
 - Экспорт за выбранный период
 - Автоматическое формирование имени файла с датой
 
@@ -72,19 +73,27 @@ src/main/java/com/reminder/
 │   ├── DataStore.java
 │   └── LegacyMigrator.java
 ├── ui/
-│   ├── TrayService.java          # Системный трей
-│   ├── controller/               # Контроллеры (FXML)
+│   ├── TrayService.java           # Системный трей
+│   ├── UpdateCheckUi.java         # UI проверки обновлений
+│   ├── controller/                # Контроллеры (FXML)
 │   │   ├── MainController.java
 │   │   ├── RemindersDialogController.java
 │   │   ├── ExportDialogController.java
 │   │   └── HolidaysDialogController.java
-│   └── component/                # UI-компоненты
-│       ├── WeekEntryCell.java
-│       └── WeekTotalCell.java
-└── util/                         # Утилиты
+│   ├── dialog/                    # Диалоги
+│   │   └── EntryEditDialog.java
+│   ├── component/                 # UI-компоненты
+│   │   ├── WeekEntryCell.java
+│   │   ├── WeekTotalCell.java
+│   │   └── EasterEgg.java         # Пасхалка
+│   └── util/                      # UI-утилиты
+│       ├── DatePickerUtils.java
+│       └── Dialogs.java
+└── util/                          # Утилиты
     ├── DateUtils.java
     ├── RussianDays.java
     ├── TaskValidationUtils.java
+    ├── YamlTemplate.java          # Шаблон YAML из ресурса
     └── VersionInfo.java
 ```
 

@@ -2,6 +2,7 @@ package com.reminder.ui.controller;
 
 import com.reminder.model.Reminder;
 import com.reminder.service.ReminderService;
+import com.reminder.ui.util.Dialogs;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -78,7 +79,7 @@ public class RemindersDialogController {
         LocalTime time = LocalTime.of(hourSpinner.getValue(), minuteSpinner.getValue());
         String text = textArea.getText();
         if (text == null || text.trim().isEmpty()) {
-            showAlert("Ошибка", "⚠️ Введите текст напоминания");
+            Dialogs.info("Ошибка", "⚠️ Введите текст напоминания");
             return;
         }
         Reminder reminder = new Reminder(time, text.trim(), repeatCheckBox.isSelected());
@@ -86,13 +87,13 @@ public class RemindersDialogController {
         refreshList();
         textArea.clear();
         repeatCheckBox.setSelected(false);
-        showAlert("Успех", "✅ Напоминание добавлено!");
+        Dialogs.info("Успех", "✅ Напоминание добавлено!");
     }
 
     private void editReminder() {
         Reminder selected = remindersTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            showAlert("Внимание", "⚠️ Пожалуйста, выберите напоминание для редактирования");
+            Dialogs.info("Внимание", "⚠️ Пожалуйста, выберите напоминание для редактирования");
             return;
         }
 
@@ -131,7 +132,7 @@ public class RemindersDialogController {
             if (dialogButton != saveType) return null;
             String txt = text.getText();
             if (txt == null || txt.trim().isEmpty()) {
-                showAlert("Ошибка", "⚠️ Введите текст напоминания");
+                Dialogs.info("Ошибка", "⚠️ Введите текст напоминания");
                 return null;
             }
             selected.setTime(LocalTime.of(hour.getValue(), minute.getValue()));
@@ -144,14 +145,14 @@ public class RemindersDialogController {
         dialog.showAndWait().ifPresent(r -> {
             reminderService.updateReminder(r);
             refreshList();
-            showAlert("Успех", "✅ Напоминание обновлено!");
+            Dialogs.info("Успех", "✅ Напоминание обновлено!");
         });
     }
 
     private void deleteReminder() {
         Reminder selected = remindersTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            showAlert("Внимание", "⚠️ Пожалуйста, выберите напоминание для удаления");
+            Dialogs.info("Внимание", "⚠️ Пожалуйста, выберите напоминание для удаления");
             return;
         }
         Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
@@ -168,20 +169,12 @@ public class RemindersDialogController {
     private void toggleActive() {
         Reminder selected = remindersTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            showAlert("Внимание", "⚠️ Пожалуйста, выберите напоминание");
+            Dialogs.info("Внимание", "⚠️ Пожалуйста, выберите напоминание");
             return;
         }
         selected.setActive(!selected.isActive());
         reminderService.updateReminder(selected);
         remindersTable.refresh();
         refreshList();
-    }
-
-    private void showAlert(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
     }
 }

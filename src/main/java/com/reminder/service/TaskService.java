@@ -37,10 +37,16 @@ public class TaskService {
     }
 
     public boolean addWorkEntry(WorkEntry entry) {
+        return addWorkEntry(entry, false);
+    }
+
+    /** Добавляет запись. При allowOvertime пропускается проверка дневного лимита. */
+    public boolean addWorkEntry(WorkEntry entry, boolean allowOvertime) {
         if (entry == null || entry.getHours() <= 0) {
             return false;
         }
-        if (getTotalHoursForDate(entry.getDate()) + entry.getHours() > WorkTimeService.MAX_DAILY_HOURS) {
+        if (!allowOvertime
+                && getTotalHoursForDate(entry.getDate()) + entry.getHours() > WorkTimeService.MAX_DAILY_HOURS) {
             return false;
         }
         entries.add(entry);
@@ -50,6 +56,11 @@ public class TaskService {
 
     /** Заменяет существующую запись, сохраняя время создания. */
     public boolean updateWorkEntry(WorkEntry original, WorkEntry updated) {
+        return updateWorkEntry(original, updated, false);
+    }
+
+    /** Заменяет запись. При allowOvertime пропускается проверка дневного лимита. */
+    public boolean updateWorkEntry(WorkEntry original, WorkEntry updated, boolean allowOvertime) {
         int idx = entries.indexOf(original);
         if (idx < 0) {
             return false;
@@ -61,7 +72,7 @@ public class TaskService {
                 .filter(e -> !e.equals(original) && e.getDate().equals(updated.getDate()))
                 .mapToDouble(WorkEntry::getHours)
                 .sum();
-        if (otherTotal + updated.getHours() > WorkTimeService.MAX_DAILY_HOURS) {
+        if (!allowOvertime && otherTotal + updated.getHours() > WorkTimeService.MAX_DAILY_HOURS) {
             return false;
         }
         updated.setCreatedAt(original.getCreatedAt());
@@ -83,10 +94,6 @@ public class TaskService {
                 .filter(e -> e.getDate().equals(date))
                 .mapToDouble(WorkEntry::getHours)
                 .sum();
-    }
-
-    public double getRemainingHoursForDate(LocalDate date) {
-        return WorkTimeService.MAX_DAILY_HOURS - getTotalHoursForDate(date);
     }
 
     public List<WorkEntry> getEntriesForDate(LocalDate date) {
@@ -118,24 +125,11 @@ public class TaskService {
         return new ArrayList<>(taskNames);
     }
 
-    public List<Task> getPredefinedTasks() {
-        return new ArrayList<>(predefinedTasks);
-    }
-
-    public void setPredefinedTasks(List<Task> tasks) {
-        this.predefinedTasks = new ArrayList<>(tasks);
-        savePredefinedTasks();
-    }
-
     public void addPredefinedTask(Task task) {
         if (task != null && !predefinedTasks.contains(task)) {
             predefinedTasks.add(task);
             savePredefinedTasks();
         }
-    }
-
-    public List<WorkEntry> getAllEntries() {
-        return new ArrayList<>(entries);
     }
 
     public void clearEntriesForDate(LocalDate date) {

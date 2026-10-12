@@ -1,6 +1,7 @@
 package com.reminder.ui.controller;
 
 import com.reminder.service.WorkTimeService;
+import com.reminder.ui.util.DatePickerUtils;
 import com.reminder.util.DateUtils;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -12,10 +13,8 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
-import javafx.util.StringConverter;
 
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.function.BiConsumer;
 
@@ -33,28 +32,11 @@ public class HolidaysDialogController {
     private BiConsumer<String, String> alert;
     private final ObservableList<String> holidayItems = FXCollections.observableArrayList();
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-
     public void init(WorkTimeService workTimeService, BiConsumer<String, String> alert) {
         this.workTimeService = workTimeService;
         this.alert = alert;
 
-        holidayPicker.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(LocalDate date) {
-                return date != null ? date.format(DATE_FORMATTER) : "";
-            }
-
-            @Override
-            public LocalDate fromString(String string) {
-                if (string == null || string.isEmpty()) return null;
-                try {
-                    return LocalDate.parse(string, DATE_FORMATTER);
-                } catch (Exception ex) {
-                    return null;
-                }
-            }
-        });
+        DatePickerUtils.applyTo(holidayPicker);
         holidayPicker.setValue(LocalDate.now());
 
         holidayList.setItems(holidayItems);
@@ -71,7 +53,7 @@ public class HolidaysDialogController {
         List<LocalDate> holidays = workTimeService.getHolidays().stream()
                 .sorted()
                 .toList();
-        holidayItems.setAll(holidays.stream().map(d -> d.format(DATE_FORMATTER)).toList());
+        holidayItems.setAll(holidays.stream().map(DateUtils::formatDate).toList());
         updateCount();
     }
 
@@ -90,7 +72,7 @@ public class HolidaysDialogController {
             return;
         }
         refreshList();
-        alert.accept("Успех", "✅ Праздничный день добавлен: " + date.format(DATE_FORMATTER));
+        alert.accept("Успех", "✅ Праздничный день добавлен: " + DateUtils.formatDate(date));
     }
 
     private void removeHoliday() {
@@ -100,7 +82,11 @@ public class HolidaysDialogController {
             return;
         }
         try {
-            LocalDate date = LocalDate.parse(selected, DATE_FORMATTER);
+            LocalDate date = DatePickerUtils.converter().fromString(selected);
+            if (date == null) {
+                alert.accept("Ошибка", "⚠️ Не удалось удалить выбранный день");
+                return;
+            }
             workTimeService.removeHoliday(date);
             refreshList();
             alert.accept("Успех", "✅ Праздничный день удален: " + selected);

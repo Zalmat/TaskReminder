@@ -1,11 +1,11 @@
 package com.reminder.model;
 
+import com.reminder.util.DateUtils;
 import com.reminder.util.RussianDays;
 
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 
 public class WorkEntry implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -68,7 +68,7 @@ public class WorkEntry implements Serializable {
     }
 
     public String getFormattedDate() {
-        return date.format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
+        return DateUtils.formatDate(date);
     }
 
     @Override

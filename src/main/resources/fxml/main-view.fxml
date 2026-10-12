@@ -69,6 +69,7 @@
             <Separator/>
 
             <Button fx:id="loadYamlButton" text="📂 Загрузить категории задач из YAML" maxWidth="Infinity"/>
+            <Button fx:id="templateButton" text="📄 Скачать шаблон YAML" maxWidth="Infinity"/>
             <Button fx:id="clearButton" text="🗑️ Очистить таблицу" maxWidth="Infinity"
                     style="-fx-background-color: #f44336; -fx-text-fill: white;"/>
         </VBox>
@@ -81,6 +82,8 @@
                     <Label fx:id="dayTotalLabel" text="Загружено: 0.0 ч"
                            style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
                     <Label fx:id="dayRemainingLabel" text="Осталось: 8.0 ч"
+                           style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
+                    <Label fx:id="dayOvertimeLabel"
                            style="-fx-font-weight: bold; -fx-font-size: 14px;"/>
                 </HBox>
                 <TableView fx:id="dayTableView" VBox.vgrow="ALWAYS">

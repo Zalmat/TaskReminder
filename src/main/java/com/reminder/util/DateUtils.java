@@ -4,7 +4,6 @@ import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
-import java.util.Set;
 
 public final class DateUtils {
 
@@ -29,23 +28,5 @@ public final class DateUtils {
     /** Начало недели — всегда понедельник (не зависит от локали системы). */
     public static LocalDate startOfWeek(LocalDate date) {
         return date.with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
-    }
-
-    public static boolean isWeekend(LocalDate date) {
-        return date.getDayOfWeek().getValue() >= 6;
-    }
-
-    public static boolean isHoliday(LocalDate date, Set<LocalDate> holidays) {
-        return holidays != null && holidays.contains(date);
-    }
-
-    public static double calculateWorkingDays(LocalDate start, LocalDate end, Set<LocalDate> holidays) {
-        double workingDays = 0;
-        for (LocalDate d = start; !d.isAfter(end); d = d.plusDays(1)) {
-            if (!isWeekend(d) && !isHoliday(d, holidays)) {
-                workingDays++;
-            }
-        }
-        return workingDays;
     }
 }

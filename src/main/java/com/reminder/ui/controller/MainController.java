@@ -2,7 +2,6 @@ package com.reminder.ui.controller;
 
 import com.reminder.model.Reminder;
 import com.reminder.model.Task;
-import com.reminder.model.UpdateInfo;
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
 import com.reminder.service.ExportService;
@@ -11,15 +10,18 @@ import com.reminder.service.TaskService;
 import com.reminder.service.UpdateCheckService;
 import com.reminder.service.WorkTimeService;
 import com.reminder.service.YamlLoaderService;
+import com.reminder.ui.UpdateCheckUi;
+import com.reminder.ui.component.EasterEgg;
 import com.reminder.ui.component.WeekEntryCell;
 import com.reminder.ui.component.WeekTotalCell;
+import com.reminder.ui.util.DatePickerUtils;
+import com.reminder.ui.util.Dialogs;
 import com.reminder.util.DateUtils;
 import com.reminder.util.RussianDays;
-import com.reminder.util.VersionInfo;
+import com.reminder.util.YamlTemplate;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
-import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -45,18 +47,19 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
-import javafx.scene.layout.GridPane;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.media.AudioClip;
 import javafx.stage.FileChooser;
 import javafx.util.Duration;
-import javafx.util.StringConverter;
 
 import java.awt.Desktop;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -64,7 +67,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.prefs.Preferences;
 
 /** Контроллер главного окна. Собирает слой UI поверх сервисов бизнес-логики. */
 public class MainController {
@@ -75,6 +77,7 @@ public class MainController {
     @FXML private VBox hoursContainer;
     @FXML private Label dayTotalLabel;
     @FXML private Label dayRemainingLabel;
+    @FXML private Label dayOvertimeLabel;
     @FXML private Label weekTotalLabel;
     @FXML private Label clockLabel;
     @FXML private DatePicker datePicker;
@@ -99,6 +102,7 @@ public class MainController {
     @FXML private TableColumn<WeekEntry, Integer> weekTotalColumn;
     @FXML private Button addButton;
     @FXML private Button loadYamlButton;
+    @FXML private Button templateButton;
     @FXML private Button clearButton;
     @FXML private Button prevButton;
     @FXML private Button nextButton;
@@ -114,6 +118,8 @@ public class MainController {
     private final ExportService exportService = new ExportService();
     private final YamlLoaderService yamlLoaderService = new YamlLoaderService();
     private final UpdateCheckService updateCheckService = new UpdateCheckService();
+    private UpdateCheckUi updateCheckUi;
+    private final EasterEgg easterEgg = new EasterEgg();
 
     private final ObservableList<WorkEntry> dayEntries = FXCollections.observableArrayList();
     private final ObservableList<WeekEntry> weekEntries = FXCollections.observableArrayList();
@@ -121,8 +127,7 @@ public class MainController {
     private final List<LocalDate> weekDays = new ArrayList<>();
     private final List<WeekDayColumn> weekDayColumns = new ArrayList<>();
     private boolean isWeekView = false;
-
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private boolean weekCellEditInProgress = false;
 
     @FXML
     private void initialize() {
@@ -145,22 +150,7 @@ public class MainController {
     // ==================== НАСТРОЙКА UI ====================
 
     private void configureDatePicker() {
-        datePicker.setConverter(new StringConverter<>() {
-            @Override
-            public String toString(LocalDate date) {
-                return date != null ? date.format(DATE_FORMATTER) : "";
-            }
-
-            @Override
-            public LocalDate fromString(String string) {
-                if (string == null || string.isEmpty()) return null;
-                try {
-                    return LocalDate.parse(string, DATE_FORMATTER);
-                } catch (Exception e) {
-                    return null;
-                }
-            }
-        });
+        DatePickerUtils.applyTo(datePicker);
         datePicker.setValue(LocalDate.now());
         datePicker.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
@@ -238,9 +228,12 @@ public class MainController {
     /** Колонка дня недели, помнит свою дату для переиспользования при навигации. */
     private static final class WeekDayColumn extends TableColumn<WeekEntry, Integer> {
         private LocalDate date;
+        private Tooltip dayTooltip;
+        private final Label headerLabel = new Label();
 
         WeekDayColumn(LocalDate date) {
             this.date = date;
+            setGraphic(headerLabel);
         }
 
         LocalDate date() {
@@ -249,6 +242,27 @@ public class MainController {
 
         void setDay(LocalDate d) {
             this.date = d;
+        }
+
+        void setHeaderText(String text) {
+            headerLabel.setText(text);
+        }
+
+        void setHeaderStyle(String css) {
+            headerLabel.setStyle(css);
+        }
+
+        /** Показывает/скрывает тултип о превышении лимита на заголовке дня. */
+        void setOvertimeTooltip(boolean show) {
+            if (show && dayTooltip == null) {
+                dayTooltip = new Tooltip("Осторожно. Превышено количество рабочих часов");
+                Tooltip.install(headerLabel, dayTooltip);
+            } else if (!show) {
+                if (dayTooltip != null) {
+                    Tooltip.uninstall(headerLabel, dayTooltip);
+                    dayTooltip = null;
+                }
+            }
         }
     }
 
@@ -293,6 +307,7 @@ public class MainController {
             }
         });
         loadYamlButton.setOnAction(e -> loadTasksFromYaml());
+        templateButton.setOnAction(e -> downloadYamlTemplate());
         clearButton.setOnAction(e -> {
             if (isWeekView) {
                 clearWeekEntries();
@@ -351,24 +366,25 @@ public class MainController {
     }
 
     private void updateDayView(LocalDate date) {
-        dayEntries.setAll(taskService.getEntriesForDate(date));
+        List<WorkEntry> entries = taskService.getEntriesForDate(date);
+        dayEntries.setAll(entries);
 
-        double total = taskService.getTotalHoursForDate(date);
-        double remaining = WorkTimeService.MAX_DAILY_HOURS - total;
+        double total = workTimeService.getDayTotal(entries, date);
+        double remaining = workTimeService.getRemainingForDay(entries, date);
 
+        String bold = "-fx-font-weight: bold; -fx-font-size: 14px;";
         dayTotalLabel.setText(String.format("Загружено: %.1f ч", total));
-        dayRemainingLabel.setText(String.format("Осталось: %.1f ч", remaining));
-
-        String color;
         if (remaining < 0) {
-            color = "red";
-        } else if (remaining < 1) {
-            color = "orange";
+            dayRemainingLabel.setText("Осталось: 0,0 ч");
+            dayRemainingLabel.setStyle(bold + "-fx-text-fill: orange;");
+            dayOvertimeLabel.setText(String.format("Переработка: %.1f ч", -remaining));
+            dayOvertimeLabel.setStyle(bold + "-fx-text-fill: red;");
         } else {
-            color = "green";
+            dayRemainingLabel.setText(String.format("Осталось: %.1f ч", remaining));
+            dayRemainingLabel.setStyle(bold + "-fx-text-fill: " + (remaining < 1 ? "orange" : "green") + ";");
+            dayOvertimeLabel.setText("");
+            dayOvertimeLabel.setStyle("");
         }
-        dayRemainingLabel.setStyle(
-                "-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: " + color + ";");
     }
 
     private void updateWeekView(LocalDate date) {
@@ -384,18 +400,13 @@ public class MainController {
             WeekDayColumn col = weekDayColumns.get(i);
             LocalDate day = weekDays.get(i);
             col.setDay(day);
-            col.setText(RussianDays.shortName(day.getDayOfWeek().getValue()) + " " + DateUtils.formatShort(day));
-            boolean holiday = workTimeService.isHoliday(day);
-            col.setEditable(!holiday);
-            if (holiday) {
-                col.setStyle("-fx-alignment: CENTER; -fx-text-fill: #999; -fx-background-color: #f5f5f5;");
-            } else {
-                col.setStyle("-fx-alignment: CENTER;");
-            }
+            col.setHeaderText(RussianDays.shortName(day.getDayOfWeek().getValue()) + " " + DateUtils.formatShort(day));
+            col.setEditable(!workTimeService.isHoliday(day));
         }
 
         List<WorkEntry> entries = taskService.getEntriesForDateRange(startOfWeek, endOfWeek);
         weekEntries.setAll(workTimeService.aggregateWeek(entries));
+        highlightOvertimeDays();
         updateWeekTotals();
         weekTableView.refresh();
     }
@@ -411,6 +422,29 @@ public class MainController {
         weekTotalLabel.setText(text);
     }
 
+    /** Подсвечивает красным заголовок дня, если сумма часов за день превышает лимит. */
+    private void highlightOvertimeDays() {
+        for (WeekDayColumn col : weekDayColumns) {
+            LocalDate day = col.date();
+            int dayTotal = weekEntries.stream()
+                    .mapToInt(we -> we.getDayHours().getOrDefault(day, 0))
+                    .sum();
+            if (dayTotal > WorkTimeService.MAX_DAILY_HOURS) {
+                col.setStyle("-fx-alignment: CENTER;");
+                col.setHeaderStyle("-fx-font-weight: bold; -fx-text-fill: red;");
+                col.setOvertimeTooltip(true);
+            } else if (workTimeService.isHoliday(day)) {
+                col.setStyle("-fx-alignment: CENTER; -fx-background-color: #f5f5f5;");
+                col.setHeaderStyle("-fx-text-fill: #999;");
+                col.setOvertimeTooltip(false);
+            } else {
+                col.setStyle("-fx-alignment: CENTER;");
+                col.setHeaderStyle("");
+                col.setOvertimeTooltip(false);
+            }
+        }
+    }
+
     // ==================== ДНЕВНОЙ РЕЖИМ ====================
 
     private void addDayEntry() {
@@ -422,22 +456,22 @@ public class MainController {
             String comment = commentArea.getText().trim();
 
             if (project.isEmpty()) {
-                showAlert("Ошибка", "⚠️ Пожалуйста, укажите проект");
+                Dialogs.info("Ошибка", "⚠️ Пожалуйста, укажите проект");
                 projectChoice.getEditor().requestFocus();
                 return;
             }
             if (taskName.isEmpty()) {
-                showAlert("Ошибка", "⚠️ Пожалуйста, укажите задачу");
+                Dialogs.info("Ошибка", "⚠️ Пожалуйста, укажите задачу");
                 taskChoice.getEditor().requestFocus();
                 return;
             }
             if (type == null || type.isEmpty()) {
-                showAlert("Ошибка", "⚠️ Пожалуйста, выберите тип работы");
+                Dialogs.info("Ошибка", "⚠️ Пожалуйста, выберите тип работы");
                 typeChoice.requestFocus();
                 return;
             }
             if (hoursText.isEmpty()) {
-                showAlert("Ошибка", "⚠️ Пожалуйста, укажите длительность");
+                Dialogs.info("Ошибка", "⚠️ Пожалуйста, укажите длительность");
                 hoursField.requestFocus();
                 return;
             }
@@ -446,39 +480,43 @@ public class MainController {
             try {
                 hours = Integer.parseInt(hoursText);
             } catch (NumberFormatException e) {
-                showAlert("Ошибка", "⚠️ Длительность должна быть целым числом");
+                Dialogs.info("Ошибка", "⚠️ Длительность должна быть целым числом");
                 hoursField.requestFocus();
                 return;
             }
             if (hours <= 0 || hours > 24) {
-                showAlert("Ошибка", "⚠️ Длительность должна быть от 1 до 24 часов");
+                Dialogs.info("Ошибка", "⚠️ Длительность должна быть от 1 до 24 часов");
                 hoursField.requestFocus();
                 return;
             }
 
             LocalDate date = datePicker.getValue() != null ? datePicker.getValue() : LocalDate.now();
 
+            boolean allowOvertime = false;
             double currentTotal = taskService.getTotalHoursForDate(date);
-            if (currentTotal + hours > WorkTimeService.MAX_DAILY_HOURS) {
-                showAlert("Ошибка", String.format(
-                        "⚠️ Превышен дневной лимит (%.0f часов)!\nОсталось: %.1f ч",
-                        WorkTimeService.MAX_DAILY_HOURS, WorkTimeService.MAX_DAILY_HOURS - currentTotal));
-                return;
+            if (workTimeService.wouldExceedDayLimit(taskService.getEntriesForDate(date), date, hours)) {
+                int overtime = (int) (currentTotal + hours) - (int) WorkTimeService.MAX_DAILY_HOURS;
+                allowOvertime = Dialogs.yesNo("Переработка",
+                        String.format("Превышен лимит %.0f ч", WorkTimeService.MAX_DAILY_HOURS),
+                        String.format("Переработка %d ч. Зарегистрировать?", overtime));
+                if (!allowOvertime) {
+                    return;
+                }
             }
 
             WorkEntry entry = new WorkEntry(project, taskName, type, hours);
             entry.setDate(date);
             entry.setComment(comment);
 
-            if (taskService.addWorkEntry(entry)) {
+            if (taskService.addWorkEntry(entry, allowOvertime)) {
                 taskService.addPredefinedTask(new Task(project, taskName, type));
                 refreshChoices();
                 clearInputFields();
                 updateDayView(date);
-                showAlert("Успех", "✅ Работа добавлена!");
+                Dialogs.info("Успех", "✅ Работа добавлена!");
             }
         } catch (Exception e) {
-            showAlert("Ошибка", "❌ Произошла ошибка: " + e.getMessage());
+            Dialogs.info("Ошибка", "❌ Произошла ошибка: " + e.getMessage());
         }
     }
 
@@ -486,21 +524,23 @@ public class MainController {
         WorkEntry selected = dayTableView.getSelectionModel().getSelectedItem();
         if (selected == null) return;
 
-        EntryEditResult result = showEntryEditDialog(
-                "✏️ Редактировать запись", "Измените данные записи",
-                selected.getProject(), selected.getTaskName(), selected.getType(),
-                String.valueOf((int) selected.getHours()), selected.getComment(), true);
+        com.reminder.ui.dialog.EntryEditDialog.EntryEditResult result =
+                com.reminder.ui.dialog.EntryEditDialog.show(
+                        "✏️ Редактировать запись", "Измените данные записи",
+                        typeChoice.getItems(),
+                        selected.getProject(), selected.getTaskName(), selected.getType(),
+                        String.valueOf((int) selected.getHours()), selected.getComment(), true);
         if (result == null) return;
 
         int hours;
         try {
             hours = Integer.parseInt(result.hours());
         } catch (NumberFormatException e) {
-            showAlert("Ошибка", "⚠️ Длительность должна быть целым числом");
+            Dialogs.info("Ошибка", "⚠️ Длительность должна быть целым числом");
             return;
         }
         if (hours <= 0 || hours > 24) {
-            showAlert("Ошибка", "⚠️ Длительность должна быть от 1 до 24 часов");
+            Dialogs.info("Ошибка", "⚠️ Длительность должна быть от 1 до 24 часов");
             return;
         }
 
@@ -508,13 +548,26 @@ public class MainController {
         updated.setDate(selected.getDate());
         updated.setComment(result.comment());
 
-        if (taskService.updateWorkEntry(selected, updated)) {
+        boolean allowOvertime = false;
+        double otherTotal = workTimeService.getDayTotal(
+                taskService.getEntriesForDate(selected.getDate()), selected.getDate()) - selected.getHours();
+        if (otherTotal + hours > WorkTimeService.MAX_DAILY_HOURS) {
+            int overtime = (int) (otherTotal + hours) - (int) WorkTimeService.MAX_DAILY_HOURS;
+            allowOvertime = Dialogs.yesNo("Переработка",
+                    String.format("Превышен лимит %.0f ч", WorkTimeService.MAX_DAILY_HOURS),
+                    String.format("Переработка %d ч. Зарегистрировать?", overtime));
+            if (!allowOvertime) {
+                return;
+            }
+        }
+
+        if (taskService.updateWorkEntry(selected, updated, allowOvertime)) {
             taskService.addPredefinedTask(new Task(result.project(), result.taskName(), result.type()));
             refreshChoices();
             updateDayView(selected.getDate());
-            showAlert("Успех", "✅ Запись обновлена!");
+            Dialogs.info("Успех", "✅ Запись обновлена!");
         } else {
-            showAlert("Ошибка", "⚠️ Не удалось сохранить (возможно, превышен дневной лимит)");
+            Dialogs.info("Ошибка", "⚠️ Не удалось сохранить");
         }
     }
 
@@ -522,13 +575,9 @@ public class MainController {
         WorkEntry selected = dayTableView.getSelectionModel().getSelectedItem();
         if (selected == null) return;
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Подтверждение удаления");
-        alert.setHeaderText("🗑️ Удалить запись?");
-        alert.setContentText(String.format("%s - %s (%.0f ч)",
-                selected.getProject(), selected.getTaskName(), selected.getHours()));
-
-        if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+        if (Dialogs.confirm("Подтверждение удаления", "🗑️ Удалить запись?",
+                String.format("%s - %s (%.0f ч)",
+                        selected.getProject(), selected.getTaskName(), selected.getHours()))) {
             taskService.removeWorkEntry(selected);
             updateDayView(selected.getDate());
         }
@@ -538,12 +587,9 @@ public class MainController {
         LocalDate date = datePicker.getValue();
         if (date == null) return;
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Подтверждение очистки");
-        alert.setHeaderText("🗑️ Очистить все записи за " + date.format(DATE_FORMATTER) + "?");
-        alert.setContentText("Это действие нельзя отменить!");
-
-        if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+        if (Dialogs.confirm("Подтверждение очистки",
+                "🗑️ Очистить все записи за " + DateUtils.formatDate(date) + "?",
+                "Это действие нельзя отменить!")) {
             taskService.clearEntriesForDate(date);
             updateDayView(date);
         }
@@ -559,17 +605,17 @@ public class MainController {
             String comment = commentArea.getText().trim();
 
             if (project.isEmpty()) {
-                showAlert("Ошибка", "⚠️ Пожалуйста, укажите проект");
+                Dialogs.info("Ошибка", "⚠️ Пожалуйста, укажите проект");
                 projectChoice.getEditor().requestFocus();
                 return;
             }
             if (taskName.isEmpty()) {
-                showAlert("Ошибка", "⚠️ Пожалуйста, укажите задачу");
+                Dialogs.info("Ошибка", "⚠️ Пожалуйста, укажите задачу");
                 taskChoice.getEditor().requestFocus();
                 return;
             }
             if (type == null || type.isEmpty()) {
-                showAlert("Ошибка", "⚠️ Пожалуйста, выберите тип работы");
+                Dialogs.info("Ошибка", "⚠️ Пожалуйста, выберите тип работы");
                 typeChoice.requestFocus();
                 return;
             }
@@ -578,7 +624,7 @@ public class MainController {
                 if (entry.getProject().equals(project)
                         && entry.getTaskName().equals(taskName)
                         && entry.getType().equals(type)) {
-                    showAlert("Внимание", "⚠️ Такая задача уже существует в этой неделе");
+                    Dialogs.info("Внимание", "⚠️ Такая задача уже существует в этой неделе");
                     return;
                 }
             }
@@ -596,13 +642,26 @@ public class MainController {
             clearInputFields();
             updateWeekTotals();
             weekTableView.refresh();
-            showAlert("Успех", "✅ Задача добавлена! Введите часы в таблице (двойной клик).");
+            Dialogs.info("Успех", "✅ Задача добавлена! Введите часы в таблице (двойной клик).");
         } catch (Exception e) {
-            showAlert("Ошибка", "❌ Произошла ошибка: " + e.getMessage());
+            Dialogs.info("Ошибка", "❌ Произошла ошибка: " + e.getMessage());
         }
     }
 
     private void handleWeekCellEdit(TableColumn.CellEditEvent<WeekEntry, Integer> event) {
+        if (weekCellEditInProgress) {
+            weekTableView.refresh();
+            return;
+        }
+        weekCellEditInProgress = true;
+        try {
+            processWeekCellEdit(event);
+        } finally {
+            weekCellEditInProgress = false;
+        }
+    }
+
+    private void processWeekCellEdit(TableColumn.CellEditEvent<WeekEntry, Integer> event) {
         WeekDayColumn col = (WeekDayColumn) event.getTableColumn();
         WeekEntry entry = event.getRowValue();
         LocalDate day = col.date();
@@ -613,22 +672,27 @@ public class MainController {
         }
 
         int oldValue = entry.getDayHours().getOrDefault(day, 0);
-        int currentDayTotal = 0;
-        for (WeekEntry we : weekEntries) {
-            currentDayTotal += we.getDayHours().getOrDefault(day, 0);
-        }
+        int currentDayTotal = weekEntries.stream()
+                .mapToInt(we -> we.getDayHours().getOrDefault(day, 0))
+                .sum();
 
-        if (currentDayTotal - oldValue + newValue > WorkTimeService.MAX_DAILY_HOURS) {
-            showAlert("Предупреждение", String.format(
-                    "⚠️ Превышен дневной лимит (%.0f часов)!\nТекущий дневной итог: %d ч",
-                    WorkTimeService.MAX_DAILY_HOURS, currentDayTotal - oldValue));
-            weekTableView.refresh();
-            return;
+        boolean allowOvertime = false;
+        if (!workTimeService.dayTotalWithinLimit(weekEntries, day, newValue, oldValue)) {
+            int busy = currentDayTotal - oldValue;
+            int overtime = busy + newValue - (int) WorkTimeService.MAX_DAILY_HOURS;
+            allowOvertime = Dialogs.yesNo("Переработка",
+                    String.format("Превышен лимит %.0f ч", WorkTimeService.MAX_DAILY_HOURS),
+                    String.format("Переработка %d ч. Зарегистрировать?", overtime));
+            if (!allowOvertime) {
+                weekTableView.refresh();
+                return;
+            }
         }
 
         entry.getDayHours().put(day, newValue);
-        saveWeekEntryToService(entry, entry);
+        saveWeekEntryToService(entry, entry, allowOvertime);
         updateWeekTotals();
+        highlightOvertimeDays();
         weekTableView.refresh();
     }
 
@@ -636,10 +700,12 @@ public class MainController {
         WeekEntry selected = weekTableView.getSelectionModel().getSelectedItem();
         if (selected == null) return;
 
-        EntryEditResult result = showEntryEditDialog(
-                "✏️ Редактировать задачу", "Измените данные задачи недели",
-                selected.getProject(), selected.getTaskName(), selected.getType(),
-                null, selected.getComment(), false);
+        com.reminder.ui.dialog.EntryEditDialog.EntryEditResult result =
+                com.reminder.ui.dialog.EntryEditDialog.show(
+                        "✏️ Редактировать задачу", "Измените данные задачи недели",
+                        typeChoice.getItems(),
+                        selected.getProject(), selected.getTaskName(), selected.getType(),
+                        null, selected.getComment(), false);
         if (result == null) return;
 
         WeekEntry updated = new WeekEntry(result.project(), result.taskName(), result.type());
@@ -648,25 +714,22 @@ public class MainController {
 
         int idx = weekEntries.indexOf(selected);
         weekEntries.set(idx, updated);
-        saveWeekEntryToService(updated, selected);
+        saveWeekEntryToService(updated, selected, true);
         taskService.addPredefinedTask(new Task(result.project(), result.taskName(), result.type()));
 
         refreshChoices();
         updateWeekTotals();
+        highlightOvertimeDays();
         weekTableView.refresh();
-        showAlert("Успех", "✅ Задача обновлена!");
+        Dialogs.info("Успех", "✅ Задача обновлена!");
     }
 
     private void deleteWeekEntry() {
         WeekEntry selected = weekTableView.getSelectionModel().getSelectedItem();
         if (selected == null) return;
 
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Подтверждение удаления");
-        alert.setHeaderText("🗑️ Удалить задачу за неделю?");
-        alert.setContentText(String.format("%s - %s", selected.getProject(), selected.getTaskName()));
-
-        if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+        if (Dialogs.confirm("Подтверждение удаления", "🗑️ Удалить задачу за неделю?",
+                String.format("%s - %s", selected.getProject(), selected.getTaskName()))) {
             removeRecordsFor(selected);
             weekEntries.remove(selected);
             updateWeekTotals();
@@ -675,12 +738,9 @@ public class MainController {
     }
 
     private void clearWeekEntries() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Подтверждение очистки");
-        alert.setHeaderText("🗑️ Очистить все записи за неделю?");
-        alert.setContentText("Это действие нельзя отменить!");
-
-        if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+        if (Dialogs.confirm("Подтверждение очистки",
+                "🗑️ Очистить все записи за неделю?",
+                "Это действие нельзя отменить!")) {
             taskService.clearEntriesForDates(weekDays);
             weekEntries.clear();
             updateWeekTotals();
@@ -689,7 +749,7 @@ public class MainController {
     }
 
     /** Сохраняет недельную задачу в записи: удаляет старые (previous) и пишет новые. */
-    private void saveWeekEntryToService(WeekEntry entry, WeekEntry previous) {
+    private void saveWeekEntryToService(WeekEntry entry, WeekEntry previous, boolean allowOvertime) {
         removeRecordsFor(previous);
         removeRecordsFor(entry);
 
@@ -700,7 +760,7 @@ public class MainController {
                         entry.getProject(), entry.getTaskName(), entry.getType(), hours);
                 workEntry.setDate(day);
                 workEntry.setComment(entry.getComment());
-                taskService.addWorkEntry(workEntry);
+                taskService.addWorkEntry(workEntry, allowOvertime);
             }
         }
     }
@@ -731,7 +791,7 @@ public class MainController {
             dialog.setDialogPane(pane);
             dialog.showAndWait();
         } catch (IOException e) {
-            showAlert("Ошибка", "❌ Не удалось открыть окно напоминаний: " + e.getMessage());
+            Dialogs.info("Ошибка", "❌ Не удалось открыть окно напоминаний: " + Dialogs.reason(e));
         }
     }
 
@@ -740,14 +800,14 @@ public class MainController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/export-dialog.fxml"));
             DialogPane pane = loader.load();
             ExportDialogController ctrl = loader.getController();
-            ctrl.init(taskService, exportService, datePicker.getValue(), isWeekView, datePicker.getScene().getWindow(), this::showAlert);
+            ctrl.init(taskService, exportService, datePicker.getValue(), isWeekView, datePicker.getScene().getWindow(), Dialogs::info);
 
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle("📊 Экспорт данных");
             dialog.setDialogPane(pane);
             dialog.showAndWait();
         } catch (IOException e) {
-            showAlert("Ошибка", "❌ Не удалось открыть окно экспорта: " + e.getMessage());
+            Dialogs.info("Ошибка", "❌ Не удалось открыть окно экспорта: " + Dialogs.reason(e));
         }
     }
 
@@ -756,7 +816,7 @@ public class MainController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/holidays-dialog.fxml"));
             DialogPane pane = loader.load();
             HolidaysDialogController ctrl = loader.getController();
-            ctrl.init(workTimeService, this::showAlert);
+            ctrl.init(workTimeService, Dialogs::info);
 
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle("📅 Управление праздничными днями");
@@ -767,7 +827,7 @@ public class MainController {
                 updateWeekView(datePicker.getValue());
             }
         } catch (IOException e) {
-            showAlert("Ошибка", "❌ Не удалось открыть окно праздников: " + e.getMessage());
+            Dialogs.info("Ошибка", "❌ Не удалось открыть окно праздников: " + Dialogs.reason(e));
         }
     }
 
@@ -814,59 +874,7 @@ public class MainController {
         }
     }
 
-    /** Диалог редактирования записи/задачи. Возвращает результат или null при отмене. */
-    private EntryEditResult showEntryEditDialog(String title, String header,
-                                                String project, String taskName, String type,
-                                                String hours, String comment, boolean withHours) {
-        Dialog<EntryEditResult> dialog = new Dialog<>();
-        dialog.setTitle(title);
-        dialog.setHeaderText(header);
-
-        ButtonType saveType = new ButtonType("💾 Сохранить", ButtonBar.ButtonData.OK_DONE);
-        dialog.getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);
-
-        GridPane grid = new GridPane();
-        grid.setHgap(10);
-        grid.setVgap(10);
-        grid.setPadding(new Insets(20));
-
-        TextField projectField = new TextField(project);
-        TextField taskField = new TextField(taskName);
-        ComboBox<String> typeField = new ComboBox<>(typeChoice.getItems());
-        typeField.setEditable(true);
-        typeField.setValue(type);
-        TextField hoursFieldDialog = new TextField(hours);
-        TextArea commentField = new TextArea(comment);
-        commentField.setPrefRowCount(3);
-
-        grid.addRow(0, new Label("Проект:"), projectField);
-        grid.addRow(1, new Label("Задача:"), taskField);
-        grid.addRow(2, new Label("Тип работ:"), typeField);
-        if (withHours) {
-            grid.addRow(3, new Label("Длительность (часы):"), hoursFieldDialog);
-            grid.addRow(4, new Label("Комментарий:"), commentField);
-        } else {
-            grid.addRow(3, new Label("Комментарий:"), commentField);
-        }
-        dialog.getDialogPane().setContent(grid);
-
-        dialog.setResultConverter(dialogButton -> {
-            if (dialogButton != saveType) return null;
-            String p = projectField.getText().trim();
-            String t = taskField.getText().trim();
-            String ty = typeField.getValue() != null ? typeField.getValue().trim() : "";
-            if (p.isEmpty() || t.isEmpty() || ty.isEmpty()) return null;
-            return new EntryEditResult(p, t, ty,
-                    withHours ? hoursFieldDialog.getText().trim() : null,
-                    commentField.getText().trim());
-        });
-
-        return dialog.showAndWait().orElse(null);
-    }
-
-    private record EntryEditResult(String project, String taskName, String type,
-                                   String hours, String comment) {
-    }
+    /** Диалог редактирования записи/задачи вынесен в {@link com.reminder.ui.dialog.EntryEditDialog}. */
 
     // ==================== ПРОЧЕЕ ====================
 
@@ -882,16 +890,34 @@ public class MainController {
         try {
             List<Task> tasks = yamlLoaderService.loadTasksFromYaml(file.getAbsolutePath());
             if (tasks.isEmpty()) {
-                showAlert("Внимание", "⚠️ Файл не содержит задач");
+                Dialogs.info("Внимание", "⚠️ Файл не содержит задач");
                 return;
             }
             for (Task task : tasks) {
                 taskService.addPredefinedTask(task);
             }
             refreshChoices();
-            showAlert("Успех", String.format("✅ Загружено %d задач!", tasks.size()));
+            Dialogs.info("Успех", String.format("✅ Загружено %d задач!", tasks.size()));
         } catch (Exception e) {
-            showAlert("Ошибка", "❌ Не удалось загрузить файл: " + e.getMessage());
+            Dialogs.info("Ошибка", "❌ Не удалось загрузить файл: " + e.getMessage());
+        }
+    }
+
+    private void downloadYamlTemplate() {
+        FileChooser fileChooser = new FileChooser();
+        fileChooser.setTitle("Сохранить шаблон YAML");
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter("YAML файлы", "*.yaml", "*.yml"));
+        fileChooser.setInitialFileName("tasks-template.yaml");
+
+        File file = fileChooser.showSaveDialog(datePicker.getScene().getWindow());
+        if (file == null) return;
+
+        try {
+            Files.writeString(file.toPath(), YamlTemplate.content(), StandardCharsets.UTF_8);
+            Dialogs.info("Успех", "✅ Шаблон сохранен: " + file.getName());
+        } catch (Exception e) {
+            Dialogs.info("Ошибка", "❌ Не удалось сохранить шаблон: " + e.getMessage());
         }
     }
 
@@ -939,76 +965,9 @@ public class MainController {
     // ==================== ОБНОВЛЕНИЯ ====================
 
     private void setupUpdateCheck() {
-        updateButton.setOnAction(e -> checkForUpdates(true));
-        checkForUpdates(false);
-    }
-
-    /** Проверяет наличие обновлений. При manual=true всегда показывает результат. */
-    private void checkForUpdates(boolean manual) {
-        updateCheckService.checkLatest().thenAccept(update ->
-                Platform.runLater(() -> handleUpdateResult(update, manual)));
-    }
-
-    private void handleUpdateResult(UpdateInfo update, boolean manual) {
-        if (update.failed()) {
-            if (manual) {
-                showAlert("Обновления", "⚠ Не удалось проверить обновления (нет интернета или проблема с GitHub API).");
-            }
-        } else if (update.newer()) {
-            showUpdateDialog(update, manual);
-        } else if (manual) {
-            showAlert("Обновления", "✅ У вас установлена актуальная версия v" + VersionInfo.load().version());
-        }
-    }
-
-    private void showUpdateDialog(UpdateInfo update, boolean manual) {
-        String latestKey = "v" + update.version();
-        Preferences prefs = Preferences.userRoot().node("com/reminder");
-        if (!manual && latestKey.equals(prefs.get("lastSeenVersion", ""))) {
-            return;
-        }
-        prefs.put("lastSeenVersion", latestKey);
-
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Доступно обновление");
-        alert.setHeaderText("Доступна новая версия " + latestKey);
-        String current = "v" + VersionInfo.load().version();
-        alert.setContentText("Текущая версия: " + current + "\nНовая версия: " + latestKey);
-
-        ButtonType downloadButton = new ButtonType("Скачать zip", ButtonBar.ButtonData.OK_DONE);
-        ButtonType releaseButton = new ButtonType("Открыть релиз");
-        ButtonType closeButton = new ButtonType("Закрыть", ButtonBar.ButtonData.CANCEL_CLOSE);
-        alert.getButtonTypes().setAll(downloadButton, releaseButton, closeButton);
-
-        Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent()) {
-            if (result.get() == downloadButton) {
-                String url = !update.downloadUrl().isEmpty() ? update.downloadUrl() : update.releaseUrl();
-                openLink(url);
-            } else if (result.get() == releaseButton) {
-                openLink(update.releaseUrl());
-            }
-        }
-    }
-
-    private void openLink(String url) {
-        if (url == null || url.isEmpty()) {
-            showAlert("Ошибка", "Ссылка недоступна");
-            return;
-        }
-        try {
-            Desktop.getDesktop().browse(URI.create(url));
-        } catch (Exception e) {
-            showAlert("Ошибка", "Не удалось открыть ссылку: " + e.getMessage());
-        }
-    }
-
-    private void showAlert(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
+        updateCheckUi = new UpdateCheckUi(updateCheckService);
+        updateButton.setOnAction(e -> updateCheckUi.checkForUpdates(true));
+        updateCheckUi.checkForUpdates(false);
     }
 
     public void shutdown() {
@@ -1025,37 +984,12 @@ public class MainController {
         }
     }
 
-    // Шутка начало
+    // Шутка (обработчик вынесен в EasterEgg)
     @FXML
     private Label addJobLabel;
-    private int clickCount = 0;
-    private Timeline resetTimeline;
-
 
     @FXML
     private void handleLabelClick() {
-        // Инициализируем таймер при первом нажатии
-        if (resetTimeline == null) {
-            resetTimeline = new Timeline(new KeyFrame(Duration.seconds(1.0), event -> {
-                clickCount = 0; // Время вышло, обнуляем
-            }));
-            resetTimeline.setCycleCount(1);
-        }
-        resetTimeline.stop();
-        clickCount++;
-        resetTimeline.play();
-        if (clickCount == 20) {
-            resetTimeline.stop();
-            clickCount = 0;
-            showAlertWithJoke();
-        }
+        easterEgg.onLabelClick();
     }
-    private void showAlertWithJoke() {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Пасхалка!");
-        alert.setHeaderText("Кто-то знатно заспамил кнопку...");
-        alert.setContentText("— Алло, это техподдержка?\n— Да.\n— Я тут 20 раз подряд нажал на текст, и у меня открылось это окно. Что мне делать?\n— Поздравляем, вы прошли тест на стрессоустойчивость!");
-        alert.showAndWait();
-    }
-    //ШУтка конец
 }

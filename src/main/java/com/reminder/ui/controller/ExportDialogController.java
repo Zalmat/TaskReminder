@@ -4,6 +4,8 @@ import com.reminder.model.WorkEntry;
 import com.reminder.service.ExportService;
 import com.reminder.service.TaskService;
 import com.reminder.util.DateUtils;
+import com.reminder.ui.util.DatePickerUtils;
+import com.reminder.ui.util.Dialogs;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -14,7 +16,6 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.DialogPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
-import javafx.util.StringConverter;
 
 import java.io.File;
 import java.time.LocalDate;
@@ -35,8 +36,6 @@ public class ExportDialogController {
     private Window owner;
     private BiConsumer<String, String> alert;
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-
     public void init(TaskService taskService, ExportService exportService,
                      LocalDate currentDate, boolean weekView, Window owner, BiConsumer<String, String> alert) {
         this.taskService = taskService;
@@ -44,24 +43,8 @@ public class ExportDialogController {
         this.owner = owner;
         this.alert = alert;
 
-        StringConverter<LocalDate> converter = new StringConverter<>() {
-            @Override
-            public String toString(LocalDate date) {
-                return date != null ? date.format(DATE_FORMATTER) : "";
-            }
-
-            @Override
-            public LocalDate fromString(String string) {
-                if (string == null || string.isEmpty()) return null;
-                try {
-                    return LocalDate.parse(string, DATE_FORMATTER);
-                } catch (Exception e) {
-                    return null;
-                }
-            }
-        };
-        startDate.setConverter(converter);
-        endDate.setConverter(converter);
+        DatePickerUtils.applyTo(startDate);
+        DatePickerUtils.applyTo(endDate);
 
         if (weekView && currentDate != null) {
             LocalDate start = DateUtils.startOfWeek(currentDate);
@@ -73,7 +56,7 @@ public class ExportDialogController {
         }
 
         formatChoice.getItems().addAll(
-                "Excel (.xlsx)", "JSON (.json)", "YAML (.yaml)", "XML (.xml)");
+                "Excel (.xlsx)", "CSV (.csv)", "JSON (.json)", "YAML (.yaml)", "XML (.xml)");
         formatChoice.setValue("Excel (.xlsx)");
 
         ButtonType exportType = new ButtonType("Экспорт", ButtonBar.ButtonData.OK_DONE);
@@ -111,6 +94,9 @@ public class ExportDialogController {
         if (format.startsWith("Excel")) {
             fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel файлы", "*.xlsx"));
             fileChooser.setInitialFileName(String.format("work_report_%s_%s.xlsx", timestamp, dateRange));
+        } else if (format.startsWith("CSV")) {
+            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV файлы", "*.csv"));
+            fileChooser.setInitialFileName(String.format("work_report_%s_%s.csv", timestamp, dateRange));
         } else if (format.startsWith("JSON")) {
             fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON файлы", "*.json"));
             fileChooser.setInitialFileName(String.format("work_report_%s_%s.json", timestamp, dateRange));
@@ -122,14 +108,17 @@ public class ExportDialogController {
             fileChooser.setInitialFileName(String.format("work_report_%s_%s.xml", timestamp, dateRange));
         }
 
-        File file = fileChooser.showSaveDialog(owner);
-        if (file == null) return;
-
         try {
+            File file = fileChooser.showSaveDialog(owner);
+            if (file == null) return;
+
             String filePath = file.getAbsolutePath();
             if (format.startsWith("Excel")) {
                 if (!filePath.toLowerCase().endsWith(".xlsx")) filePath += ".xlsx";
                 exportService.exportToExcel(entries, filePath);
+            } else if (format.startsWith("CSV")) {
+                if (!filePath.toLowerCase().endsWith(".csv")) filePath += ".csv";
+                exportService.exportToCsv(entries, filePath);
             } else if (format.startsWith("JSON")) {
                 if (!filePath.toLowerCase().endsWith(".json")) filePath += ".json";
                 exportService.exportToJson(entries, filePath);
@@ -143,7 +132,8 @@ public class ExportDialogController {
             closeDialog();
             alert.accept("Успех", String.format("✅ Данные экспортированы!\n%d записей", entries.size()));
         } catch (Exception ex) {
-            alert.accept("Ошибка", "❌ Ошибка экспорта: " + ex.getMessage());
+            ex.printStackTrace();
+            alert.accept("Ошибка", "❌ Ошибка экспорта: " + Dialogs.reason(ex));
         }
     }
 
