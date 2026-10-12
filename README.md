@@ -167,17 +167,17 @@ build/release/
 
 Workflow `.github/workflows/release.yml` срабатывает **при пуше тега** `v*`:
 
-1. Проверяет наличие файла заметок `release-notes/v<версия>.md`. Если файла нет, он пуст или идентичен заметкам предыдущего релиза — сборка **не запускается** и Release не создаётся.
+1. Проверяет файл заметок `release-notes.md`: если он пуст или равен тексту предыдущего релиза — сборка **не запускается** и Release не создаётся.
 2. Собирает проект (gradle + jpackage) и создаёт Release, прикрепляя `*.zip` и `*.sha256`.
 
 Порядок выпуска версии:
 
 ```
-git add release-notes/v1.3.0.md
-git commit -m "Release notes v1.3.0"
-git tag -a v1.3.0 -m "..."   # или в IDEA: Git → Tag
+git add release-notes.md
+git commit -m "Release notes v1.2.2"
+git tag -a v1.2.2 -m "..."   # или в IDEA: Git → Tag
 git push origin main
-git push origin v1.3.0        # IDEA: не забыть пушить теги
+git push origin v1.2.2        # IDEA: не забыть пушить теги
 ```
 
 Старые архивы релизов при необходимости удаляются вручную (страховка от переполнения хранилища).
