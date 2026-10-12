@@ -1,4 +1,4 @@
-# v1.2.2
+# v1.2.3
 
 - Централизация диалогов: единый слой `Dialogs` (info / warn / error / confirm)
 - Автопубликация релизов через GitHub Actions
