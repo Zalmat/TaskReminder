@@ -32,7 +32,7 @@ public class UpdateCheckUi {
     private void handleUpdateResult(UpdateInfo update, boolean manual) {
         if (update.failed()) {
             if (manual) {
-                Dialogs.info("Обновления", "⚠ Не удалось проверить обновления (нет интернета или проблема с GitHub API).");
+                Dialogs.warn("Обновления", "⚠ Не удалось проверить обновления (нет интернета или проблема с GitHub API).");
             }
         } else if (update.newer()) {
             showUpdateDialog(update, manual);
@@ -73,13 +73,13 @@ public class UpdateCheckUi {
 
     private void openLink(String url) {
         if (url == null || url.isEmpty()) {
-            Dialogs.info("Ошибка", "Ссылка недоступна");
+            Dialogs.error("Ошибка", "Ссылка недоступна");
             return;
         }
         try {
             Desktop.getDesktop().browse(URI.create(url));
         } catch (Exception e) {
-            Dialogs.info("Ошибка", "Не удалось открыть ссылку: " + e.getMessage());
+            Dialogs.error("Ошибка", "Не удалось открыть ссылку: " + e.getMessage());
         }
     }
 }

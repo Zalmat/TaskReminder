@@ -2,14 +2,13 @@ package com.reminder;
 
 import com.reminder.ui.TrayService;
 import com.reminder.ui.controller.MainController;
+import com.reminder.ui.util.Dialogs;
 import com.reminder.util.VersionInfo;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Alert;
-import javafx.scene.control.ButtonType;
 import javafx.stage.Stage;
 
 import java.util.Locale;
@@ -69,12 +68,7 @@ public class App extends Application {
     }
 
     private void quit() {
-        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
-        alert.setTitle("Выход");
-        alert.setHeaderText("Вы уверены, что хотите выйти?");
-        alert.setContentText("Все данные будут сохранены.");
-
-        if (alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK) {
+        if (Dialogs.confirm("Выход", "Вы уверены, что хотите выйти?", "Все данные будут сохранены.")) {
             if (mainController != null) {
                 mainController.shutdown();
             }
@@ -86,11 +80,7 @@ public class App extends Application {
     }
 
     private void showErrorAlert(String title, String content) {
-        Alert alert = new Alert(Alert.AlertType.ERROR);
-        alert.setTitle(title);
-        alert.setHeaderText(null);
-        alert.setContentText(content);
-        alert.showAndWait();
+        Dialogs.error(title, content);
     }
 
     public static void main(String[] args) {

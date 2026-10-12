@@ -43,6 +43,17 @@ public final class Dialogs {
         return alert.showAndWait().orElse(noButton) == yesButton;
     }
 
+    /** Маршрутизирует по заголовку: «Ошибка»→error, «Внимание»→warn, иначе→info. */
+    public static void accept(String title, String content) {
+        if (title != null && title.startsWith("Ошибка")) {
+            error(title, content);
+        } else if (title != null && title.startsWith("Внимание")) {
+            warn(title, content);
+        } else {
+            info(title, content);
+        }
+    }
+
     /** Собирает непустой текст, описывающий ошибку (message + цепочка причин). */
     public static String reason(Throwable t) {
         if (t == null) {

@@ -454,22 +454,22 @@ public class MainController {
             String comment = commentArea.getText().trim();
 
             if (project.isEmpty()) {
-                Dialogs.info("Ошибка", "⚠️ Пожалуйста, укажите проект");
+                Dialogs.error("Ошибка", "⚠️ Пожалуйста, укажите проект");
                 projectChoice.getEditor().requestFocus();
                 return;
             }
             if (taskName.isEmpty()) {
-                Dialogs.info("Ошибка", "⚠️ Пожалуйста, укажите задачу");
+                Dialogs.error("Ошибка", "⚠️ Пожалуйста, укажите задачу");
                 taskChoice.getEditor().requestFocus();
                 return;
             }
             if (type == null || type.isEmpty()) {
-                Dialogs.info("Ошибка", "⚠️ Пожалуйста, выберите тип работы");
+                Dialogs.error("Ошибка", "⚠️ Пожалуйста, выберите тип работы");
                 typeChoice.requestFocus();
                 return;
             }
             if (hoursText.isEmpty()) {
-                Dialogs.info("Ошибка", "⚠️ Пожалуйста, укажите длительность");
+                Dialogs.error("Ошибка", "⚠️ Пожалуйста, укажите длительность");
                 hoursField.requestFocus();
                 return;
             }
@@ -478,12 +478,12 @@ public class MainController {
             try {
                 hours = Integer.parseInt(hoursText);
             } catch (NumberFormatException e) {
-                Dialogs.info("Ошибка", "⚠️ Длительность должна быть целым числом");
+                Dialogs.error("Ошибка", "⚠️ Длительность должна быть целым числом");
                 hoursField.requestFocus();
                 return;
             }
             if (hours <= 0 || hours > 24) {
-                Dialogs.info("Ошибка", "⚠️ Длительность должна быть от 1 до 24 часов");
+                Dialogs.error("Ошибка", "⚠️ Длительность должна быть от 1 до 24 часов");
                 hoursField.requestFocus();
                 return;
             }
@@ -514,7 +514,7 @@ public class MainController {
                 Dialogs.info("Успех", "✅ Работа добавлена!");
             }
         } catch (Exception e) {
-            Dialogs.info("Ошибка", "❌ Произошла ошибка: " + e.getMessage());
+            Dialogs.error("Ошибка", "❌ Произошла ошибка: " + e.getMessage());
         }
     }
 
@@ -534,11 +534,11 @@ public class MainController {
         try {
             hours = Integer.parseInt(result.hours());
         } catch (NumberFormatException e) {
-            Dialogs.info("Ошибка", "⚠️ Длительность должна быть целым числом");
+            Dialogs.error("Ошибка", "⚠️ Длительность должна быть целым числом");
             return;
         }
         if (hours <= 0 || hours > 24) {
-            Dialogs.info("Ошибка", "⚠️ Длительность должна быть от 1 до 24 часов");
+            Dialogs.error("Ошибка", "⚠️ Длительность должна быть от 1 до 24 часов");
             return;
         }
 
@@ -567,7 +567,7 @@ public class MainController {
             updateDayView(selected.getDate());
             Dialogs.info("Успех", "✅ Запись обновлена!");
         } else {
-            Dialogs.info("Ошибка", "⚠️ Не удалось сохранить");
+            Dialogs.error("Ошибка", "⚠️ Не удалось сохранить");
         }
     }
 
@@ -605,17 +605,17 @@ public class MainController {
             String comment = commentArea.getText().trim();
 
             if (project.isEmpty()) {
-                Dialogs.info("Ошибка", "⚠️ Пожалуйста, укажите проект");
+                Dialogs.error("Ошибка", "⚠️ Пожалуйста, укажите проект");
                 projectChoice.getEditor().requestFocus();
                 return;
             }
             if (taskName.isEmpty()) {
-                Dialogs.info("Ошибка", "⚠️ Пожалуйста, укажите задачу");
+                Dialogs.error("Ошибка", "⚠️ Пожалуйста, укажите задачу");
                 taskChoice.getEditor().requestFocus();
                 return;
             }
             if (type == null || type.isEmpty()) {
-                Dialogs.info("Ошибка", "⚠️ Пожалуйста, выберите тип работы");
+                Dialogs.error("Ошибка", "⚠️ Пожалуйста, выберите тип работы");
                 typeChoice.requestFocus();
                 return;
             }
@@ -624,7 +624,7 @@ public class MainController {
                 if (entry.getProject().equals(project)
                         && entry.getTaskName().equals(taskName)
                         && entry.getType().equals(type)) {
-                    Dialogs.info("Внимание", "⚠️ Такая задача уже существует в этой неделе");
+                    Dialogs.warn("Внимание", "⚠️ Такая задача уже существует в этой неделе");
                     return;
                 }
             }
@@ -644,7 +644,7 @@ public class MainController {
             weekTableView.refresh();
             Dialogs.info("Успех", "✅ Задача добавлена! Введите часы в таблице (двойной клик).");
         } catch (Exception e) {
-            Dialogs.info("Ошибка", "❌ Произошла ошибка: " + e.getMessage());
+            Dialogs.error("Ошибка", "❌ Произошла ошибка: " + e.getMessage());
         }
     }
 
@@ -791,7 +791,7 @@ public class MainController {
             dialog.setDialogPane(pane);
             dialog.showAndWait();
         } catch (IOException e) {
-            Dialogs.info("Ошибка", "❌ Не удалось открыть окно напоминаний: " + Dialogs.reason(e));
+            Dialogs.error("Ошибка", "❌ Не удалось открыть окно напоминаний: " + Dialogs.reason(e));
         }
     }
 
@@ -800,14 +800,14 @@ public class MainController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/export-dialog.fxml"));
             DialogPane pane = loader.load();
             ExportDialogController ctrl = loader.getController();
-            ctrl.init(taskService, exportService, datePicker.getValue(), isWeekView, datePicker.getScene().getWindow(), Dialogs::info);
+            ctrl.init(taskService, exportService, datePicker.getValue(), isWeekView, datePicker.getScene().getWindow(), Dialogs::accept);
 
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle("📊 Экспорт данных");
             dialog.setDialogPane(pane);
             dialog.showAndWait();
         } catch (IOException e) {
-            Dialogs.info("Ошибка", "❌ Не удалось открыть окно экспорта: " + Dialogs.reason(e));
+            Dialogs.error("Ошибка", "❌ Не удалось открыть окно экспорта: " + Dialogs.reason(e));
         }
     }
 
@@ -816,7 +816,7 @@ public class MainController {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/holidays-dialog.fxml"));
             DialogPane pane = loader.load();
             HolidaysDialogController ctrl = loader.getController();
-            ctrl.init(workTimeService, Dialogs::info);
+            ctrl.init(workTimeService, Dialogs::accept);
 
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle("📅 Управление праздничными днями");
@@ -827,7 +827,7 @@ public class MainController {
                 updateWeekView(datePicker.getValue());
             }
         } catch (IOException e) {
-            Dialogs.info("Ошибка", "❌ Не удалось открыть окно праздников: " + Dialogs.reason(e));
+            Dialogs.error("Ошибка", "❌ Не удалось открыть окно праздников: " + Dialogs.reason(e));
         }
     }
 
@@ -890,7 +890,7 @@ public class MainController {
         try {
             List<Task> tasks = yamlLoaderService.loadTasksFromYaml(file.getAbsolutePath());
             if (tasks.isEmpty()) {
-                Dialogs.info("Внимание", "⚠️ Файл не содержит задач");
+                Dialogs.warn("Внимание", "⚠️ Файл не содержит задач");
                 return;
             }
             for (Task task : tasks) {
@@ -899,7 +899,7 @@ public class MainController {
             refreshChoices();
             Dialogs.info("Успех", String.format("✅ Загружено %d задач!", tasks.size()));
         } catch (Exception e) {
-            Dialogs.info("Ошибка", "❌ Не удалось загрузить файл: " + e.getMessage());
+            Dialogs.error("Ошибка", "❌ Не удалось загрузить файл: " + e.getMessage());
         }
     }
 
@@ -917,7 +917,7 @@ public class MainController {
             Files.writeString(file.toPath(), YamlTemplate.content(), StandardCharsets.UTF_8);
             Dialogs.info("Успех", "✅ Шаблон сохранен: " + file.getName());
         } catch (Exception e) {
-            Dialogs.info("Ошибка", "❌ Не удалось сохранить шаблон: " + e.getMessage());
+            Dialogs.error("Ошибка", "❌ Не удалось сохранить шаблон: " + e.getMessage());
         }
     }
 
