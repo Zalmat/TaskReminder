@@ -47,7 +47,11 @@ if (-not $jmods) {
     }
     if (Test-Path $jmodsDir) { Remove-Item -Recurse -Force $jmodsDir }
     Expand-Archive -Path $jmodsZip -DestinationPath $jmodsDir -Force
-    $jmods = $jmodsDir
+    # Внутри zip jmods могут лежать во вложенной папке — ищем каталог с *.jmod
+    $inner = Get-ChildItem -Path $jmodsDir -Directory -ErrorAction SilentlyContinue |
+        Where-Object { @(Get-ChildItem $_.FullName -Filter *.jmod -ErrorAction SilentlyContinue).Count -gt 0 } |
+        Select-Object -First 1
+    $jmods = if ($inner) { $inner.FullName } else { $jmodsDir }
 }
 Write-Host "[3/6] Using jmods: $jmods"
 
