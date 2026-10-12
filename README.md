@@ -72,6 +72,7 @@ src/main/java/com/reminder/
 │   ├── DataStore.java
 │   └── LegacyMigrator.java
 ├── ui/
+│   ├── TrayService.java          # Системный трей
 │   ├── controller/               # Контроллеры (FXML)
 │   │   ├── MainController.java
 │   │   ├── RemindersDialogController.java
@@ -83,6 +84,7 @@ src/main/java/com/reminder/
 └── util/                         # Утилиты
     ├── DateUtils.java
     ├── RussianDays.java
+    ├── TaskValidationUtils.java
     └── VersionInfo.java
 ```
 
