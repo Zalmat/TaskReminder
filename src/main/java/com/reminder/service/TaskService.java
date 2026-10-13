@@ -24,7 +24,11 @@ public class TaskService {
     private final List<Task> predefinedTasks;
 
     public TaskService() {
-        this.store = new DataStore();
+        this(new DataStore());
+    }
+
+    public TaskService(DataStore store) {
+        this.store = store;
         migrateLegacy();
         this.entries = store.loadList(ENTRIES_FILE, WorkEntry.class);
         this.predefinedTasks = store.loadList(TASKS_FILE, Task.class);

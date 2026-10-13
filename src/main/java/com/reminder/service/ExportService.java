@@ -206,10 +206,12 @@ public class ExportService {
             transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 
             javax.xml.transform.dom.DOMSource source = new javax.xml.transform.dom.DOMSource(doc);
-            javax.xml.transform.stream.StreamResult result =
-                    new javax.xml.transform.stream.StreamResult(
-                            new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8));
-            transformer.transform(source, result);
+            try (Writer writer = new OutputStreamWriter(
+                    new FileOutputStream(filePath), StandardCharsets.UTF_8)) {
+                javax.xml.transform.stream.StreamResult result =
+                        new javax.xml.transform.stream.StreamResult(writer);
+                transformer.transform(source, result);
+            }
         } catch (Exception e) {
             throw new IOException("Ошибка экспорта в XML: " + e.getMessage(), e);
         }
