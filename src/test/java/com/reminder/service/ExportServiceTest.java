@@ -44,4 +44,24 @@ class ExportServiceTest {
         assertTrue(Files.readString(xml, StandardCharsets.UTF_8)
                 .contains("<project>Проект Альфа</project>"));
     }
+
+    @Test
+    void dispatcherExportsSelectedFormat(@TempDir Path dir) throws IOException {
+        ExportService svc = new ExportService();
+        WorkEntry e = new WorkEntry("Проект Альфа", "Разработка бэкенда", "Разработка", 3);
+        e.setDate(LocalDate.of(2026, 10, 12));
+        List<WorkEntry> entries = List.of(e);
+
+        Path csv = dir.resolve("d.csv");
+        svc.export(entries, ExportFormat.CSV, csv.toString());
+        assertTrue(Files.readString(csv, StandardCharsets.UTF_8).contains("Проект Альфа"));
+
+        Path json = dir.resolve("d.json");
+        svc.export(entries, ExportFormat.JSON, json.toString());
+        assertTrue(Files.readString(json, StandardCharsets.UTF_8).contains("\"project\""));
+
+        Path xml = dir.resolve("d.xml");
+        svc.export(entries, ExportFormat.XML, xml.toString());
+        assertTrue(Files.readString(xml, StandardCharsets.UTF_8).contains("workReport"));
+    }
 }

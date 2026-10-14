@@ -8,8 +8,17 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
 import org.yaml.snakeyaml.Yaml;
 
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.dom.DOMSource;
+import javax.xml.transform.stream.StreamResult;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
@@ -27,6 +36,17 @@ import java.util.Map;
 
 /** Экспорт данных. Весь текст пишется в кодировке UTF-8 (данные — Unicode). */
 public class ExportService {
+
+    /** Экспортирует записи в выбранном формате. */
+    public void export(List<WorkEntry> entries, ExportFormat format, String filePath) throws IOException {
+        switch (format) {
+            case EXCEL -> exportToExcel(entries, filePath);
+            case CSV -> exportToCsv(entries, filePath);
+            case JSON -> exportToJson(entries, filePath);
+            case YAML -> exportToYaml(entries, filePath);
+            case XML -> exportToXml(entries, filePath);
+        }
+    }
 
     public void exportToExcel(List<WorkEntry> entries, String filePath) throws IOException {
         try (Workbook workbook = new XSSFWorkbook()) {
@@ -168,23 +188,23 @@ public class ExportService {
 
     public void exportToXml(List<WorkEntry> entries, String filePath) throws IOException {
         try {
-            javax.xml.parsers.DocumentBuilderFactory docFactory =
-                    javax.xml.parsers.DocumentBuilderFactory.newInstance();
-            javax.xml.parsers.DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
-            org.w3c.dom.Document doc = docBuilder.newDocument();
+            DocumentBuilderFactory docFactory =
+                    DocumentBuilderFactory.newInstance();
+            DocumentBuilder docBuilder = docFactory.newDocumentBuilder();
+            Document doc = docBuilder.newDocument();
 
-            org.w3c.dom.Element rootElement = doc.createElement("workReport");
+            Element rootElement = doc.createElement("workReport");
             doc.appendChild(rootElement);
 
-            org.w3c.dom.Element info = doc.createElement("info");
+            Element info = doc.createElement("info");
             info.setAttribute("exportDate", LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
             info.setAttribute("totalEntries", String.valueOf(entries.size()));
             info.setAttribute("totalHours", String.valueOf(entries.stream().mapToDouble(WorkEntry::getHours).sum()));
             rootElement.appendChild(info);
 
-            org.w3c.dom.Element entriesElement = doc.createElement("entries");
+            Element entriesElement = doc.createElement("entries");
             for (WorkEntry entry : entries) {
-                org.w3c.dom.Element entryElement = doc.createElement("entry");
+                Element entryElement = doc.createElement("entry");
                 entryElement.setAttribute("date", DateUtils.formatDate(entry.getDate()));
                 entryElement.setAttribute("dayOfWeek", entry.getDayOfWeek());
 
@@ -198,18 +218,18 @@ public class ExportService {
             }
             rootElement.appendChild(entriesElement);
 
-            javax.xml.transform.TransformerFactory transformerFactory =
-                    javax.xml.transform.TransformerFactory.newInstance();
-            javax.xml.transform.Transformer transformer = transformerFactory.newTransformer();
-            transformer.setOutputProperty(javax.xml.transform.OutputKeys.INDENT, "yes");
-            transformer.setOutputProperty(javax.xml.transform.OutputKeys.ENCODING, "UTF-8");
+            TransformerFactory transformerFactory =
+                    TransformerFactory.newInstance();
+            Transformer transformer = transformerFactory.newTransformer();
+            transformer.setOutputProperty(OutputKeys.INDENT, "yes");
+            transformer.setOutputProperty(OutputKeys.ENCODING, "UTF-8");
             transformer.setOutputProperty("{http://xml.apache.org/xslt}indent-amount", "2");
 
-            javax.xml.transform.dom.DOMSource source = new javax.xml.transform.dom.DOMSource(doc);
+            DOMSource source = new DOMSource(doc);
             try (Writer writer = new OutputStreamWriter(
                     new FileOutputStream(filePath), StandardCharsets.UTF_8)) {
-                javax.xml.transform.stream.StreamResult result =
-                        new javax.xml.transform.stream.StreamResult(writer);
+                StreamResult result =
+                        new StreamResult(writer);
                 transformer.transform(source, result);
             }
         } catch (Exception e) {
@@ -217,8 +237,8 @@ public class ExportService {
         }
     }
 
-    private void addXmlElement(org.w3c.dom.Document doc, org.w3c.dom.Element parent, String name, String value) {
-        org.w3c.dom.Element element = doc.createElement(name);
+    private void addXmlElement(Document doc, Element parent, String name, String value) {
+        Element element = doc.createElement(name);
         element.appendChild(doc.createTextNode(value != null ? value : ""));
         parent.appendChild(element);
     }

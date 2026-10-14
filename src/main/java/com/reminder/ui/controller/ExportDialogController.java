@@ -1,6 +1,7 @@
 package com.reminder.ui.controller;
 
 import com.reminder.model.WorkEntry;
+import com.reminder.service.ExportFormat;
 import com.reminder.service.ExportService;
 import com.reminder.service.TaskService;
 import com.reminder.util.DateUtils;
@@ -55,9 +56,10 @@ public class ExportDialogController {
             endDate.setValue(currentDate);
         }
 
-        formatChoice.getItems().addAll(
-                "Excel (.xlsx)", "CSV (.csv)", "JSON (.json)", "YAML (.yaml)", "XML (.xml)");
-        formatChoice.setValue("Excel (.xlsx)");
+        for (ExportFormat format : ExportFormat.values()) {
+            formatChoice.getItems().add(format.label());
+        }
+        formatChoice.setValue(ExportFormat.EXCEL.label());
 
         ButtonType exportType = new ButtonType("Экспорт", ButtonBar.ButtonData.OK_DONE);
         dialogPane.getButtonTypes().setAll(exportType, ButtonType.CANCEL);
@@ -82,7 +84,7 @@ public class ExportDialogController {
             return;
         }
 
-        String format = formatChoice.getValue();
+        ExportFormat format = ExportFormat.fromLabel(formatChoice.getValue());
         String dateRange = String.format("%s_%s",
                 start.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
                 end.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
@@ -90,45 +92,20 @@ public class ExportDialogController {
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle("Сохранить файл");
-
-        if (format.startsWith("Excel")) {
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Excel файлы", "*.xlsx"));
-            fileChooser.setInitialFileName(String.format("work_report_%s_%s.xlsx", timestamp, dateRange));
-        } else if (format.startsWith("CSV")) {
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("CSV файлы", "*.csv"));
-            fileChooser.setInitialFileName(String.format("work_report_%s_%s.csv", timestamp, dateRange));
-        } else if (format.startsWith("JSON")) {
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("JSON файлы", "*.json"));
-            fileChooser.setInitialFileName(String.format("work_report_%s_%s.json", timestamp, dateRange));
-        } else if (format.startsWith("YAML")) {
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("YAML файлы", "*.yaml"));
-            fileChooser.setInitialFileName(String.format("work_report_%s_%s.yaml", timestamp, dateRange));
-        } else {
-            fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("XML файлы", "*.xml"));
-            fileChooser.setInitialFileName(String.format("work_report_%s_%s.xml", timestamp, dateRange));
-        }
+        fileChooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter(format.filterName(), "*." + format.extension()));
+        fileChooser.setInitialFileName(
+                String.format("work_report_%s_%s.%s", timestamp, dateRange, format.extension()));
 
         try {
             File file = fileChooser.showSaveDialog(owner);
             if (file == null) return;
 
             String filePath = file.getAbsolutePath();
-            if (format.startsWith("Excel")) {
-                if (!filePath.toLowerCase().endsWith(".xlsx")) filePath += ".xlsx";
-                exportService.exportToExcel(entries, filePath);
-            } else if (format.startsWith("CSV")) {
-                if (!filePath.toLowerCase().endsWith(".csv")) filePath += ".csv";
-                exportService.exportToCsv(entries, filePath);
-            } else if (format.startsWith("JSON")) {
-                if (!filePath.toLowerCase().endsWith(".json")) filePath += ".json";
-                exportService.exportToJson(entries, filePath);
-            } else if (format.startsWith("YAML")) {
-                if (!filePath.toLowerCase().endsWith(".yaml")) filePath += ".yaml";
-                exportService.exportToYaml(entries, filePath);
-            } else {
-                if (!filePath.toLowerCase().endsWith(".xml")) filePath += ".xml";
-                exportService.exportToXml(entries, filePath);
+            if (!filePath.toLowerCase().endsWith("." + format.extension())) {
+                filePath += "." + format.extension();
             }
+            exportService.export(entries, format, filePath);
             closeDialog();
             alert.accept("Успех", String.format("✅ Данные экспортированы!\n%d записей", entries.size()));
         } catch (Exception ex) {
