@@ -23,6 +23,7 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
+import javafx.util.Duration;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -388,6 +389,9 @@ public class WeekView {
         void setOvertimeTooltip(boolean show) {
             if (show && dayTooltip == null) {
                 dayTooltip = new Tooltip("Осторожно. Превышено количество рабочих часов");
+                dayTooltip.setShowDelay(Duration.millis(250));
+                dayTooltip.setShowDuration(Duration.seconds(5));
+                dayTooltip.setHideDelay(Duration.millis(100));
                 Tooltip.install(headerLabel, dayTooltip);
             } else if (!show) {
                 if (dayTooltip != null) {
