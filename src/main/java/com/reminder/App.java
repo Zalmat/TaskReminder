@@ -80,6 +80,7 @@ public class App extends Application {
         }
     }
 
+    @SuppressWarnings("unused")
     public static void main(String[] args) {
         // Фиксируем русскую локаль, чтобы форматирование и начало недели были стабильными.
         Locale.setDefault(Locale.forLanguageTag("ru-RU"));
