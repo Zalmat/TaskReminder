@@ -1,0 +1,106 @@
+/* Тёмная тема. */
+
+.root {
+    -fx-base: #2b2b2b;
+    -fx-background: #1e1e1e;
+    -fx-control-inner-background: #2b2b2b;
+    -fx-text-background-color: #e0e0e0;
+}
+
+.button {
+    -fx-background-color: #3a3a3a;
+    -fx-text-fill: #e0e0e0;
+}
+
+.button:hover {
+    -fx-background-color: #454545;
+}
+
+.button.primary {
+    -fx-background-color: #4CAF50;
+    -fx-text-fill: white;
+}
+
+.button.danger {
+    -fx-background-color: #f44336;
+    -fx-text-fill: white;
+}
+
+.table-view {
+    -fx-background-color: transparent;
+    -fx-border-color: #3a3a3a;
+}
+
+.table-view .column-header {
+    -fx-background-color: #2f2f2f;
+    -fx-border-color: #3a3a3a;
+    -fx-border-width: 0 0 1px 0;
+}
+
+.table-view .table-cell {
+    -fx-border-color: transparent transparent #333333 transparent;
+    -fx-text-fill: #e0e0e0;
+}
+
+.table-row-cell {
+    -fx-background-color: #232323;
+    -fx-text-fill: #e0e0e0;
+}
+
+.table-row-cell:even {
+    -fx-background-color: #262626;
+}
+
+.table-row-cell:selected,
+.table-row-cell:selected .table-cell {
+    -fx-background-color: #3a4a5a;
+    -fx-text-fill: white;
+}
+
+.table-row-cell:focused:selected,
+.table-row-cell:focused:selected .table-cell {
+    -fx-background-color: #45607a;
+    -fx-text-fill: white;
+}
+
+.choice-box, .date-picker, .text-field, .text-area {
+    -fx-background-color: #2b2b2b;
+    -fx-border-color: #444444;
+    -fx-border-radius: 4px;
+    -fx-background-radius: 4px;
+    -fx-text-fill: #e0e0e0;
+}
+
+.label {
+    -fx-text-fill: #e0e0e0;
+}
+
+.side-panel {
+    -fx-background-color: #252525;
+    -fx-border-color: #3a3a3a;
+    -fx-border-width: 1px;
+}
+
+.hint {
+    -fx-text-fill: #9a9a9a;
+}
+
+.github-link {
+    -fx-text-fill: #cccccc;
+}
+
+.holiday-column {
+    -fx-background-color: #2f2f2f;
+}
+
+.holiday-header {
+    -fx-text-fill: #888888;
+}
+
+.text-input {
+    -fx-prompt-text-fill: #8a8a8a;
+}
+
+.combo-box > .list-cell {
+    -fx-text-fill: #e0e0e0;
+}

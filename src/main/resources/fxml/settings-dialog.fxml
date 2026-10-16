@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<DialogPane fx:id="dialogPane"
+            fx:controller="com.reminder.ui.controller.SettingsDialogController"
+            xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            prefWidth="560" prefHeight="340"
+            headerText="Настройки">
+    <fx:define>
+        <ToggleGroup fx:id="themeGroup"/>
+    </fx:define>
+    <content>
+        <HBox spacing="10">
+            <ListView fx:id="sectionList" prefWidth="180"/>
+            <StackPane fx:id="contentArea" HBox.hgrow="ALWAYS">
+                <VBox fx:id="appearancePane" spacing="10">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding>
+                    <Label text="Тема:" style="-fx-font-weight: bold;"/>
+                    <RadioButton fx:id="lightRadio" text="Светлая" toggleGroup="$themeGroup"/>
+                    <RadioButton fx:id="darkRadio" text="Тёмная" toggleGroup="$themeGroup"/>
+                </VBox>
+                <VBox fx:id="generalPane" spacing="10">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding>
+                    <Label text="Тип работы по умолчанию:" style="-fx-font-weight: bold;"/>
+                    <ComboBox fx:id="typeChoice" maxWidth="Infinity"/>
+                </VBox>
+            </StackPane>
+        </HBox>
+    </content>
+</DialogPane>

@@ -2,6 +2,7 @@ package com.reminder;
 
 import com.reminder.ui.TrayService;
 import com.reminder.ui.controller.MainController;
+import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.util.VersionInfo;
 import javafx.application.Application;
@@ -27,6 +28,7 @@ public class App extends Application {
 
             Scene scene = new Scene(root, 1200, 800);
             scene.getStylesheets().add(getClass().getResource("/styles/style.css").toExternalForm());
+            ThemeManager.apply(scene);
 
             primaryStage.setTitle("📋 Напоминалка - Учет рабочего времени  v" + VersionInfo.load().version());
             primaryStage.setScene(scene);

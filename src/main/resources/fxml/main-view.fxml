@@ -34,7 +34,7 @@
     </top>
 
     <left>
-        <VBox spacing="10" prefWidth="320" style="-fx-background-color: #f5f5f5; -fx-border-color: #ddd; -fx-border-width: 1px;">
+        <VBox spacing="10" prefWidth="320" styleClass="side-panel">
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding> <!-- Внутри шутка
@@ -62,15 +62,13 @@
             <Label text="Комментарий:"/>
             <TextArea fx:id="commentArea" prefRowCount="3" wrapText="true" promptText="Дополнительная информация..."/>
 
-            <Button fx:id="addButton" text="✅ Добавить" maxWidth="Infinity"
-                    style="-fx-background-color: #4CAF50; -fx-text-fill: white; -fx-font-weight: bold;"/>
+            <Button fx:id="addButton" text="✅ Добавить" maxWidth="Infinity" styleClass="primary"/>
 
             <Separator/>
 
             <Button fx:id="loadYamlButton" text="📂 Загрузить категории задач из YAML" maxWidth="Infinity"/>
             <Button fx:id="templateButton" text="📄 Скачать шаблон YAML" maxWidth="Infinity"/>
-            <Button fx:id="clearButton" text="🗑️ Очистить таблицу" maxWidth="Infinity"
-                    style="-fx-background-color: #f44336; -fx-text-fill: white;"/>
+            <Button fx:id="clearButton" text="🗑️ Очистить таблицу" maxWidth="Infinity" styleClass="danger"/>
         </VBox>
     </left>
 
@@ -101,7 +99,7 @@
                     <Label fx:id="weekTotalLabel" text="Неделя: 0 / 48 ч"
                            style="-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #2196F3;"/>
                     <Label text="(двойной клик для редактирования)"
-                           style="-fx-font-size: 11px; -fx-text-fill: #888;"/>
+                           styleClass="hint" style="-fx-font-size: 11px;"/>
                 </HBox>
                 <TableView fx:id="weekTableView" editable="true" VBox.vgrow="ALWAYS">
                     <columns>
@@ -118,11 +116,17 @@
 
     <bottom>
         <HBox spacing="10" alignment="CENTER_RIGHT" style="-fx-padding: 10 0 0 0;">
+            <MenuButton fx:id="menuButton" text="☰">
+                <items>
+                    <MenuItem fx:id="settingsItem" text="⚙ Настройки"/>
+                </items>
+            </MenuButton>
+            <Separator orientation="VERTICAL"/>
             <Button fx:id="updateButton" text="🔍 Проверить обновления"/>
             <Button fx:id="reminderButton" text="⏰ Напоминания"/>
             <Button fx:id="exportButton" text="📊 Экспорт"/>
             <Region HBox.hgrow="ALWAYS"/>
-            <Hyperlink text="GitHub Issues" onAction="#openGithubIssues" style="-fx-padding: 0; -fx-text-fill: #f2f2f2; -fx-underline: false; -fx-font-weight: bold;">
+            <Hyperlink text="GitHub Issues" onAction="#openGithubIssues" styleClass="github-link" style="-fx-padding: 0; -fx-underline: false; -fx-font-weight: bold;">
                 <effect>
                     <DropShadow radius="1" offsetX="1" offsetY="-1" color="#c2c2c2" />
                 </effect>

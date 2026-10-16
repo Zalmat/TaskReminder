@@ -13,6 +13,7 @@ import com.reminder.ui.UpdateCheckUi;
 import com.reminder.ui.component.ClockUi;
 import com.reminder.ui.component.EasterEgg;
 import com.reminder.ui.component.EntryForm;
+import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.DatePickerUtils;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.view.DayView;
@@ -27,6 +28,8 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -86,6 +89,8 @@ public class MainController {
     @FXML private Button reminderButton;
     @FXML private Button exportButton;
     @FXML private Button updateButton;
+    @FXML private MenuButton menuButton;
+    @FXML private MenuItem settingsItem;
 
     private final TaskService taskService = new TaskService();
     private final WorkTimeService workTimeService = new WorkTimeService();
@@ -181,6 +186,7 @@ public class MainController {
         holidayButton.setOnAction(e -> openHolidaysDialog());
         reminderButton.setOnAction(e -> openRemindersDialog());
         exportButton.setOnAction(e -> openExportDialog());
+        settingsItem.setOnAction(e -> openSettingsDialog());
     }
 
     private void wireViewToggle() {
@@ -222,6 +228,7 @@ public class MainController {
             DialogPane pane = loader.load();
             RemindersDialogController ctrl = loader.getController();
             ctrl.init(reminderService);
+            ThemeManager.applyTo(pane);
 
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle("⏰ Управление напоминаниями");
@@ -238,6 +245,7 @@ public class MainController {
             DialogPane pane = loader.load();
             ExportDialogController ctrl = loader.getController();
             ctrl.init(taskService, exportService, datePicker.getValue(), isWeekView, datePicker.getScene().getWindow(), Dialogs::accept);
+            ThemeManager.applyTo(pane);
 
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle("📊 Экспорт данных");
@@ -254,6 +262,7 @@ public class MainController {
             DialogPane pane = loader.load();
             HolidaysDialogController ctrl = loader.getController();
             ctrl.init(workTimeService, Dialogs::accept);
+            ThemeManager.applyTo(pane);
 
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle("📅 Управление праздничными днями");
@@ -269,6 +278,22 @@ public class MainController {
     }
 
     /** Показ диалога напоминания и звук вынесены в {@link ReminderUi}. */
+
+    private void openSettingsDialog() {
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/settings-dialog.fxml"));
+            DialogPane pane = loader.load();
+            SettingsDialogController ctrl = loader.getController();
+            ctrl.init(datePicker.getScene(), form.typeItems());
+
+            Dialog<Void> dialog = new Dialog<>();
+            dialog.setTitle("⚙ Настройки");
+            dialog.setDialogPane(pane);
+            dialog.showAndWait();
+        } catch (IOException e) {
+            Dialogs.error("Ошибка", "❌ Не удалось открыть окно настроек: " + Dialogs.reason(e));
+        }
+    }
 
     // ==================== ПРОЧЕЕ ====================
 

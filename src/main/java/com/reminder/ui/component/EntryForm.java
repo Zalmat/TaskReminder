@@ -1,6 +1,7 @@
 package com.reminder.ui.component;
 
 import com.reminder.service.TaskService;
+import com.reminder.settings.AppSettings;
 import com.reminder.util.TaskValidationUtils;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
@@ -30,7 +31,7 @@ public class EntryForm {
         typeChoice.getItems().addAll(
                 "Разработка", "Тестирование", "Дизайн", "Аналитика",
                 "Управление", "Коммуникация", "Другое");
-        typeChoice.setValue("Разработка");
+        typeChoice.setValue(defaultType());
     }
 
     public void refreshChoices(TaskService taskService) {
@@ -56,7 +57,7 @@ public class EntryForm {
         commentArea.clear();
         projectChoice.getEditor().clear();
         taskChoice.getEditor().clear();
-        typeChoice.setValue("Разработка");
+        typeChoice.setValue(defaultType());
         projectChoice.setValue(null);
         taskChoice.setValue(null);
         projectChoice.setPromptText("Введите или выберите проект");
@@ -101,5 +102,10 @@ public class EntryForm {
 
     public void focusHours() {
         hoursField.requestFocus();
+    }
+
+    private static String defaultType() {
+        String type = AppSettings.defaultType();
+        return (type == null || type.isBlank()) ? AppSettings.DEFAULT_WORK_TYPE : type;
     }
 }

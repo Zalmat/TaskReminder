@@ -2,6 +2,7 @@ package com.reminder.ui.view;
 
 import com.reminder.model.Reminder;
 import com.reminder.service.ReminderService;
+import com.reminder.ui.theme.ThemeManager;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonBar;
@@ -50,6 +51,7 @@ public class ReminderUi {
         VBox vbox = new VBox(10, new Label("Отложить на (минут):"), snoozeMinutes);
         vbox.setPadding(new Insets(10));
         alert.getDialogPane().setExpandableContent(vbox);
+        ThemeManager.applyTo(alert.getDialogPane());
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent()) {

@@ -1,5 +1,6 @@
 package com.reminder.ui.dialog;
 
+import com.reminder.ui.theme.ThemeManager;
 import com.reminder.util.TaskValidationUtils;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
@@ -72,6 +73,7 @@ public final class EntryEditDialog {
                     commentField.getText().trim());
         });
 
+        ThemeManager.applyTo(dialog.getDialogPane());
         return dialog.showAndWait().orElse(null);
     }
 }

@@ -316,14 +316,17 @@ public class WeekView {
             if (dayTotal > WorkTimeService.MAX_DAILY_HOURS) {
                 col.setStyle("-fx-alignment: CENTER;");
                 col.setHeaderStyle("-fx-font-weight: bold; -fx-text-fill: red;");
+                col.setHoliday(false);
                 col.setOvertimeTooltip(true);
             } else if (workTimeService.isHoliday(day)) {
-                col.setStyle("-fx-alignment: CENTER; -fx-background-color: #f5f5f5;");
-                col.setHeaderStyle("-fx-text-fill: #999;");
+                col.setStyle("-fx-alignment: CENTER;");
+                col.setHeaderStyle("");
+                col.setHoliday(true);
                 col.setOvertimeTooltip(false);
             } else {
                 col.setStyle("-fx-alignment: CENTER;");
                 col.setHeaderStyle("");
+                col.setHoliday(false);
                 col.setOvertimeTooltip(false);
             }
         }
@@ -383,6 +386,16 @@ public class WeekView {
 
         void setHeaderStyle(String css) {
             headerLabel.setStyle(css);
+        }
+
+        /** Помечает день как праздничный (фон/цвет — из темы). */
+        void setHoliday(boolean holiday) {
+            getStyleClass().remove("holiday-column");
+            headerLabel.getStyleClass().remove("holiday-header");
+            if (holiday) {
+                getStyleClass().add("holiday-column");
+                headerLabel.getStyleClass().add("holiday-header");
+            }
         }
 
         /** Показывает/скрывает тултип о превышении лимита на заголовке дня. */
