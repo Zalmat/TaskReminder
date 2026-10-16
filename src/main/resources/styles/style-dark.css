@@ -90,22 +90,23 @@
     -fx-border-color: #444444;
 }
 
-.list-cell {
+.list-view .list-cell {
     -fx-background-color: transparent;
     -fx-text-fill: #e0e0e0;
 }
 
-.list-cell:filled:hover {
+.list-view .list-cell:filled:hover {
     -fx-background-color: #333333;
 }
 
-.list-cell:filled:selected {
+.list-view .list-cell:filled:selected {
     -fx-background-color: #3a4a5a;
     -fx-text-fill: white;
 }
 
 .github-link {
-    -fx-text-fill: #cccccc;
+    -fx-text-fill: #333333;
+    -fx-effect: dropshadow(gaussian, #101010, 1, 0, 1, -1);
 }
 
 .holiday-column {

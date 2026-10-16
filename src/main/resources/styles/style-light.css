@@ -1,8 +1,8 @@
 /* Светлая тема. */
 
 .root {
-    -fx-base: #f0f0f0;
-    -fx-background: #ffffff;
+    -fx-base: #ececec;
+    -fx-background: #f4f4f4;
     -fx-control-inner-background: #ffffff;
     -fx-text-background-color: #333333;
 }
@@ -84,22 +84,23 @@
     -fx-border-color: #ddd;
 }
 
-.list-cell {
+.list-view .list-cell {
     -fx-background-color: transparent;
     -fx-text-fill: #333333;
 }
 
-.list-cell:filled:hover {
+.list-view .list-cell:filled:hover {
     -fx-background-color: #f0f0f0;
 }
 
-.list-cell:filled:selected {
+.list-view .list-cell:filled:selected {
     -fx-background-color: #e3f2fd;
     -fx-text-fill: black;
 }
 
 .github-link {
-    -fx-text-fill: #666666;
+    -fx-text-fill: #f2f2f2;
+    -fx-effect: dropshadow(gaussian, #c2c2c2, 1, 0, 1, -1);
 }
 
 .holiday-column {
