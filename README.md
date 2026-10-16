@@ -42,6 +42,12 @@
 - Выход — через диалог окна или меню трея («Открыть» / «Выход»)
 - Двойной клик по иконке трея разворачивает окно
 
+### 🎨 Настройки и оформление
+- Кнопка-меню (☰) в левом нижнем углу → «Настройки»
+- Переключаемая тема: Светлая / Тёмная (применяется к окну и всем диалогам)
+- «Тип работы по умолчанию» для формы ввода
+- Настройки сохраняются между запусками
+
 ## 🛠️ Технологии
 
 - **Java 17+**
@@ -62,11 +68,15 @@ src/main/java/com/reminder/
 │   ├── WeekEntry.java
 │   ├── Reminder.java
 │   └── UpdateInfo.java
+├── settings/                     # Пользовательские настройки
+│   ├── AppSettings.java          # тема, тип работы по умолчанию (Preferences)
+│   └── Theme.java                # enum LIGHT/DARK
 ├── service/                      # Бизнес-логика
 │   ├── TaskService.java
 │   ├── WorkTimeService.java
 │   ├── ReminderService.java
 │   ├── ExportService.java
+│   ├── ExportFormat.java         # enum форматов экспорта
 │   ├── YamlLoaderService.java
 │   └── UpdateCheckService.java
 ├── storage/                      # Хранение/миграция данных
@@ -79,16 +89,26 @@ src/main/java/com/reminder/
 │   │   ├── MainController.java
 │   │   ├── RemindersDialogController.java
 │   │   ├── ExportDialogController.java
-│   │   └── HolidaysDialogController.java
+│   │   ├── HolidaysDialogController.java
+│   │   └── SettingsDialogController.java
+│   ├── view/                      # Экраны
+│   │   ├── DayView.java
+│   │   ├── WeekView.java
+│   │   └── ReminderUi.java
 │   ├── dialog/                    # Диалоги
 │   │   └── EntryEditDialog.java
+│   ├── theme/                     # Применение темы
+│   │   └── ThemeManager.java
 │   ├── component/                 # UI-компоненты
 │   │   ├── WeekEntryCell.java
 │   │   ├── WeekTotalCell.java
+│   │   ├── EntryForm.java
+│   │   ├── ClockUi.java
 │   │   └── EasterEgg.java         # Пасхалка
 │   └── util/                      # UI-утилиты
 │       ├── DatePickerUtils.java
-│       └── Dialogs.java
+│       ├── Dialogs.java
+│       └── TableCells.java
 └── util/                          # Утилиты
     ├── DateUtils.java
     ├── RussianDays.java
