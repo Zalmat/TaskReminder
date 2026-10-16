@@ -79,6 +79,25 @@
     -fx-text-fill: #888888;
 }
 
+.list-view {
+    -fx-background-color: white;
+    -fx-border-color: #ddd;
+}
+
+.list-cell {
+    -fx-background-color: transparent;
+    -fx-text-fill: #333333;
+}
+
+.list-cell:filled:hover {
+    -fx-background-color: #f0f0f0;
+}
+
+.list-cell:filled:selected {
+    -fx-background-color: #e3f2fd;
+    -fx-text-fill: black;
+}
+
 .github-link {
     -fx-text-fill: #666666;
 }
