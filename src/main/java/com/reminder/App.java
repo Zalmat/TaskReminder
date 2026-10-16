@@ -27,7 +27,6 @@ public class App extends Application {
             mainController = loader.getController();
 
             Scene scene = new Scene(root, 1200, 800);
-            scene.getStylesheets().add(getClass().getResource("/styles/style.css").toExternalForm());
             ThemeManager.apply(scene);
 
             primaryStage.setTitle("📋 Напоминалка - Учет рабочего времени  v" + VersionInfo.load().version());
@@ -44,8 +43,8 @@ public class App extends Application {
 
             primaryStage.show();
         } catch (Exception e) {
-            e.printStackTrace();
-            showErrorAlert("Ошибка запуска", e.getMessage());
+            System.err.println("Ошибка запуска: " + Dialogs.reason(e));
+            Dialogs.error("Ошибка запуска", Dialogs.reason(e));
         }
     }
 
@@ -79,10 +78,6 @@ public class App extends Application {
             }
             Platform.exit();
         }
-    }
-
-    private void showErrorAlert(String title, String content) {
-        Dialogs.error(title, content);
     }
 
     public static void main(String[] args) {

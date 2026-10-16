@@ -15,7 +15,7 @@
     <content>
         <HBox spacing="10">
             <ListView fx:id="sectionList" prefWidth="180"/>
-            <StackPane fx:id="contentArea" HBox.hgrow="ALWAYS">
+            <StackPane HBox.hgrow="ALWAYS">
                 <VBox fx:id="appearancePane" spacing="10">
                     <padding>
                         <Insets top="10" right="10" bottom="10" left="10"/>

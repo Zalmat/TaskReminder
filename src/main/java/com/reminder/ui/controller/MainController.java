@@ -28,7 +28,6 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
-import javafx.scene.control.MenuButton;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TableColumn;
@@ -89,7 +88,6 @@ public class MainController {
     @FXML private Button reminderButton;
     @FXML private Button exportButton;
     @FXML private Button updateButton;
-    @FXML private MenuButton menuButton;
     @FXML private MenuItem settingsItem;
 
     private final TaskService taskService = new TaskService();

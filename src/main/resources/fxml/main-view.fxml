@@ -116,7 +116,7 @@
 
     <bottom>
         <HBox spacing="10" alignment="CENTER_RIGHT" style="-fx-padding: 10 0 0 0;">
-            <MenuButton fx:id="menuButton" text="☰">
+            <MenuButton text="☰">
                 <items>
                     <MenuItem fx:id="settingsItem" text="⚙ Настройки"/>
                 </items>

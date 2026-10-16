@@ -6,9 +6,12 @@ import javafx.scene.Scene;
 import javafx.scene.control.DialogPane;
 
 import java.net.URL;
+import java.util.List;
 
 /** Применение темы оформления к сценам и диалогам. */
 public final class ThemeManager {
+
+    private static final String BASE_STYLESHEET = "/styles/style.css";
 
     private ThemeManager() {
     }
@@ -21,8 +24,7 @@ public final class ThemeManager {
         if (scene == null) {
             return;
         }
-        scene.getStylesheets().removeIf(ThemeManager::isThemeStylesheet);
-        add(scene.getStylesheets(), theme);
+        applyStyles(scene.getStylesheets(), theme);
     }
 
     public static void applyTo(DialogPane pane) {
@@ -33,14 +35,23 @@ public final class ThemeManager {
         if (pane == null) {
             return;
         }
-        pane.getStylesheets().removeIf(ThemeManager::isThemeStylesheet);
-        add(pane.getStylesheets(), theme);
+        applyStyles(pane.getStylesheets(), theme);
     }
 
-    private static void add(java.util.List<String> stylesheets, Theme theme) {
-        URL url = ThemeManager.class.getResource(theme.stylesheet());
-        if (url != null) {
-            stylesheets.add(url.toExternalForm());
+    private static void applyStyles(List<String> stylesheets, Theme theme) {
+        addIfMissing(stylesheets, BASE_STYLESHEET);
+        stylesheets.removeIf(ThemeManager::isThemeStylesheet);
+        addIfMissing(stylesheets, theme.stylesheet());
+    }
+
+    private static void addIfMissing(List<String> stylesheets, String resource) {
+        URL url = ThemeManager.class.getResource(resource);
+        if (url == null) {
+            return;
+        }
+        String externalForm = url.toExternalForm();
+        if (!stylesheets.contains(externalForm)) {
+            stylesheets.add(externalForm);
         }
     }
 
