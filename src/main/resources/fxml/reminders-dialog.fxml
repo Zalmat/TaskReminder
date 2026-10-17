@@ -15,7 +15,7 @@
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
 
-            <TitledPane text="%reminders.addPane" expanded="true">
+            <TitledPane text="%reminders.addPane">
                 <GridPane hgap="10" vgap="10">
                     <padding>
                         <Insets top="10" right="10" bottom="10" left="10"/>
@@ -37,7 +37,7 @@
                 </GridPane>
             </TitledPane>
 
-            <TitledPane text="%reminders.listPane" expanded="true">
+            <TitledPane text="%reminders.listPane">
                 <VBox spacing="10">
                     <TableView fx:id="remindersTable" prefHeight="220" VBox.vgrow="ALWAYS">
                         <columns>

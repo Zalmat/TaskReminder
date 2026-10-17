@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /** Проверяет, что все языковые пакеты содержат тот же набор ключей, что и базовый русский. */
@@ -23,7 +24,7 @@ class LanguageKeyParityTest {
 
         for (String code : List.of("en", "de", "bg")) {
             Language language = byCode.get(code);
-            assertTrue(language != null, code + " missing");
+            assertNotNull(language, code + " missing");
             TreeSet<String> missing = new TreeSet<>(base.strings().keySet());
             missing.removeAll(language.strings().keySet());
             assertTrue(missing.isEmpty(), code + " missing keys: " + missing);

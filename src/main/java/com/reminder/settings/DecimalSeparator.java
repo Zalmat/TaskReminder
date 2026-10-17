@@ -32,14 +32,11 @@ public enum DecimalSeparator {
 
     /** Символ-разделитель ('\0' — использовать локаль системы). */
     public char sign() {
-        switch (this) {
-            case DOT:
-                return '.';
-            case COMMA:
-                return ',';
-            default:
-                return '\0';
-        }
+        return switch (this) {
+            case DOT -> '.';
+            case COMMA -> ',';
+            default -> '\0';
+        };
     }
 
     /** Форматирует число для экспорта в соответствии с настройкой. */

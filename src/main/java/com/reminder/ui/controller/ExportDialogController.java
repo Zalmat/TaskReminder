@@ -120,7 +120,7 @@ public class ExportDialogController {
             closeDialog();
             alert.accept(I18n.get("common.success"), I18n.format("export.success", entries.size()));
         } catch (Exception ex) {
-            ex.printStackTrace();
+            System.err.println("Export failed: " + ex.getMessage());
             alert.accept(I18n.get("common.error"), I18n.format("export.error", Dialogs.reason(ex)));
         }
     }

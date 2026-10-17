@@ -15,11 +15,6 @@ public final class RussianDays {
         return fullName(day.getValue());
     }
 
-    public static String shortName(DayOfWeek day) {
-        if (day == null) return "";
-        return shortName(day.getValue());
-    }
-
     public static String fullName(int dayOfWeekValue) {
         return (dayOfWeekValue >= 1 && dayOfWeekValue <= 7)
                 ? I18n.get("day." + dayOfWeekValue + ".full") : "";
