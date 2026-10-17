@@ -1,0 +1,34 @@
+name: Linux build (manual)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout (full history for git describe)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17 (Zulu)
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+          cache: gradle
+
+      - name: Build Linux app-image
+        run: |
+          chmod +x ./gradlew ./build-release.sh
+          ./build-release.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TaskReminder-linux-x64
+          path: |
+            build/release/*.tar.gz
+            build/release/*.sha256
+          if-no-files-found: error
