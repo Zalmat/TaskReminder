@@ -1,8 +1,10 @@
 package com.reminder.ui;
 
+import com.reminder.app.DevMode;
 import com.reminder.i18n.I18n;
 import com.reminder.model.UpdateInfo;
 import com.reminder.service.UpdateCheckService;
+import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.ProgramFolder;
 import com.reminder.ui.util.Tooltips;
@@ -35,6 +37,11 @@ public class UpdateCheckUi {
 
     /** Проверяет наличие обновлений. При manual=true всегда показывает результат. */
     public void checkForUpdates(boolean manual) {
+        // Режим разработки: показываем диалог с демо-описанием без обращения к сети.
+        if (DevMode.isEnabled()) {
+            Platform.runLater(() -> showUpdateDialog(DevMode.demoUpdate(), true));
+            return;
+        }
         service.checkLatest().thenAccept(update ->
                 Platform.runLater(() -> handleUpdateResult(update, manual)));
     }
@@ -105,6 +112,8 @@ public class UpdateCheckUi {
             ProgramFolder.open();
         });
 
+        ThemeManager.applyTo(alert.getDialogPane());
+
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent()) {
             if (result.get() == downloadButton) {
@@ -116,8 +125,7 @@ public class UpdateCheckUi {
         }
     }
 
-    private void openLink(String url) {
-        if (url == null || url.isEmpty()) {
+    private void openLink(String url) {        if (url == null || url.isEmpty()) {
             Dialogs.error(I18n.get("common.error"), I18n.get("error.link"));
             return;
         }

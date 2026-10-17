@@ -12,6 +12,7 @@ reminders.json
 holidays.json
 .taskreminder.lock
 /language/
+dev.flag
 *.dat
 *.dat.legacy
 *.json.tmp

@@ -1,5 +1,6 @@
 package com.reminder;
 
+import com.reminder.app.DevMode;
 import com.reminder.app.SingleInstanceLock;
 import com.reminder.autostart.AutoStartService;
 import com.reminder.i18n.I18n;
@@ -109,6 +110,7 @@ public class App extends Application {
 
     @SuppressWarnings("unused")
     public static void main(String[] args) {
+        DevMode.init(java.util.Arrays.asList(args));
         // Инициализация локализации: читает сохранённый язык и фиксирует локаль до старта JavaFX.
         I18n.init();
         launch(args);
