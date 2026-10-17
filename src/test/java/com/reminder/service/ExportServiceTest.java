@@ -1,6 +1,10 @@
 package com.reminder.service;
 
+import com.reminder.i18n.I18n;
 import com.reminder.model.WorkEntry;
+import com.reminder.settings.AppSettings;
+import com.reminder.settings.DecimalSeparator;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -14,6 +18,11 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExportServiceTest {
+
+    @BeforeAll
+    static void initI18n() {
+        I18n.init("ru");
+    }
 
     @Test
     void exportsCsvJsonYamlXmlWithData(@TempDir Path dir) throws IOException {
@@ -63,5 +72,25 @@ class ExportServiceTest {
         Path xml = dir.resolve("d.xml");
         svc.export(entries, ExportFormat.XML, xml.toString());
         assertTrue(Files.readString(xml, StandardCharsets.UTF_8).contains("workReport"));
+    }
+
+    @Test
+    void csvQuotesFieldsAndUsesConfiguredSeparator(@TempDir Path dir) throws IOException {
+        DecimalSeparator saved = AppSettings.decimalSeparator();
+        try {
+            AppSettings.setDecimalSeparator(DecimalSeparator.COMMA);
+            ExportService svc = new ExportService();
+            WorkEntry e = new WorkEntry("A,B", "Task", "Type", 1.5);
+            e.setDate(LocalDate.of(2026, 10, 12));
+            e.setComment("line1\nline2");
+            Path csv = dir.resolve("q.csv");
+            svc.exportToCsv(List.of(e), csv.toString());
+            String text = Files.readString(csv, StandardCharsets.UTF_8);
+            assertTrue(text.contains("\"A,B\""), text);
+            assertTrue(text.contains("1,5"), text);
+            assertTrue(text.contains("\"line1\nline2\""), text);
+        } finally {
+            AppSettings.setDecimalSeparator(saved);
+        }
     }
 }

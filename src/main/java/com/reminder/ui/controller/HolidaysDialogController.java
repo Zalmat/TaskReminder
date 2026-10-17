@@ -1,5 +1,6 @@
 package com.reminder.ui.controller;
 
+import com.reminder.i18n.I18n;
 import com.reminder.service.WorkTimeService;
 import com.reminder.ui.util.DatePickerUtils;
 import com.reminder.util.DateUtils;
@@ -44,7 +45,7 @@ public class HolidaysDialogController {
         deleteHolidayButton.setOnAction(e -> removeHoliday());
 
         dialogPane.getButtonTypes().setAll(
-                new ButtonType("Закрыть", ButtonBar.ButtonData.CANCEL_CLOSE));
+                new ButtonType(I18n.get("button.close"), ButtonBar.ButtonData.CANCEL_CLOSE));
 
         refreshList();
     }
@@ -58,40 +59,40 @@ public class HolidaysDialogController {
     }
 
     private void updateCount() {
-        countLabel.setText("Праздничные дни (всего: " + holidayItems.size() + "):");
+        countLabel.setText(I18n.format("holidays.count", holidayItems.size()));
     }
 
     private void addHoliday() {
         LocalDate date = holidayPicker.getValue();
         if (date == null) {
-            alert.accept("Ошибка", "⚠️ Пожалуйста, выберите дату");
+            alert.accept(I18n.get("common.error"), I18n.get("holidays.selectDate"));
             return;
         }
         if (!workTimeService.addHoliday(date)) {
-            alert.accept("Внимание", "⚠️ Этот день уже добавлен как праздничный");
+            alert.accept(I18n.get("common.warning"), I18n.get("holidays.already"));
             return;
         }
         refreshList();
-        alert.accept("Успех", "✅ Праздничный день добавлен: " + DateUtils.formatDate(date));
+        alert.accept(I18n.get("common.success"), I18n.format("holidays.added", DateUtils.formatDate(date)));
     }
 
     private void removeHoliday() {
         String selected = holidayList.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            alert.accept("Внимание", "⚠️ Пожалуйста, выберите день для удаления");
+            alert.accept(I18n.get("common.warning"), I18n.get("holidays.selectForDelete"));
             return;
         }
         try {
             LocalDate date = DatePickerUtils.converter().fromString(selected);
             if (date == null) {
-                alert.accept("Ошибка", "⚠️ Не удалось удалить выбранный день");
+                alert.accept(I18n.get("common.error"), I18n.get("holidays.deleteError"));
                 return;
             }
             workTimeService.removeHoliday(date);
             refreshList();
-            alert.accept("Успех", "✅ Праздничный день удален: " + selected);
+            alert.accept(I18n.get("common.success"), I18n.format("holidays.deleted", selected));
         } catch (Exception ex) {
-            alert.accept("Ошибка", "⚠️ Не удалось удалить выбранный день");
+            alert.accept(I18n.get("common.error"), I18n.get("holidays.deleteError"));
         }
     }
 }

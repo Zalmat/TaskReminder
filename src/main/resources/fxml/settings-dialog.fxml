@@ -7,8 +7,8 @@
 <DialogPane fx:id="dialogPane"
             fx:controller="com.reminder.ui.controller.SettingsDialogController"
             xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-            prefWidth="560" prefHeight="340"
-            headerText="Настройки">
+            prefWidth="620" prefHeight="380"
+            headerText="%settings.header">
     <fx:define>
         <ToggleGroup fx:id="themeGroup"/>
     </fx:define>
@@ -20,20 +20,36 @@
                     <padding>
                         <Insets top="10" right="10" bottom="10" left="10"/>
                     </padding>
-                    <Label text="Тема:" style="-fx-font-weight: bold;"/>
-                    <RadioButton fx:id="lightRadio" text="Светлая" toggleGroup="$themeGroup"/>
-                    <RadioButton fx:id="darkRadio" text="Тёмная" toggleGroup="$themeGroup"/>
+                    <Label text="%settings.theme" style="-fx-font-weight: bold;"/>
+                    <RadioButton fx:id="lightRadio" text="%settings.theme.light" toggleGroup="$themeGroup"/>
+                    <RadioButton fx:id="darkRadio" text="%settings.theme.dark" toggleGroup="$themeGroup"/>
                 </VBox>
                 <VBox fx:id="generalPane" spacing="10">
                     <padding>
                         <Insets top="10" right="10" bottom="10" left="10"/>
                     </padding>
-                    <Label text="Тип работы по умолчанию:" style="-fx-font-weight: bold;"/>
+                    <Label text="%settings.defaultType" style="-fx-font-weight: bold;"/>
                     <ComboBox fx:id="typeChoice" maxWidth="Infinity"/>
-                    <CheckBox fx:id="autostartCheck"
-                              text="Запускать при входе в систему (свёрнутым в трей)"
-                              wrapText="true"/>
-                    <Button fx:id="openFolderButton" text="Открыть папку с программой" maxWidth="Infinity"/>
+                    <CheckBox fx:id="autostartCheck" text="%settings.autostart" wrapText="true"/>
+                    <Button fx:id="openFolderButton" text="%settings.openFolder" maxWidth="Infinity"/>
+                </VBox>
+                <VBox fx:id="languagePane" spacing="10">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding>
+                    <Label text="%settings.language.label" style="-fx-font-weight: bold;"/>
+                    <ComboBox fx:id="languageChoice" maxWidth="Infinity"/>
+                    <Label text="%settings.language.restartHint" styleClass="hint" wrapText="true"/>
+                    <Button fx:id="restartButton" text="%settings.language.restart"/>
+                    <Label fx:id="languageWarningLabel" wrapText="true"
+                           style="-fx-text-fill: #f44336;" managed="false" visible="false"/>
+                </VBox>
+                <VBox fx:id="exportPane" spacing="10">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding>
+                    <Label text="%settings.export.decimal" style="-fx-font-weight: bold;"/>
+                    <ComboBox fx:id="decimalChoice" maxWidth="Infinity"/>
                 </VBox>
             </StackPane>
         </HBox>

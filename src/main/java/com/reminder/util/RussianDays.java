@@ -1,8 +1,10 @@
 package com.reminder.util;
 
+import com.reminder.i18n.I18n;
+
 import java.time.DayOfWeek;
 
-/** Русские названия дней недели. */
+/** Названия дней недели (локализуются через {@link I18n}). */
 public final class RussianDays {
 
     private RussianDays() {
@@ -19,28 +21,12 @@ public final class RussianDays {
     }
 
     public static String fullName(int dayOfWeekValue) {
-        switch (dayOfWeekValue) {
-            case 1: return "Понедельник";
-            case 2: return "Вторник";
-            case 3: return "Среда";
-            case 4: return "Четверг";
-            case 5: return "Пятница";
-            case 6: return "Суббота";
-            case 7: return "Воскресенье";
-            default: return "";
-        }
+        return (dayOfWeekValue >= 1 && dayOfWeekValue <= 7)
+                ? I18n.get("day." + dayOfWeekValue + ".full") : "";
     }
 
     public static String shortName(int dayOfWeekValue) {
-        switch (dayOfWeekValue) {
-            case 1: return "Пн";
-            case 2: return "Вт";
-            case 3: return "Ср";
-            case 4: return "Чт";
-            case 5: return "Пт";
-            case 6: return "Сб";
-            case 7: return "Вс";
-            default: return "";
-        }
+        return (dayOfWeekValue >= 1 && dayOfWeekValue <= 7)
+                ? I18n.get("day." + dayOfWeekValue + ".short") : "";
     }
 }

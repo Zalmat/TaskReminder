@@ -1,5 +1,6 @@
 package com.reminder.ui.util;
 
+import com.reminder.i18n.I18n;
 import com.reminder.ui.theme.ThemeManager;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonBar;
@@ -39,18 +40,21 @@ public final class Dialogs {
         alert.setTitle(title);
         alert.setHeaderText(header);
         alert.setContentText(content);
-        ButtonType yesButton = new ButtonType("Да", ButtonBar.ButtonData.OK_DONE);
-        ButtonType noButton = new ButtonType("Нет", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType yesButton = new ButtonType(I18n.get("dialog.yes"), ButtonBar.ButtonData.OK_DONE);
+        ButtonType noButton = new ButtonType(I18n.get("dialog.no"), ButtonBar.ButtonData.CANCEL_CLOSE);
         alert.getButtonTypes().setAll(yesButton, noButton);
         ThemeManager.applyTo(alert.getDialogPane());
         return alert.showAndWait().orElse(noButton) == yesButton;
     }
 
-    /** Маршрутизирует по заголовку: «Ошибка»→error, «Внимание»→warn, иначе→info. */
+    /**
+     * Маршрутизирует по заголовку: «Ошибка»→error, «Внимание»→warn, иначе→info.
+     * Сравнение идёт с локализованными заголовками, поэтому не зависит от языка.
+     */
     public static void accept(String title, String content) {
-        if (title != null && title.startsWith("Ошибка")) {
+        if (title != null && title.equals(I18n.get("common.error"))) {
             error(title, content);
-        } else if (title != null && title.startsWith("Внимание")) {
+        } else if (title != null && title.equals(I18n.get("common.warning"))) {
             warn(title, content);
         } else {
             info(title, content);
@@ -60,7 +64,7 @@ public final class Dialogs {
     /** Собирает непустой текст, описывающий ошибку (message + цепочка причин). */
     public static String reason(Throwable t) {
         if (t == null) {
-            return "Неизвестная ошибка";
+            return I18n.get("error.unknown");
         }
         StringBuilder sb = new StringBuilder();
         for (Throwable c = t; c != null; c = c.getCause()) {

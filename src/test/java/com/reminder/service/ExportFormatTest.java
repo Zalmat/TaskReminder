@@ -3,21 +3,9 @@ package com.reminder.service;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ExportFormatTest {
-
-    @Test
-    void fromLabelMapsEveryLabel() {
-        for (ExportFormat format : ExportFormat.values()) {
-            assertEquals(format, ExportFormat.fromLabel(format.label()));
-        }
-    }
-
-    @Test
-    void fromLabelFallsBackToExcel() {
-        assertEquals(ExportFormat.EXCEL, ExportFormat.fromLabel(null));
-        assertEquals(ExportFormat.EXCEL, ExportFormat.fromLabel("неизвестный формат"));
-    }
 
     @Test
     void extensionsAndFilterNamesAreSet() {
@@ -26,6 +14,14 @@ class ExportFormatTest {
         assertEquals("json", ExportFormat.JSON.extension());
         assertEquals("yaml", ExportFormat.YAML.extension());
         assertEquals("xml", ExportFormat.XML.extension());
-        assertEquals("Excel файлы", ExportFormat.EXCEL.filterName());
+        assertEquals("format.filter.excel", ExportFormat.EXCEL.filterNameKey());
+    }
+
+    @Test
+    void labelsAreSet() {
+        for (ExportFormat format : ExportFormat.values()) {
+            assertTrue(format.label() != null && !format.label().isBlank());
+            assertTrue(format.filterNameKey().startsWith("format.filter."));
+        }
     }
 }

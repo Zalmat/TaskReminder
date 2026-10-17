@@ -1,5 +1,6 @@
 package com.reminder.ui.view;
 
+import com.reminder.i18n.I18n;
 import com.reminder.model.Reminder;
 import com.reminder.service.ReminderService;
 import com.reminder.ui.theme.ThemeManager;
@@ -28,8 +29,7 @@ public class ReminderUi {
     /** Инициализирует дефолтное напоминание и подписку на срабатывание. */
     public void setup() {
         if (reminderService.getReminders().isEmpty()) {
-            Reminder reminder = new Reminder(LocalTime.of(12, 0),
-                    "📋 Не забудьте заполнить отчет за первую половину дня!");
+            Reminder reminder = new Reminder(LocalTime.of(12, 0), I18n.get("reminder.default"));
             reminder.setRepeatDaily(true);
             reminderService.addReminder(reminder);
         }
@@ -39,16 +39,16 @@ public class ReminderUi {
     private void showDialog(Reminder reminder) {
         playSound();
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("⏰ Напоминание");
-        alert.setHeaderText("Время напоминания!");
+        alert.setTitle(I18n.get("reminder.popup.title"));
+        alert.setHeaderText(I18n.get("reminder.popup.header"));
         alert.setContentText(reminder.getText());
 
-        ButtonType snoozeButton = new ButtonType("Отложить");
-        ButtonType dismissButton = new ButtonType("Закрыть", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType snoozeButton = new ButtonType(I18n.get("reminder.snooze"));
+        ButtonType dismissButton = new ButtonType(I18n.get("button.close"), ButtonBar.ButtonData.CANCEL_CLOSE);
         alert.getButtonTypes().setAll(snoozeButton, dismissButton);
 
         Spinner<Integer> snoozeMinutes = new Spinner<>(10, 120, 10, 5);
-        VBox vbox = new VBox(10, new Label("Отложить на (минут):"), snoozeMinutes);
+        VBox vbox = new VBox(10, new Label(I18n.get("reminder.snoozeMinutes")), snoozeMinutes);
         vbox.setPadding(new Insets(10));
         alert.getDialogPane().setExpandableContent(vbox);
         ThemeManager.applyTo(alert.getDialogPane());

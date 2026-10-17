@@ -1,22 +1,22 @@
 package com.reminder.service;
 
-/** Форматы экспорта: подпись для UI, расширение файла и имя фильтра выбора файла. */
+/** Форматы экспорта: подпись для UI, расширение файла и ключ имени фильтра выбора файла. */
 public enum ExportFormat {
 
-    EXCEL("Excel (.xlsx)", "xlsx", "Excel файлы"),
-    CSV("CSV (.csv)", "csv", "CSV файлы"),
-    JSON("JSON (.json)", "json", "JSON файлы"),
-    YAML("YAML (.yaml)", "yaml", "YAML файлы"),
-    XML("XML (.xml)", "xml", "XML файлы");
+    EXCEL("Excel (.xlsx)", "xlsx", "format.filter.excel"),
+    CSV("CSV (.csv)", "csv", "format.filter.csv"),
+    JSON("JSON (.json)", "json", "format.filter.json"),
+    YAML("YAML (.yaml)", "yaml", "format.filter.yaml"),
+    XML("XML (.xml)", "xml", "format.filter.xml");
 
     private final String label;
     private final String extension;
-    private final String filterName;
+    private final String filterNameKey;
 
-    ExportFormat(String label, String extension, String filterName) {
+    ExportFormat(String label, String extension, String filterNameKey) {
         this.label = label;
         this.extension = extension;
-        this.filterName = filterName;
+        this.filterNameKey = filterNameKey;
     }
 
     public String label() {
@@ -27,19 +27,8 @@ public enum ExportFormat {
         return extension;
     }
 
-    public String filterName() {
-        return filterName;
-    }
-
-    /** Возвращает формат по подписи; при null или неизвестной подписи — {@link #EXCEL}. */
-    public static ExportFormat fromLabel(String label) {
-        if (label != null) {
-            for (ExportFormat format : values()) {
-                if (format.label.equals(label)) {
-                    return format;
-                }
-            }
-        }
-        return EXCEL;
+    /** Ключ локализованного имени фильтра выбора файла. */
+    public String filterNameKey() {
+        return filterNameKey;
     }
 }

@@ -11,6 +11,7 @@ predefined_tasks.json
 reminders.json
 holidays.json
 .taskreminder.lock
+/language/
 *.dat
 *.dat.legacy
 *.json.tmp

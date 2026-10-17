@@ -1,5 +1,6 @@
 package com.reminder.ui.component;
 
+import com.reminder.i18n.I18n;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.scene.control.Alert;
@@ -30,9 +31,9 @@ public class EasterEgg {
 
     private void showJoke() {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Пасхалка!");
-        alert.setHeaderText("Кто-то знатно заспамил кнопку...");
-        alert.setContentText("— Алло, это техподдержка?\n— Да.\n— Я тут 20 раз подряд нажал на текст, и у меня открылось это окно. Что мне делать?\n— Поздравляем, вы прошли тест на стрессоустойчивость!");
+        alert.setTitle(I18n.get("easteregg.title"));
+        alert.setHeaderText(I18n.get("easteregg.header"));
+        alert.setContentText(I18n.get("easteregg.content"));
         alert.showAndWait();
     }
 }

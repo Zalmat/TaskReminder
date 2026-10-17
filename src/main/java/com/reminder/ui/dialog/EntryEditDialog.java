@@ -1,5 +1,6 @@
 package com.reminder.ui.dialog;
 
+import com.reminder.i18n.I18n;
 import com.reminder.ui.theme.ThemeManager;
 import com.reminder.util.TaskValidationUtils;
 import javafx.collections.FXCollections;
@@ -34,7 +35,7 @@ public final class EntryEditDialog {
         dialog.setTitle(title);
         dialog.setHeaderText(header);
 
-        ButtonType saveType = new ButtonType("💾 Сохранить", ButtonBar.ButtonData.OK_DONE);
+        ButtonType saveType = new ButtonType(I18n.get("button.save"), ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);
 
         GridPane grid = new GridPane();
@@ -51,14 +52,14 @@ public final class EntryEditDialog {
         TextArea commentField = new TextArea(comment);
         commentField.setPrefRowCount(3);
 
-        grid.addRow(0, new Label("Проект:"), projectField);
-        grid.addRow(1, new Label("Задача:"), taskField);
-        grid.addRow(2, new Label("Тип работ:"), typeField);
+        grid.addRow(0, new Label(I18n.get("label.project")), projectField);
+        grid.addRow(1, new Label(I18n.get("label.task")), taskField);
+        grid.addRow(2, new Label(I18n.get("label.typeWork")), typeField);
         if (withHours) {
-            grid.addRow(3, new Label("Длительность (часы):"), hoursFieldDialog);
-            grid.addRow(4, new Label("Комментарий:"), commentField);
+            grid.addRow(3, new Label(I18n.get("label.hours")), hoursFieldDialog);
+            grid.addRow(4, new Label(I18n.get("label.comment")), commentField);
         } else {
-            grid.addRow(3, new Label("Комментарий:"), commentField);
+            grid.addRow(3, new Label(I18n.get("label.comment")), commentField);
         }
         dialog.getDialogPane().setContent(grid);
 

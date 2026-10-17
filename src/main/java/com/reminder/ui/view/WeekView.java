@@ -1,5 +1,6 @@
 package com.reminder.ui.view;
 
+import com.reminder.i18n.I18n;
 import com.reminder.model.Task;
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
@@ -90,9 +91,9 @@ public class WeekView {
         totalColumn.setCellFactory(c -> new WeekTotalCell());
 
         ContextMenu menu = new ContextMenu();
-        MenuItem editItem = new MenuItem("✏️ Редактировать задачу");
+        MenuItem editItem = new MenuItem(I18n.get("entry.editTask"));
         editItem.setOnAction(e -> edit());
-        MenuItem deleteItem = new MenuItem("🗑️ Удалить задачу");
+        MenuItem deleteItem = new MenuItem(I18n.get("entry.deleteTask"));
         deleteItem.setOnAction(e -> delete());
         menu.getItems().addAll(editItem, deleteItem);
         table.setContextMenu(menu);
@@ -150,17 +151,17 @@ public class WeekView {
             String comment = form.comment();
 
             if (project.isEmpty()) {
-                Dialogs.error("Ошибка", "⚠️ Пожалуйста, укажите проект");
+                Dialogs.error(I18n.get("common.error"), I18n.get("error.project"));
                 form.focusProject();
                 return;
             }
             if (taskName.isEmpty()) {
-                Dialogs.error("Ошибка", "⚠️ Пожалуйста, укажите задачу");
+                Dialogs.error(I18n.get("common.error"), I18n.get("error.task"));
                 form.focusTask();
                 return;
             }
             if (type == null || type.isEmpty()) {
-                Dialogs.error("Ошибка", "⚠️ Пожалуйста, выберите тип работы");
+                Dialogs.error(I18n.get("common.error"), I18n.get("error.type"));
                 form.focusType();
                 return;
             }
@@ -169,7 +170,7 @@ public class WeekView {
                 if (entry.getProject().equals(project)
                         && entry.getTaskName().equals(taskName)
                         && entry.getType().equals(type)) {
-                    Dialogs.warn("Внимание", "⚠️ Такая задача уже существует в этой неделе");
+                    Dialogs.warn(I18n.get("common.warning"), I18n.get("week.exists"));
                     return;
                 }
             }
@@ -187,9 +188,9 @@ public class WeekView {
             form.clear();
             updateTotals();
             table.refresh();
-            Dialogs.info("Успех", "✅ Задача добавлена! Введите часы в таблице (двойной клик).");
+            Dialogs.info(I18n.get("common.success"), I18n.get("success.taskAddedWeek"));
         } catch (Exception e) {
-            Dialogs.error("Ошибка", "❌ Произошла ошибка: " + e.getMessage());
+            Dialogs.error(I18n.get("common.error"), I18n.format("error.generic", e.getMessage()));
         }
     }
 
@@ -200,7 +201,7 @@ public class WeekView {
 
         com.reminder.ui.dialog.EntryEditDialog.EntryEditResult result =
                 com.reminder.ui.dialog.EntryEditDialog.show(
-                        "✏️ Редактировать задачу", "Измените данные задачи недели",
+                        I18n.get("entry.editTaskTitle"), I18n.get("entry.editTaskHeader"),
                         form.typeItems(),
                         selected.getProject(), selected.getTaskName(), selected.getType(),
                         null, selected.getComment(), false);
@@ -219,7 +220,7 @@ public class WeekView {
         updateTotals();
         highlightOvertimeDays();
         table.refresh();
-        Dialogs.info("Успех", "✅ Задача обновлена!");
+        Dialogs.info(I18n.get("common.success"), I18n.get("success.taskUpdated"));
     }
 
     /** Удаляет выбранную недельную задачу. */
@@ -227,8 +228,8 @@ public class WeekView {
         WeekEntry selected = table.getSelectionModel().getSelectedItem();
         if (selected == null) return;
 
-        if (Dialogs.confirm("Подтверждение удаления", "🗑️ Удалить задачу за неделю?",
-                String.format("%s - %s", selected.getProject(), selected.getTaskName()))) {
+        if (Dialogs.confirm(I18n.get("confirm.delete.title"), I18n.get("confirm.delete.taskWeek"),
+                I18n.format("confirm.delete.taskWeekContent", selected.getProject(), selected.getTaskName()))) {
             removeRecordsFor(selected);
             entries.remove(selected);
             updateTotals();
@@ -238,9 +239,9 @@ public class WeekView {
 
     /** Очищает все записи текущей недели. */
     public void clear() {
-        if (Dialogs.confirm("Подтверждение очистки",
-                "🗑️ Очистить все записи за неделю?",
-                "Это действие нельзя отменить!")) {
+        if (Dialogs.confirm(I18n.get("confirm.clear.title"),
+                I18n.get("confirm.clear.week"),
+                I18n.get("confirm.clear.content"))) {
             taskService.clearEntriesForDates(weekDays);
             entries.clear();
             updateTotals();
@@ -279,9 +280,9 @@ public class WeekView {
         if (!workTimeService.dayTotalWithinLimit(entries, day, newValue, oldValue)) {
             int busy = currentDayTotal - oldValue;
             int overtime = busy + newValue - (int) WorkTimeService.MAX_DAILY_HOURS;
-            boolean confirmed = Dialogs.yesNo("Переработка",
-                    String.format("Превышен лимит %.0f ч", WorkTimeService.MAX_DAILY_HOURS),
-                    String.format("Переработка %d ч. Зарегистрировать?", overtime));
+            boolean confirmed = Dialogs.yesNo(I18n.get("overtime.title"),
+                    I18n.format("overtime.limit", I18n.number(WorkTimeService.MAX_DAILY_HOURS, 0)),
+                    I18n.format("overtime.register", overtime));
             if (!confirmed) {
                 table.refresh();
                 return;
@@ -297,7 +298,8 @@ public class WeekView {
 
     private void updateTotals() {
         double weeklyTotal = workTimeService.getWeekTotal(entries);
-        String text = String.format("Неделя: %.1f / %.0f ч", weeklyTotal, WorkTimeService.MAX_WEEKLY_HOURS);
+        String text = I18n.format("main.weekTotal", I18n.number(weeklyTotal, 1),
+                I18n.number(WorkTimeService.MAX_WEEKLY_HOURS, 0));
         if (weeklyTotal > WorkTimeService.MAX_WEEKLY_HOURS) {
             totalLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: red;");
         } else {
@@ -401,7 +403,7 @@ public class WeekView {
         /** Показывает/скрывает тултип о превышении лимита на заголовке дня. */
         void setOvertimeTooltip(boolean show) {
             if (show && dayTooltip == null) {
-                dayTooltip = new Tooltip("Осторожно. Превышено количество рабочих часов");
+                dayTooltip = new Tooltip(I18n.get("week.overtimeTooltip"));
                 dayTooltip.setShowDelay(Duration.millis(250));
                 dayTooltip.setShowDuration(Duration.seconds(5));
                 dayTooltip.setHideDelay(Duration.millis(100));

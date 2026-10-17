@@ -8,25 +8,25 @@
             fx:controller="com.reminder.ui.controller.HolidaysDialogController"
             xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
             prefWidth="420" prefHeight="380"
-            headerText="Добавьте или удалите праздничные дни">
+            headerText="%holidays.header">
     <content>
         <VBox spacing="10">
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
 
-            <Label fx:id="countLabel" text="Праздничные дни (всего: 0):"/>
+            <Label fx:id="countLabel"/>
             <ListView fx:id="holidayList" VBox.vgrow="ALWAYS"/>
 
             <Separator/>
 
-            <Label text="Добавить праздничный день:"/>
+            <Label text="%holidays.addLabel"/>
             <HBox spacing="10" alignment="CENTER_LEFT">
                 <DatePicker fx:id="holidayPicker"/>
-                <Button fx:id="addHolidayButton" text="➕ Добавить"
+                <Button fx:id="addHolidayButton" text="%holidays.add"
                         style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
             </HBox>
-            <Button fx:id="deleteHolidayButton" text="🗑️ Удалить выбранный" maxWidth="Infinity"
+            <Button fx:id="deleteHolidayButton" text="%holidays.deleteSelected" maxWidth="Infinity"
                     style="-fx-background-color: #f44336; -fx-text-fill: white;"/>
         </VBox>
     </content>

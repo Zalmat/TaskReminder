@@ -1,5 +1,6 @@
 package com.reminder.ui.controller;
 
+import com.reminder.i18n.I18n;
 import com.reminder.model.WorkEntry;
 import com.reminder.service.ExportFormat;
 import com.reminder.service.ExportService;
@@ -17,6 +18,7 @@ import javafx.scene.control.DatePicker;
 import javafx.scene.control.DialogPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Window;
+import javafx.util.StringConverter;
 
 import java.io.File;
 import java.time.LocalDate;
@@ -30,7 +32,7 @@ public class ExportDialogController {
     @FXML private DialogPane dialogPane;
     @FXML private DatePicker startDate;
     @FXML private DatePicker endDate;
-    @FXML private ComboBox<String> formatChoice;
+    @FXML private ComboBox<ExportFormat> formatChoice;
 
     private TaskService taskService;
     private ExportService exportService;
@@ -56,12 +58,21 @@ public class ExportDialogController {
             endDate.setValue(currentDate);
         }
 
-        for (ExportFormat format : ExportFormat.values()) {
-            formatChoice.getItems().add(format.label());
-        }
-        formatChoice.setValue(ExportFormat.EXCEL.label());
+        formatChoice.getItems().setAll(ExportFormat.values());
+        formatChoice.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(ExportFormat format) {
+                return format == null ? "" : format.label();
+            }
 
-        ButtonType exportType = new ButtonType("Экспорт", ButtonBar.ButtonData.OK_DONE);
+            @Override
+            public ExportFormat fromString(String string) {
+                return null;
+            }
+        });
+        formatChoice.setValue(ExportFormat.EXCEL);
+
+        ButtonType exportType = new ButtonType(I18n.get("export.button"), ButtonBar.ButtonData.OK_DONE);
         dialogPane.getButtonTypes().setAll(exportType, ButtonType.CANCEL);
         Button exportButton = (Button) dialogPane.lookupButton(exportType);
         exportButton.addEventFilter(ActionEvent.ACTION, event -> {
@@ -74,26 +85,26 @@ public class ExportDialogController {
         LocalDate start = startDate.getValue();
         LocalDate end = endDate.getValue();
         if (start == null || end == null || start.isAfter(end)) {
-            alert.accept("Ошибка", "⚠️ Некорректный диапазон дат");
+            alert.accept(I18n.get("common.error"), I18n.get("export.invalidRange"));
             return;
         }
 
         List<WorkEntry> entries = taskService.getEntriesForDateRange(start, end);
         if (entries.isEmpty()) {
-            alert.accept("Внимание", "⚠️ Нет данных за выбранный период");
+            alert.accept(I18n.get("common.warning"), I18n.get("export.noData"));
             return;
         }
 
-        ExportFormat format = ExportFormat.fromLabel(formatChoice.getValue());
+        ExportFormat format = formatChoice.getValue() != null ? formatChoice.getValue() : ExportFormat.EXCEL;
         String dateRange = String.format("%s_%s",
                 start.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
                 end.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
         String timestamp = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
 
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Сохранить файл");
+        fileChooser.setTitle(I18n.get("export.saveTitle"));
         fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter(format.filterName(), "*." + format.extension()));
+                new FileChooser.ExtensionFilter(I18n.get(format.filterNameKey()), "*." + format.extension()));
         fileChooser.setInitialFileName(
                 String.format("work_report_%s_%s.%s", timestamp, dateRange, format.extension()));
 
@@ -107,10 +118,10 @@ public class ExportDialogController {
             }
             exportService.export(entries, format, filePath);
             closeDialog();
-            alert.accept("Успех", String.format("✅ Данные экспортированы!\n%d записей", entries.size()));
+            alert.accept(I18n.get("common.success"), I18n.format("export.success", entries.size()));
         } catch (Exception ex) {
             ex.printStackTrace();
-            alert.accept("Ошибка", "❌ Ошибка экспорта: " + Dialogs.reason(ex));
+            alert.accept(I18n.get("common.error"), I18n.format("export.error", Dialogs.reason(ex)));
         }
     }
 

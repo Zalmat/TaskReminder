@@ -1,5 +1,6 @@
 package com.reminder.ui.controller;
 
+import com.reminder.i18n.I18n;
 import com.reminder.model.Reminder;
 import com.reminder.service.ReminderService;
 import com.reminder.ui.util.Dialogs;
@@ -65,7 +66,7 @@ public class RemindersDialogController {
         toggleButton.setOnAction(e -> toggleActive());
 
         dialogPane.getButtonTypes().setAll(
-                new ButtonType("Закрыть", ButtonBar.ButtonData.CANCEL_CLOSE));
+                new ButtonType(I18n.get("button.close"), ButtonBar.ButtonData.CANCEL_CLOSE));
 
         refreshList();
     }
@@ -78,7 +79,7 @@ public class RemindersDialogController {
         LocalTime time = LocalTime.of(hourSpinner.getValue(), minuteSpinner.getValue());
         String text = textArea.getText();
         if (text == null || text.trim().isEmpty()) {
-            Dialogs.error("Ошибка", "⚠️ Введите текст напоминания");
+            Dialogs.error(I18n.get("common.error"), I18n.get("reminders.enterText"));
             return;
         }
         Reminder reminder = new Reminder(time, text.trim(), repeatCheckBox.isSelected());
@@ -86,21 +87,21 @@ public class RemindersDialogController {
         refreshList();
         textArea.clear();
         repeatCheckBox.setSelected(false);
-        Dialogs.info("Успех", "✅ Напоминание добавлено!");
+        Dialogs.info(I18n.get("common.success"), I18n.get("reminders.added"));
     }
 
     private void editReminder() {
         Reminder selected = remindersTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            Dialogs.warn("Внимание", "⚠️ Пожалуйста, выберите напоминание для редактирования");
+            Dialogs.warn(I18n.get("common.warning"), I18n.get("reminders.selectEdit"));
             return;
         }
 
         Dialog<Reminder> dialog = new Dialog<>();
-        dialog.setTitle("✏️ Редактирование напоминания");
-        dialog.setHeaderText("Измените данные напоминания");
+        dialog.setTitle(I18n.get("reminders.editTitle"));
+        dialog.setHeaderText(I18n.get("reminders.editHeader"));
 
-        ButtonType saveType = new ButtonType("💾 Сохранить", ButtonBar.ButtonData.OK_DONE);
+        ButtonType saveType = new ButtonType(I18n.get("button.save"), ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);
 
         GridPane grid = new GridPane();
@@ -116,13 +117,13 @@ public class RemindersDialogController {
 
         TextArea text = new TextArea(selected.getText());
         text.setPrefRowCount(3);
-        CheckBox repeat = new CheckBox("Повторять ежедневно");
+        CheckBox repeat = new CheckBox(I18n.get("reminders.repeat"));
         repeat.setSelected(selected.isRepeatDaily());
-        CheckBox active = new CheckBox("Активно");
+        CheckBox active = new CheckBox(I18n.get("reminders.active"));
         active.setSelected(selected.isActive());
 
-        grid.addRow(0, new Label("Время:"), timeBox);
-        grid.addRow(1, new Label("Текст:"), text);
+        grid.addRow(0, new Label(I18n.get("reminders.label.time")), timeBox);
+        grid.addRow(1, new Label(I18n.get("reminders.label.text")), text);
         grid.addRow(2, new Label(""), repeat);
         grid.addRow(3, new Label(""), active);
         dialog.getDialogPane().setContent(grid);
@@ -131,7 +132,7 @@ public class RemindersDialogController {
             if (dialogButton != saveType) return null;
             String txt = text.getText();
             if (txt == null || txt.trim().isEmpty()) {
-                Dialogs.error("Ошибка", "⚠️ Введите текст напоминания");
+                Dialogs.error(I18n.get("common.error"), I18n.get("reminders.enterText"));
                 return null;
             }
             selected.setTime(LocalTime.of(hour.getValue(), minute.getValue()));
@@ -144,18 +145,18 @@ public class RemindersDialogController {
         dialog.showAndWait().ifPresent(r -> {
             reminderService.updateReminder(r);
             refreshList();
-            Dialogs.info("Успех", "✅ Напоминание обновлено!");
+            Dialogs.info(I18n.get("common.success"), I18n.get("reminders.updated"));
         });
     }
 
     private void deleteReminder() {
         Reminder selected = remindersTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            Dialogs.warn("Внимание", "⚠️ Пожалуйста, выберите напоминание для удаления");
+            Dialogs.warn(I18n.get("common.warning"), I18n.get("reminders.selectDelete"));
             return;
         }
-        if (Dialogs.confirm("Подтверждение удаления", "🗑️ Удалить напоминание?",
-                String.format("Время: %s\nТекст: %s",
+        if (Dialogs.confirm(I18n.get("confirm.delete.title"), I18n.get("reminders.deleteConfirm"),
+                I18n.format("reminders.deleteContent",
                         selected.getFormattedTime(), selected.getText()))) {
             reminderService.removeReminder(selected);
             refreshList();
@@ -165,7 +166,7 @@ public class RemindersDialogController {
     private void toggleActive() {
         Reminder selected = remindersTable.getSelectionModel().getSelectedItem();
         if (selected == null) {
-            Dialogs.warn("Внимание", "⚠️ Пожалуйста, выберите напоминание");
+            Dialogs.warn(I18n.get("common.warning"), I18n.get("reminders.selectToggle"));
             return;
         }
         selected.setActive(!selected.isActive());

@@ -1,5 +1,6 @@
 package com.reminder.ui.controller;
 
+import com.reminder.i18n.I18n;
 import com.reminder.model.Task;
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
@@ -223,47 +224,52 @@ public class MainController {
     private void openRemindersDialog() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/reminders-dialog.fxml"));
+            loader.setResources(I18n.bundle());
             DialogPane pane = loader.load();
             RemindersDialogController ctrl = loader.getController();
             ctrl.init(reminderService);
             ThemeManager.applyTo(pane);
 
             Dialog<Void> dialog = new Dialog<>();
-            dialog.setTitle("⏰ Управление напоминаниями");
+            dialog.setTitle(I18n.get("dialog.reminders.title"));
             dialog.setDialogPane(pane);
             dialog.showAndWait();
         } catch (IOException e) {
-            Dialogs.error("Ошибка", "❌ Не удалось открыть окно напоминаний: " + Dialogs.reason(e));
+            Dialogs.error(I18n.get("common.error"),
+                    I18n.format("dialog.reminders.error", Dialogs.reason(e)));
         }
     }
 
     private void openExportDialog() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/export-dialog.fxml"));
+            loader.setResources(I18n.bundle());
             DialogPane pane = loader.load();
             ExportDialogController ctrl = loader.getController();
             ctrl.init(taskService, exportService, datePicker.getValue(), isWeekView, datePicker.getScene().getWindow(), Dialogs::accept);
             ThemeManager.applyTo(pane);
 
             Dialog<Void> dialog = new Dialog<>();
-            dialog.setTitle("📊 Экспорт данных");
+            dialog.setTitle(I18n.get("dialog.export.title"));
             dialog.setDialogPane(pane);
             dialog.showAndWait();
         } catch (IOException e) {
-            Dialogs.error("Ошибка", "❌ Не удалось открыть окно экспорта: " + Dialogs.reason(e));
+            Dialogs.error(I18n.get("common.error"),
+                    I18n.format("dialog.export.error", Dialogs.reason(e)));
         }
     }
 
     private void openHolidaysDialog() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/holidays-dialog.fxml"));
+            loader.setResources(I18n.bundle());
             DialogPane pane = loader.load();
             HolidaysDialogController ctrl = loader.getController();
             ctrl.init(workTimeService, Dialogs::accept);
             ThemeManager.applyTo(pane);
 
             Dialog<Void> dialog = new Dialog<>();
-            dialog.setTitle("📅 Управление праздничными днями");
+            dialog.setTitle(I18n.get("dialog.holidays.title"));
             dialog.setDialogPane(pane);
             dialog.showAndWait();
 
@@ -271,7 +277,8 @@ public class MainController {
                 weekView.update(datePicker.getValue());
             }
         } catch (IOException e) {
-            Dialogs.error("Ошибка", "❌ Не удалось открыть окно праздников: " + Dialogs.reason(e));
+            Dialogs.error(I18n.get("common.error"),
+                    I18n.format("dialog.holidays.error", Dialogs.reason(e)));
         }
     }
 
@@ -280,16 +287,18 @@ public class MainController {
     private void openSettingsDialog() {
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/settings-dialog.fxml"));
+            loader.setResources(I18n.bundle());
             DialogPane pane = loader.load();
             SettingsDialogController ctrl = loader.getController();
             ctrl.init(datePicker.getScene(), form.typeItems());
 
             Dialog<Void> dialog = new Dialog<>();
-            dialog.setTitle("⚙ Настройки");
+            dialog.setTitle(I18n.get("dialog.settings.title"));
             dialog.setDialogPane(pane);
             dialog.showAndWait();
         } catch (IOException e) {
-            Dialogs.error("Ошибка", "❌ Не удалось открыть окно настроек: " + Dialogs.reason(e));
+            Dialogs.error(I18n.get("common.error"),
+                    I18n.format("dialog.settings.error", Dialogs.reason(e)));
         }
     }
 
@@ -297,9 +306,9 @@ public class MainController {
 
     private void loadTasksFromYaml() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Выберите YAML файл с задачами");
+        fileChooser.setTitle(I18n.get("yaml.chooseTitle"));
         fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("YAML файлы", "*.yaml", "*.yml"));
+                new FileChooser.ExtensionFilter(I18n.get("yaml.filter"), "*.yaml", "*.yml"));
 
         File file = fileChooser.showOpenDialog(datePicker.getScene().getWindow());
         if (file == null) return;
@@ -307,24 +316,24 @@ public class MainController {
         try {
             List<Task> tasks = yamlLoaderService.loadTasksFromYaml(file.getAbsolutePath());
             if (tasks.isEmpty()) {
-                Dialogs.warn("Внимание", "⚠️ Файл не содержит задач");
+                Dialogs.warn(I18n.get("common.warning"), I18n.get("yaml.empty"));
                 return;
             }
             for (Task task : tasks) {
                 taskService.addPredefinedTask(task);
             }
             form.refreshChoices(taskService);
-            Dialogs.info("Успех", String.format("✅ Загружено %d задач!", tasks.size()));
+            Dialogs.info(I18n.get("common.success"), I18n.format("yaml.loaded", tasks.size()));
         } catch (Exception e) {
-            Dialogs.error("Ошибка", "❌ Не удалось загрузить файл: " + e.getMessage());
+            Dialogs.error(I18n.get("common.error"), I18n.format("yaml.loadError", e.getMessage()));
         }
     }
 
     private void downloadYamlTemplate() {
         FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle("Сохранить шаблон YAML");
+        fileChooser.setTitle(I18n.get("yaml.saveTitle"));
         fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("YAML файлы", "*.yaml", "*.yml"));
+                new FileChooser.ExtensionFilter(I18n.get("yaml.filter"), "*.yaml", "*.yml"));
         fileChooser.setInitialFileName("tasks-template.yaml");
 
         File file = fileChooser.showSaveDialog(datePicker.getScene().getWindow());
@@ -332,9 +341,9 @@ public class MainController {
 
         try {
             Files.writeString(file.toPath(), YamlTemplate.content(), StandardCharsets.UTF_8);
-            Dialogs.info("Успех", "✅ Шаблон сохранен: " + file.getName());
+            Dialogs.info(I18n.get("common.success"), I18n.format("yaml.saved", file.getName()));
         } catch (Exception e) {
-            Dialogs.error("Ошибка", "❌ Не удалось сохранить шаблон: " + e.getMessage());
+            Dialogs.error(I18n.get("common.error"), I18n.format("yaml.saveError", e.getMessage()));
         }
     }
 

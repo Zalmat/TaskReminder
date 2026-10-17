@@ -1,5 +1,6 @@
 package com.reminder.ui;
 
+import com.reminder.i18n.I18n;
 import com.reminder.model.UpdateInfo;
 import com.reminder.service.UpdateCheckService;
 import com.reminder.ui.util.Dialogs;
@@ -35,12 +36,12 @@ public class UpdateCheckUi {
     private void handleUpdateResult(UpdateInfo update, boolean manual) {
         if (update.failed()) {
             if (manual) {
-                Dialogs.warn("Обновления", "⚠ Не удалось проверить обновления (нет интернета или проблема с GitHub API).");
+                Dialogs.warn(I18n.get("updates.title"), I18n.get("updates.checkFailed"));
             }
         } else if (update.newer()) {
             showUpdateDialog(update, manual);
         } else if (manual) {
-            Dialogs.info("Обновления", "✅ У вас установлена актуальная версия v" + VersionInfo.load().version());
+            Dialogs.info(I18n.get("updates.title"), I18n.format("updates.actual", VersionInfo.load().version()));
         }
     }
 
@@ -53,22 +54,22 @@ public class UpdateCheckUi {
         prefs.put("lastSeenVersion", latestKey);
 
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setTitle("Доступно обновление");
-        alert.setHeaderText("Доступна новая версия " + latestKey);
+        alert.setTitle(I18n.get("updates.available.title"));
+        alert.setHeaderText(I18n.format("updates.available.header", latestKey));
         String current = "v" + VersionInfo.load().version();
-        alert.setContentText("Текущая версия: " + current + "\nНовая версия: " + latestKey);
+        alert.setContentText(I18n.format("updates.available.content", current, latestKey));
 
-        ButtonType downloadButton = new ButtonType("Скачать zip", ButtonBar.ButtonData.OK_DONE);
-        ButtonType releaseButton = new ButtonType("Открыть релиз");
-        ButtonType folderButton = new ButtonType("Открыть папку с программой");
-        ButtonType closeButton = new ButtonType("Закрыть", ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType downloadButton = new ButtonType(I18n.get("updates.download"), ButtonBar.ButtonData.OK_DONE);
+        ButtonType releaseButton = new ButtonType(I18n.get("updates.openRelease"));
+        ButtonType folderButton = new ButtonType(I18n.get("updates.openFolder"));
+        ButtonType closeButton = new ButtonType(I18n.get("button.close"), ButtonBar.ButtonData.CANCEL_CLOSE);
         alert.getButtonTypes().setAll(downloadButton, releaseButton, folderButton, closeButton);
 
         Button folder = (Button) alert.getDialogPane().lookupButton(folderButton);
         boolean folderAvailable = ProgramFolder.isAvailable();
         folder.setDisable(!folderAvailable);
         if (!folderAvailable) {
-            folder.setTooltip(new Tooltip("Доступно только в собранной версии"));
+            folder.setTooltip(new Tooltip(I18n.get("settings.packagedOnly")));
         }
 
         Optional<ButtonType> result = alert.showAndWait();
@@ -86,13 +87,13 @@ public class UpdateCheckUi {
 
     private void openLink(String url) {
         if (url == null || url.isEmpty()) {
-            Dialogs.error("Ошибка", "Ссылка недоступна");
+            Dialogs.error(I18n.get("common.error"), I18n.get("error.link"));
             return;
         }
         try {
             Desktop.getDesktop().browse(URI.create(url));
         } catch (Exception e) {
-            Dialogs.error("Ошибка", "Не удалось открыть ссылку: " + e.getMessage());
+            Dialogs.error(I18n.get("common.error"), I18n.format("error.openLink", e.getMessage()));
         }
     }
 }

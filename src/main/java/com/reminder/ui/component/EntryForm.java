@@ -1,5 +1,6 @@
 package com.reminder.ui.component;
 
+import com.reminder.i18n.I18n;
 import com.reminder.service.TaskService;
 import com.reminder.settings.AppSettings;
 import com.reminder.util.TaskValidationUtils;
@@ -29,8 +30,9 @@ public class EntryForm {
 
     public void loadTypeChoices() {
         typeChoice.getItems().addAll(
-                "Разработка", "Тестирование", "Дизайн", "Аналитика",
-                "Управление", "Коммуникация", "Другое");
+                I18n.get("worktype.development"), I18n.get("worktype.testing"), I18n.get("worktype.design"),
+                I18n.get("worktype.analytics"), I18n.get("worktype.management"),
+                I18n.get("worktype.communication"), I18n.get("worktype.other"));
         typeChoice.setValue(defaultType());
     }
 
@@ -60,8 +62,8 @@ public class EntryForm {
         typeChoice.setValue(defaultType());
         projectChoice.setValue(null);
         taskChoice.setValue(null);
-        projectChoice.setPromptText("Введите или выберите проект");
-        taskChoice.setPromptText("Введите или выберите задачу");
+        projectChoice.setPromptText(I18n.get("main.prompt.project"));
+        taskChoice.setPromptText(I18n.get("main.prompt.task"));
     }
 
     public String project() {
@@ -106,6 +108,6 @@ public class EntryForm {
 
     private static String defaultType() {
         String type = AppSettings.defaultType();
-        return (type == null || type.isBlank()) ? AppSettings.DEFAULT_WORK_TYPE : type;
+        return (type == null || type.isBlank()) ? I18n.get("worktype.development") : type;
     }
 }

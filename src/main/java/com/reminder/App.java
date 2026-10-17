@@ -2,6 +2,7 @@ package com.reminder;
 
 import com.reminder.app.SingleInstanceLock;
 import com.reminder.autostart.AutoStartService;
+import com.reminder.i18n.I18n;
 import com.reminder.ui.TrayService;
 import com.reminder.ui.controller.MainController;
 import com.reminder.ui.theme.ThemeManager;
@@ -14,8 +15,6 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
-import java.util.Locale;
-
 public class App extends Application {
 
     private MainController mainController;
@@ -25,20 +24,21 @@ public class App extends Application {
     public void start(Stage primaryStage) {
         if (!SingleInstanceLock.acquire()) {
             if (!getParameters().getRaw().contains("--minimized")) {
-                Dialogs.info("Запуск", "Приложение уже запущено (возможно, свёрнуто в трей).");
+                Dialogs.info(I18n.get("app.startup.title"), I18n.get("app.startup.alreadyRunning"));
             }
             Platform.exit();
             return;
         }
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main-view.fxml"));
+            loader.setResources(I18n.bundle());
             Parent root = loader.load();
             mainController = loader.getController();
 
             Scene scene = new Scene(root, 1200, 800);
             ThemeManager.apply(scene);
 
-            primaryStage.setTitle("📋 Напоминалка - Учет рабочего времени  v" + VersionInfo.load().version());
+            primaryStage.setTitle(I18n.get("app.title") + "  v" + VersionInfo.load().version());
             primaryStage.setScene(scene);
             primaryStage.setMinWidth(1000);
             primaryStage.setMinHeight(700);
@@ -57,14 +57,19 @@ public class App extends Application {
 
             setupTray(primaryStage);
 
+            if (I18n.hasStartupWarning()) {
+                Dialogs.warn(I18n.get("settings.language.warning.title"),
+                        I18n.format("settings.language.warning.text", I18n.startupWarningDetail()));
+            }
+
             if (startMinimized && tray != null) {
-                tray.showMessage("Напоминалка", "Приложение запущено в трее");
+                tray.showMessage(I18n.get("app.tray.caption"), I18n.get("app.tray.startedMinimized"));
             } else {
                 primaryStage.show();
             }
         } catch (Exception e) {
             System.err.println("Ошибка запуска: " + Dialogs.reason(e));
-            Dialogs.error("Ошибка запуска", Dialogs.reason(e));
+            Dialogs.error(I18n.get("app.startError.title"), Dialogs.reason(e));
         }
     }
 
@@ -81,7 +86,7 @@ public class App extends Application {
                 Platform.runLater(() -> {
                     primaryStage.hide();
                     if (tray != null) {
-                        tray.showMessage("Напоминалка", "Приложение свёрнуто в трей");
+                        tray.showMessage(I18n.get("app.tray.caption"), I18n.get("app.tray.minimized"));
                     }
                 });
             }
@@ -89,7 +94,8 @@ public class App extends Application {
     }
 
     private void quit() {
-        if (Dialogs.confirm("Выход", "Вы уверены, что хотите выйти?", "Все данные будут сохранены.")) {
+        if (Dialogs.confirm(I18n.get("app.quit.title"),
+                I18n.get("app.quit.header"), I18n.get("app.quit.content"))) {
             if (mainController != null) {
                 mainController.shutdown();
             }
@@ -103,8 +109,8 @@ public class App extends Application {
 
     @SuppressWarnings("unused")
     public static void main(String[] args) {
-        // Фиксируем русскую локаль, чтобы форматирование и начало недели были стабильными.
-        Locale.setDefault(Locale.forLanguageTag("ru-RU"));
+        // Инициализация локализации: читает сохранённый язык и фиксирует локаль до старта JavaFX.
+        I18n.init();
         launch(args);
     }
 }

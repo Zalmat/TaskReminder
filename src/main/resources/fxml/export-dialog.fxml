@@ -8,17 +8,17 @@
             fx:controller="com.reminder.ui.controller.ExportDialogController"
             xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
             prefWidth="430"
-            headerText="Выберите период и формат для экспорта">
+            headerText="%export.header">
     <content>
         <GridPane hgap="10" vgap="15">
             <padding>
                 <Insets top="20" right="20" bottom="20" left="20"/>
             </padding>
-            <Label text="Начало:" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
+            <Label text="%export.start" GridPane.rowIndex="0" GridPane.columnIndex="0"/>
             <DatePicker fx:id="startDate" GridPane.rowIndex="0" GridPane.columnIndex="1"/>
-            <Label text="Конец:" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
+            <Label text="%export.end" GridPane.rowIndex="1" GridPane.columnIndex="0"/>
             <DatePicker fx:id="endDate" GridPane.rowIndex="1" GridPane.columnIndex="1"/>
-            <Label text="Формат:" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
+            <Label text="%export.format" GridPane.rowIndex="2" GridPane.columnIndex="0"/>
             <ComboBox fx:id="formatChoice" GridPane.rowIndex="2" GridPane.columnIndex="1"/>
         </GridPane>
     </content>

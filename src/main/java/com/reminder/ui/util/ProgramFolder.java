@@ -1,6 +1,7 @@
 package com.reminder.ui.util;
 
 import com.reminder.autostart.LauncherPath;
+import com.reminder.i18n.I18n;
 
 import java.awt.Desktop;
 import java.io.IOException;
@@ -22,7 +23,7 @@ public final class ProgramFolder {
     public static void open() {
         Optional<Path> directory = LauncherPath.programDirectory();
         if (directory.isEmpty()) {
-            Dialogs.warn("Недоступно", "Доступно только в собранной версии");
+            Dialogs.warn(I18n.get("folder.unavailable.title"), I18n.get("settings.packagedOnly"));
             return;
         }
         Path folder = directory.get();
@@ -32,7 +33,7 @@ public final class ProgramFolder {
         if (openWithCommand(folder)) {
             return;
         }
-        Dialogs.error("Ошибка", "Не удалось открыть папку с программой");
+        Dialogs.error(I18n.get("common.error"), I18n.get("folder.error"));
     }
 
     private static boolean openWithDesktop(Path folder) {

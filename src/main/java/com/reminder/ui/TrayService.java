@@ -1,5 +1,6 @@
 package com.reminder.ui;
 
+import com.reminder.i18n.I18n;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 
@@ -32,15 +33,15 @@ public class TrayService {
         }
 
         PopupMenu menu = new PopupMenu();
-        MenuItem openItem = new MenuItem("Открыть");
+        MenuItem openItem = new MenuItem(I18n.get("tray.open"));
         openItem.addActionListener(e -> restore(stage));
-        MenuItem quitItem = new MenuItem("Выход");
+        MenuItem quitItem = new MenuItem(I18n.get("tray.exit"));
         quitItem.addActionListener(e -> Platform.runLater(onQuit));
         menu.add(openItem);
         menu.addSeparator();
         menu.add(quitItem);
 
-        trayIcon = new TrayIcon(createTrayImage(), "Напоминалка", menu);
+        trayIcon = new TrayIcon(createTrayImage(), I18n.get("app.tray.caption"), menu);
         trayIcon.setImageAutoSize(true);
         trayIcon.addMouseListener(new MouseAdapter() {
             @Override

@@ -1,5 +1,6 @@
 package com.reminder.ui.view;
 
+import com.reminder.i18n.I18n;
 import com.reminder.model.Task;
 import com.reminder.model.WorkEntry;
 import com.reminder.service.TaskService;
@@ -86,9 +87,9 @@ public class DayView {
         commentColumn.setCellFactory(c -> TableCells.wrapping());
 
         ContextMenu menu = new ContextMenu();
-        MenuItem editItem = new MenuItem("✏️ Редактировать");
+        MenuItem editItem = new MenuItem(I18n.get("entry.edit"));
         editItem.setOnAction(e -> edit());
-        MenuItem deleteItem = new MenuItem("🗑️ Удалить");
+        MenuItem deleteItem = new MenuItem(I18n.get("entry.delete"));
         deleteItem.setOnAction(e -> delete());
         menu.getItems().addAll(editItem, deleteItem);
         table.setContextMenu(menu);
@@ -103,14 +104,14 @@ public class DayView {
         double remaining = workTimeService.getRemainingForDay(dayEntries, date);
 
         String bold = "-fx-font-weight: bold; -fx-font-size: 14px;";
-        totalLabel.setText(String.format("Загружено: %.1f ч", total));
+        totalLabel.setText(I18n.format("main.total", I18n.number(total, 1)));
         if (remaining < 0) {
-            remainingLabel.setText("Осталось: 0,0 ч");
+            remainingLabel.setText(I18n.format("main.remaining", I18n.number(0, 1)));
             remainingLabel.setStyle(bold + "-fx-text-fill: orange;");
-            overtimeLabel.setText(String.format("Переработка: %.1f ч", -remaining));
+            overtimeLabel.setText(I18n.format("main.overtime", I18n.number(-remaining, 1)));
             overtimeLabel.setStyle(bold + "-fx-text-fill: red;");
         } else {
-            remainingLabel.setText(String.format("Осталось: %.1f ч", remaining));
+            remainingLabel.setText(I18n.format("main.remaining", I18n.number(remaining, 1)));
             remainingLabel.setStyle(bold + "-fx-text-fill: " + (remaining < 1 ? "orange" : "green") + ";");
             overtimeLabel.setText("");
             overtimeLabel.setStyle("");
@@ -127,22 +128,22 @@ public class DayView {
             String comment = form.comment();
 
             if (project.isEmpty()) {
-                Dialogs.error("Ошибка", "⚠️ Пожалуйста, укажите проект");
+                Dialogs.error(I18n.get("common.error"), I18n.get("error.project"));
                 form.focusProject();
                 return;
             }
             if (taskName.isEmpty()) {
-                Dialogs.error("Ошибка", "⚠️ Пожалуйста, укажите задачу");
+                Dialogs.error(I18n.get("common.error"), I18n.get("error.task"));
                 form.focusTask();
                 return;
             }
             if (type == null || type.isEmpty()) {
-                Dialogs.error("Ошибка", "⚠️ Пожалуйста, выберите тип работы");
+                Dialogs.error(I18n.get("common.error"), I18n.get("error.type"));
                 form.focusType();
                 return;
             }
             if (hoursText.isEmpty()) {
-                Dialogs.error("Ошибка", "⚠️ Пожалуйста, укажите длительность");
+                Dialogs.error(I18n.get("common.error"), I18n.get("error.duration"));
                 form.focusHours();
                 return;
             }
@@ -151,12 +152,12 @@ public class DayView {
             try {
                 hours = Integer.parseInt(hoursText);
             } catch (NumberFormatException e) {
-                Dialogs.error("Ошибка", "⚠️ Длительность должна быть целым числом");
+                Dialogs.error(I18n.get("common.error"), I18n.get("error.durationInt"));
                 form.focusHours();
                 return;
             }
             if (hours <= 0 || hours > 24) {
-                Dialogs.error("Ошибка", "⚠️ Длительность должна быть от 1 до 24 часов");
+                Dialogs.error(I18n.get("common.error"), I18n.get("error.durationRange"));
                 form.focusHours();
                 return;
             }
@@ -167,9 +168,9 @@ public class DayView {
             double currentTotal = taskService.getTotalHoursForDate(date);
             if (workTimeService.wouldExceedDayLimit(taskService.getEntriesForDate(date), date, hours)) {
                 int overtime = (int) (currentTotal + hours) - (int) WorkTimeService.MAX_DAILY_HOURS;
-                allowOvertime = Dialogs.yesNo("Переработка",
-                        String.format("Превышен лимит %.0f ч", WorkTimeService.MAX_DAILY_HOURS),
-                        String.format("Переработка %d ч. Зарегистрировать?", overtime));
+                allowOvertime = Dialogs.yesNo(I18n.get("overtime.title"),
+                        I18n.format("overtime.limit", I18n.number(WorkTimeService.MAX_DAILY_HOURS, 0)),
+                        I18n.format("overtime.register", overtime));
                 if (!allowOvertime) {
                     return;
                 }
@@ -184,10 +185,10 @@ public class DayView {
                 form.refreshChoices(taskService);
                 form.clear();
                 update(date);
-                Dialogs.info("Успех", "✅ Работа добавлена!");
+                Dialogs.info(I18n.get("common.success"), I18n.get("success.workAdded"));
             }
         } catch (Exception e) {
-            Dialogs.error("Ошибка", "❌ Произошла ошибка: " + e.getMessage());
+            Dialogs.error(I18n.get("common.error"), I18n.format("error.generic", e.getMessage()));
         }
     }
 
@@ -198,7 +199,7 @@ public class DayView {
 
         com.reminder.ui.dialog.EntryEditDialog.EntryEditResult result =
                 com.reminder.ui.dialog.EntryEditDialog.show(
-                        "✏️ Редактировать запись", "Измените данные записи",
+                        I18n.get("entry.editTitle"), I18n.get("entry.editHeader"),
                         form.typeItems(),
                         selected.getProject(), selected.getTaskName(), selected.getType(),
                         String.valueOf((int) selected.getHours()), selected.getComment(), true);
@@ -208,11 +209,11 @@ public class DayView {
         try {
             hours = Integer.parseInt(result.hours());
         } catch (NumberFormatException e) {
-            Dialogs.error("Ошибка", "⚠️ Длительность должна быть целым числом");
+            Dialogs.error(I18n.get("common.error"), I18n.get("error.durationInt"));
             return;
         }
         if (hours <= 0 || hours > 24) {
-            Dialogs.error("Ошибка", "⚠️ Длительность должна быть от 1 до 24 часов");
+            Dialogs.error(I18n.get("common.error"), I18n.get("error.durationRange"));
             return;
         }
 
@@ -227,9 +228,9 @@ public class DayView {
         double newTotal = otherTotal + hours;
         if (newTotal > WorkTimeService.MAX_DAILY_HOURS && newTotal > currentTotal) {
             int overtime = (int) newTotal - (int) WorkTimeService.MAX_DAILY_HOURS;
-            allowOvertime = Dialogs.yesNo("Переработка",
-                    String.format("Превышен лимит %.0f ч", WorkTimeService.MAX_DAILY_HOURS),
-                    String.format("Переработка %d ч. Зарегистрировать?", overtime));
+            allowOvertime = Dialogs.yesNo(I18n.get("overtime.title"),
+                    I18n.format("overtime.limit", I18n.number(WorkTimeService.MAX_DAILY_HOURS, 0)),
+                    I18n.format("overtime.register", overtime));
             if (!allowOvertime) {
                 return;
             }
@@ -239,9 +240,9 @@ public class DayView {
             taskService.addPredefinedTask(new Task(result.project(), result.taskName(), result.type()));
             form.refreshChoices(taskService);
             update(selected.getDate());
-            Dialogs.info("Успех", "✅ Запись обновлена!");
+            Dialogs.info(I18n.get("common.success"), I18n.get("success.entryUpdated"));
         } else {
-            Dialogs.error("Ошибка", "⚠️ Не удалось сохранить");
+            Dialogs.error(I18n.get("common.error"), I18n.get("error.save"));
         }
     }
 
@@ -250,9 +251,10 @@ public class DayView {
         WorkEntry selected = table.getSelectionModel().getSelectedItem();
         if (selected == null) return;
 
-        if (Dialogs.confirm("Подтверждение удаления", "🗑️ Удалить запись?",
-                String.format("%s - %s (%.0f ч)",
-                        selected.getProject(), selected.getTaskName(), selected.getHours()))) {
+        if (Dialogs.confirm(I18n.get("confirm.delete.title"), I18n.get("confirm.delete.entry"),
+                I18n.format("confirm.delete.entryContent",
+                        selected.getProject(), selected.getTaskName(),
+                        I18n.number(selected.getHours(), 0)))) {
             taskService.removeWorkEntry(selected);
             update(selected.getDate());
         }
@@ -263,9 +265,9 @@ public class DayView {
         LocalDate date = datePicker.getValue();
         if (date == null) return;
 
-        if (Dialogs.confirm("Подтверждение очистки",
-                "🗑️ Очистить все записи за " + DateUtils.formatDate(date) + "?",
-                "Это действие нельзя отменить!")) {
+        if (Dialogs.confirm(I18n.get("confirm.clear.title"),
+                I18n.format("confirm.clear.day", DateUtils.formatDate(date)),
+                I18n.get("confirm.clear.content"))) {
             taskService.clearEntriesForDate(date);
             update(date);
         }

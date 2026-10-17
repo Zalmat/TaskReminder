@@ -1,6 +1,9 @@
 package com.reminder.service;
 
+import com.reminder.i18n.I18n;
 import com.reminder.model.WorkEntry;
+import com.reminder.settings.AppSettings;
+import com.reminder.settings.DecimalSeparator;
 import com.reminder.util.DateUtils;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -50,7 +53,7 @@ public class ExportService {
 
     public void exportToExcel(List<WorkEntry> entries, String filePath) throws IOException {
         try (Workbook workbook = new XSSFWorkbook()) {
-            Sheet sheet = workbook.createSheet("Рабочее время");
+            Sheet sheet = workbook.createSheet(I18n.get("export.sheet"));
 
             CellStyle headerStyle = workbook.createCellStyle();
             Font headerFont = workbook.createFont();
@@ -65,7 +68,10 @@ public class ExportService {
             headerStyle.setBorderRight(BorderStyle.THIN);
 
             Row headerRow = sheet.createRow(0);
-            String[] headers = {"Дата", "День недели", "Проект", "Задача", "Тип", "Часы", "Комментарий"};
+            String[] headers = {
+                    I18n.get("column.date"), I18n.get("column.day"), I18n.get("column.project"),
+                    I18n.get("column.task"), I18n.get("column.type"), I18n.get("column.hours"),
+                    I18n.get("column.comment")};
             for (int i = 0; i < headers.length; i++) {
                 Cell cell = headerRow.createCell(i);
                 cell.setCellValue(headers[i]);
@@ -93,7 +99,7 @@ public class ExportService {
 
             Row totalRow = sheet.createRow(rowNum + 1);
             Cell totalLabel = totalRow.createCell(0);
-            totalLabel.setCellValue("Итого часов:");
+            totalLabel.setCellValue(I18n.get("export.total"));
             totalLabel.setCellStyle(headerStyle);
 
             double totalHours = entries.stream().mapToDouble(WorkEntry::getHours).sum();
@@ -137,26 +143,31 @@ public class ExportService {
     }
 
     public void exportToCsv(List<WorkEntry> entries, String filePath) throws IOException {
+        DecimalSeparator separator = AppSettings.decimalSeparator();
         try (Writer w = utf8Writer(filePath);
              PrintWriter writer = new PrintWriter(w)) {
             // BOM для корректного открытия UTF-8 в Excel.
             writer.print('\uFEFF');
-            writer.println("Дата,День недели,Проект,Задача,Тип,Часы,Комментарий");
+            writer.println(String.join(",",
+                    csv(I18n.get("column.date")), csv(I18n.get("column.day")), csv(I18n.get("column.project")),
+                    csv(I18n.get("column.task")), csv(I18n.get("column.type")), csv(I18n.get("column.hours")),
+                    csv(I18n.get("column.comment"))));
 
             for (WorkEntry entry : entries) {
-                writer.printf("%s,%s,%s,%s,%s,%.1f,%s%n",
-                        DateUtils.formatDate(entry.getDate()),
-                        entry.getDayOfWeek(),
-                        escapeCsv(entry.getProject()),
-                        escapeCsv(entry.getTaskName()),
-                        escapeCsv(entry.getType()),
-                        entry.getHours(),
-                        escapeCsv(entry.getComment() != null ? entry.getComment() : "")
-                );
+                writer.println(String.join(",",
+                        csv(DateUtils.formatDate(entry.getDate())),
+                        csv(entry.getDayOfWeek()),
+                        csv(entry.getProject()),
+                        csv(entry.getTaskName()),
+                        csv(entry.getType()),
+                        csv(separator.format(entry.getHours(), 1)),
+                        csv(entry.getComment() != null ? entry.getComment() : "")
+                ));
             }
 
             double totalHours = entries.stream().mapToDouble(WorkEntry::getHours).sum();
-            writer.printf("%nИтого часов: %.1f%n", totalHours);
+            writer.println();
+            writer.println(I18n.get("export.total") + " " + separator.format(totalHours, 1));
         }
     }
 
@@ -243,12 +254,10 @@ public class ExportService {
         parent.appendChild(element);
     }
 
-    private String escapeCsv(String value) {
-        if (value == null) return "";
-        if (value.contains(",") || value.contains("\"") || value.contains("\n")) {
-            return "\"" + value.replace("\"", "\"\"") + "\"";
-        }
-        return value;
+    /** Экранирует поле по RFC 4180: всегда в кавычках, внутренние кавычки удваиваются. */
+    private String csv(String value) {
+        String v = value != null ? value : "";
+        return "\"" + v.replace("\"", "\"\"") + "\"";
     }
 
     private Writer utf8Writer(String filePath) throws IOException {
