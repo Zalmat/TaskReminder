@@ -58,6 +58,8 @@ public class UpdateCheckService {
                 String tag = json.has("tag_name") ? json.get("tag_name").getAsString() : "";
                 String releaseUrl = json.has("html_url") ? json.get("html_url").getAsString() : "";
                 String name = json.has("name") ? json.get("name").getAsString() : "";
+                String body = json.has("body") && !json.get("body").isJsonNull()
+                        ? json.get("body").getAsString() : "";
                 String downloadUrl = findWinZipUrl(json);
 
                 String latest = normalize(tag);
@@ -65,7 +67,7 @@ public class UpdateCheckService {
                         && latest.compareToIgnoreCase(currentVersion) != 0
                         && compareVersions(latest, normalize(currentVersion)) > 0;
 
-                return new UpdateInfo(latest, releaseUrl, downloadUrl, name, newer, false);
+                return new UpdateInfo(latest, releaseUrl, downloadUrl, name, body, newer, false);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return UpdateInfo.error();

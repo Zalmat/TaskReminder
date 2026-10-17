@@ -12,7 +12,10 @@ import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
 import javafx.scene.control.Tooltip;
+import javafx.scene.layout.VBox;
 
 import java.awt.Desktop;
 import java.net.URI;
@@ -21,6 +24,8 @@ import java.util.prefs.Preferences;
 
 /** UI-обвязка проверки обновлений через {@link UpdateCheckService}. */
 public class UpdateCheckUi {
+
+    private static final int MAX_NOTES_LENGTH = 4000;
 
     private final UpdateCheckService service;
 
@@ -57,8 +62,30 @@ public class UpdateCheckUi {
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(I18n.get("updates.available.title"));
         alert.setHeaderText(I18n.format("updates.available.header", latestKey));
+        alert.setResizable(true);
+
         String current = "v" + VersionInfo.load().version();
-        alert.setContentText(I18n.format("updates.available.content", current, latestKey));
+        VBox content = new VBox(8);
+        content.setMaxWidth(Double.MAX_VALUE);
+        Label versions = new Label(I18n.format("updates.available.content", current, latestKey));
+        versions.setWrapText(true);
+        versions.setMaxWidth(Double.MAX_VALUE);
+        content.getChildren().add(versions);
+
+        String notes = releaseNotes(update.body());
+        if (!notes.isEmpty()) {
+            // Заметки — read-only TextArea: можно выделять и копировать, переносится по ширине
+            // окна, длинный текст прокручивается.
+            TextArea notesArea = new TextArea(notes);
+            notesArea.setEditable(false);
+            notesArea.setWrapText(true);
+            notesArea.setMinWidth(0);
+            notesArea.setMaxWidth(Double.MAX_VALUE);
+            int rows = (int) Math.min(12, Math.max(3, notes.lines().count()));
+            notesArea.setPrefRowCount(rows);
+            content.getChildren().addAll(new Label(I18n.get("updates.whatsNew")), notesArea);
+        }
+        alert.getDialogPane().setContent(content);
 
         ButtonType downloadButton = new ButtonType(I18n.get("updates.download"), ButtonBar.ButtonData.OK_DONE);
         ButtonType releaseButton = new ButtonType(I18n.get("updates.openRelease"));
@@ -99,5 +126,17 @@ public class UpdateCheckUi {
         } catch (Exception e) {
             Dialogs.error(I18n.get("common.error"), I18n.format("error.openLink", e.getMessage()));
         }
+    }
+
+    /** Готовит описание релиза к показу: обрезает по границе допустимой длины. */
+    private static String releaseNotes(String body) {
+        if (body == null) {
+            return "";
+        }
+        String notes = body.trim();
+        if (notes.length() > MAX_NOTES_LENGTH) {
+            notes = notes.substring(0, MAX_NOTES_LENGTH) + "…";
+        }
+        return notes;
     }
 }
