@@ -5,6 +5,7 @@ import com.reminder.model.UpdateInfo;
 import com.reminder.service.UpdateCheckService;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.ProgramFolder;
+import com.reminder.ui.util.Tooltips;
 import com.reminder.util.VersionInfo;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -14,7 +15,6 @@ import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
-import javafx.scene.control.Tooltip;
 import javafx.scene.layout.VBox;
 
 import java.awt.Desktop;
@@ -97,7 +97,7 @@ public class UpdateCheckUi {
         boolean folderAvailable = ProgramFolder.isAvailable();
         folder.setDisable(!folderAvailable);
         if (!folderAvailable) {
-            folder.setTooltip(new Tooltip(I18n.get("settings.packagedOnly")));
+            Tooltips.apply(folder, I18n.get("settings.packagedOnly"));
         }
         // Клик по кнопке папки не закрывает диалог: открываем папку, окно оставляем открытым.
         folder.addEventFilter(ActionEvent.ACTION, event -> {

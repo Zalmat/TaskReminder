@@ -5,10 +5,11 @@ import com.reminder.i18n.I18n;
 
 import java.awt.Desktop;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-/** Открытие папки с программой в системном файловом менеджере. */
+/** Открытие папок в системном файловом менеджере. */
 public final class ProgramFolder {
 
     private ProgramFolder() {
@@ -26,7 +27,15 @@ public final class ProgramFolder {
             Dialogs.warn(I18n.get("folder.unavailable.title"), I18n.get("settings.packagedOnly"));
             return;
         }
-        Path folder = directory.get();
+        openDirectory(directory.get());
+    }
+
+    /** Открывает произвольную существующую папку (например, папку с сохранёнными отчётами). */
+    public static void openDirectory(Path folder) {
+        if (folder == null || !Files.isDirectory(folder)) {
+            Dialogs.error(I18n.get("common.error"), I18n.get("folder.error"));
+            return;
+        }
         if (openWithDesktop(folder)) {
             return;
         }

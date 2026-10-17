@@ -7,10 +7,11 @@
 <DialogPane fx:id="dialogPane"
             fx:controller="com.reminder.ui.controller.SettingsDialogController"
             xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-            prefWidth="620" prefHeight="380"
+            prefWidth="640" prefHeight="620"
             headerText="%settings.header">
     <fx:define>
         <ToggleGroup fx:id="themeGroup"/>
+        <ToggleGroup fx:id="exportModeGroup"/>
     </fx:define>
     <content>
         <HBox spacing="10">
@@ -50,6 +51,24 @@
                     </padding>
                     <Label text="%settings.export.decimal" style="-fx-font-weight: bold;"/>
                     <ComboBox fx:id="decimalChoice" maxWidth="Infinity"/>
+
+                    <Label text="%settings.export.folder" style="-fx-font-weight: bold;"/>
+                    <HBox spacing="5">
+                        <TextField fx:id="exportDirField" editable="false" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="exportDirButton" text="%settings.export.choose"/>
+                        <Button fx:id="exportDirResetButton" text="%settings.export.reset"/>
+                    </HBox>
+
+                    <Label text="%settings.export.mode" style="-fx-font-weight: bold;"/>
+                    <RadioButton fx:id="exportModeSuggestRadio" text="%settings.export.mode.suggest"
+                                 toggleGroup="$exportModeGroup" wrapText="true"/>
+                    <RadioButton fx:id="exportModeAlwaysRadio" text="%settings.export.mode.always"
+                                 toggleGroup="$exportModeGroup" wrapText="true"/>
+
+                    <Label text="%settings.export.formats" style="-fx-font-weight: bold;"/>
+                    <VBox fx:id="formatChecks" spacing="5"/>
+
+                    <CheckBox fx:id="exportOpenFolderCheck" text="%settings.export.openFolder" wrapText="true"/>
                 </VBox>
             </StackPane>
         </HBox>

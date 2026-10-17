@@ -11,6 +11,7 @@ import com.reminder.ui.component.WeekEntryCell;
 import com.reminder.ui.component.WeekTotalCell;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.TableCells;
+import com.reminder.ui.util.Tooltips;
 import com.reminder.util.DateUtils;
 import com.reminder.util.RussianDays;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -24,7 +25,6 @@ import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
-import javafx.util.Duration;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -403,10 +403,7 @@ public class WeekView {
         /** Показывает/скрывает тултип о превышении лимита на заголовке дня. */
         void setOvertimeTooltip(boolean show) {
             if (show && dayTooltip == null) {
-                dayTooltip = new Tooltip(I18n.get("week.overtimeTooltip"));
-                dayTooltip.setShowDelay(Duration.millis(250));
-                dayTooltip.setShowDuration(Duration.seconds(5));
-                dayTooltip.setHideDelay(Duration.millis(100));
+                dayTooltip = Tooltips.create(I18n.get("week.overtimeTooltip"));
                 Tooltip.install(headerLabel, dayTooltip);
             } else if (!show) {
                 if (dayTooltip != null) {

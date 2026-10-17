@@ -8,13 +8,17 @@ import com.reminder.i18n.LanguageManager;
 import com.reminder.i18n.LanguageStatus;
 import com.reminder.settings.AppSettings;
 import com.reminder.settings.DecimalSeparator;
+import com.reminder.settings.ExportSaveMode;
 import com.reminder.settings.Theme;
+import com.reminder.service.ExportFormat;
 import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.ProgramFolder;
+import com.reminder.ui.util.Tooltips;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
@@ -26,11 +30,18 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.RadioButton;
-import javafx.scene.control.Tooltip;
+import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
+import javafx.stage.DirectoryChooser;
+import javafx.stage.Window;
 import javafx.util.StringConverter;
 
+import java.io.File;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /** Контроллер окна «Настройки». */
 public class SettingsDialogController {
@@ -50,6 +61,15 @@ public class SettingsDialogController {
     @FXML private Button restartButton;
     @FXML private Label languageWarningLabel;
     @FXML private ComboBox<DecimalSeparator> decimalChoice;
+    @FXML private TextField exportDirField;
+    @FXML private Button exportDirButton;
+    @FXML private Button exportDirResetButton;
+    @FXML private RadioButton exportModeSuggestRadio;
+    @FXML private RadioButton exportModeAlwaysRadio;
+    @FXML private VBox formatChecks;
+    @FXML private CheckBox exportOpenFolderCheck;
+
+    private final Map<ExportFormat, CheckBox> formatCheckBoxes = new EnumMap<>(ExportFormat.class);
 
     private Scene mainScene;
     private Language previousLanguage;
@@ -81,26 +101,46 @@ public class SettingsDialogController {
         } else {
             autostartCheck.setSelected(false);
             autostartCheck.setDisable(true);
-            autostartCheck.setTooltip(new Tooltip(I18n.get("settings.packagedOnly")));
+            Tooltips.apply(autostartCheck, I18n.get("settings.packagedOnly"));
         }
 
         openFolderButton.setDisable(!ProgramFolder.isAvailable());
         if (!ProgramFolder.isAvailable()) {
-            openFolderButton.setTooltip(new Tooltip(I18n.get("settings.packagedOnly")));
+            Tooltips.apply(openFolderButton, I18n.get("settings.packagedOnly"));
         }
         openFolderButton.setOnAction(e -> ProgramFolder.open());
 
         setupLanguage();
         setupDecimal();
+        setupExportOptions();
 
         ButtonType applyType = new ButtonType(I18n.get("button.apply"), ButtonBar.ButtonData.APPLY);
         ButtonType closeType = new ButtonType(I18n.get("button.close"), ButtonBar.ButtonData.CANCEL_CLOSE);
-        dialogPane.getButtonTypes().setAll(applyType, closeType);
+        ButtonType okType = new ButtonType(I18n.get("button.ok"), ButtonBar.ButtonData.OK_DONE);
+        dialogPane.getButtonTypes().setAll(applyType, closeType, okType);
+
+        // Порядок кнопок задаётся внутренним ButtonBar (у DialogPane такого метода нет).
+        dialogPane.sceneProperty().addListener((obs, oldScene, newScene) -> {
+            if (newScene != null) {
+                Platform.runLater(() -> {
+                    Node bar = dialogPane.lookup(".button-bar");
+                    if (bar instanceof ButtonBar buttonBar) {
+                        buttonBar.setButtonOrder(ButtonBar.BUTTON_ORDER_NONE);
+                    }
+                });
+            }
+        });
+
         Button applyButton = (Button) dialogPane.lookupButton(applyType);
         applyButton.addEventFilter(ActionEvent.ACTION, event -> {
             event.consume();
             apply();
         });
+
+        Button okButton = (Button) dialogPane.lookupButton(okType);
+        Tooltips.apply(okButton, I18n.get("button.ok.tooltip"));
+        // «ОК» применяет настройки и закрывает окно (событие не гасим — диалог закроется сам).
+        okButton.addEventFilter(ActionEvent.ACTION, event -> apply());
 
         ThemeManager.applyTo(dialogPane);
     }
@@ -145,7 +185,7 @@ public class SettingsDialogController {
 
         restartButton.setDisable(!AppRestart.isAvailable());
         if (!AppRestart.isAvailable()) {
-            restartButton.setTooltip(new Tooltip(I18n.get("settings.packagedOnly")));
+            Tooltips.apply(restartButton, I18n.get("settings.packagedOnly"));
         }
         restartButton.setOnAction(e -> restartNow());
     }
@@ -164,6 +204,39 @@ public class SettingsDialogController {
             }
         });
         decimalChoice.setValue(AppSettings.decimalSeparator());
+    }
+
+    private void setupExportOptions() {
+        exportDirField.setText(AppSettings.exportDirectory());
+        exportDirButton.setOnAction(e -> chooseExportDirectory());
+        exportDirResetButton.setOnAction(e -> exportDirField.clear());
+
+        if (AppSettings.exportSaveMode() == ExportSaveMode.ALWAYS) {
+            exportModeAlwaysRadio.setSelected(true);
+        } else {
+            exportModeSuggestRadio.setSelected(true);
+        }
+
+        Set<ExportFormat> selected = AppSettings.exportFolderFormats();
+        for (ExportFormat format : ExportFormat.values()) {
+            CheckBox checkBox = new CheckBox(format.label());
+            checkBox.setSelected(selected.contains(format));
+            formatCheckBoxes.put(format, checkBox);
+            formatChecks.getChildren().add(checkBox);
+        }
+
+        exportOpenFolderCheck.setSelected(AppSettings.exportOpenFolder());
+    }
+
+    private void chooseExportDirectory() {
+        DirectoryChooser chooser = new DirectoryChooser();
+        chooser.setTitle(I18n.get("settings.export.folder"));
+        AppSettings.validExportDirectory().ifPresent(path -> chooser.setInitialDirectory(path.toFile()));
+        Window owner = dialogPane.getScene() != null ? dialogPane.getScene().getWindow() : null;
+        File directory = chooser.showDialog(owner);
+        if (directory != null) {
+            exportDirField.setText(directory.getAbsolutePath());
+        }
     }
 
     private String languageLabel(Language language) {
@@ -197,7 +270,7 @@ public class SettingsDialogController {
                 }
                 setText(languageLabel(item));
                 setStyle(item.status() == LanguageStatus.DAMAGED ? "-fx-text-fill: #999999;" : "");
-                setTooltip(new Tooltip(item.source()));
+                setTooltip(Tooltips.create(item.source()));
             }
         };
     }
@@ -252,6 +325,17 @@ public class SettingsDialogController {
         if (decimalChoice.getValue() != null) {
             AppSettings.setDecimalSeparator(decimalChoice.getValue());
         }
+        AppSettings.setExportDirectory(exportDirField.getText() == null ? "" : exportDirField.getText().trim());
+        AppSettings.setExportSaveMode(exportModeAlwaysRadio.isSelected()
+                ? ExportSaveMode.ALWAYS : ExportSaveMode.SUGGEST);
+        Set<ExportFormat> formats = EnumSet.noneOf(ExportFormat.class);
+        for (Map.Entry<ExportFormat, CheckBox> entry : formatCheckBoxes.entrySet()) {
+            if (entry.getValue().isSelected()) {
+                formats.add(entry.getKey());
+            }
+        }
+        AppSettings.setExportFolderFormats(formats);
+        AppSettings.setExportOpenFolder(exportOpenFolderCheck.isSelected());
         ThemeManager.apply(mainScene);
         ThemeManager.applyTo(dialogPane);
     }

@@ -5,9 +5,12 @@ import com.reminder.model.WorkEntry;
 import com.reminder.service.ExportFormat;
 import com.reminder.service.ExportService;
 import com.reminder.service.TaskService;
+import com.reminder.settings.AppSettings;
+import com.reminder.settings.ExportSaveMode;
 import com.reminder.util.DateUtils;
 import com.reminder.ui.util.DatePickerUtils;
 import com.reminder.ui.util.Dialogs;
+import com.reminder.ui.util.ProgramFolder;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -21,9 +24,11 @@ import javafx.stage.Window;
 import javafx.util.StringConverter;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 /** Контроллер окна экспорта данных. */
@@ -100,13 +105,24 @@ public class ExportDialogController {
                 start.format(DateTimeFormatter.ofPattern("yyyyMMdd")),
                 end.format(DateTimeFormatter.ofPattern("yyyyMMdd")));
         String timestamp = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String fileName = String.format("work_report_%s_%s.%s", timestamp, dateRange, format.extension());
+
+        Optional<Path> exportDir = AppSettings.validExportDirectory();
+        boolean useExportDir = exportDir.isPresent() && AppSettings.exportFolderFormats().contains(format);
+
+        if (useExportDir && AppSettings.exportSaveMode() == ExportSaveMode.ALWAYS) {
+            saveAutomatically(entries, format, exportDir.get(), fileName);
+            return;
+        }
 
         FileChooser fileChooser = new FileChooser();
         fileChooser.setTitle(I18n.get("export.saveTitle"));
         fileChooser.getExtensionFilters().add(
                 new FileChooser.ExtensionFilter(I18n.get(format.filterNameKey()), "*." + format.extension()));
-        fileChooser.setInitialFileName(
-                String.format("work_report_%s_%s.%s", timestamp, dateRange, format.extension()));
+        fileChooser.setInitialFileName(fileName);
+        if (useExportDir) {
+            fileChooser.setInitialDirectory(exportDir.get().toFile());
+        }
 
         try {
             File file = fileChooser.showSaveDialog(owner);
@@ -122,6 +138,39 @@ public class ExportDialogController {
         } catch (Exception ex) {
             System.err.println("Export failed: " + ex.getMessage());
             alert.accept(I18n.get("common.error"), I18n.format("export.error", Dialogs.reason(ex)));
+        }
+    }
+
+    /** Автосохранение в указанную папку без диалога выбора файла. */
+    private void saveAutomatically(List<WorkEntry> entries, ExportFormat format, Path directory, String fileName) {
+        try {
+            File target = uniqueFile(directory.toFile(), fileName);
+            exportService.export(entries, format, target.getAbsolutePath());
+            closeDialog();
+            if (AppSettings.exportOpenFolder()) {
+                ProgramFolder.openDirectory(directory);
+            }
+            alert.accept(I18n.get("common.success"), I18n.format("export.savedTo", target.getName()));
+        } catch (Exception ex) {
+            System.err.println("Export failed: " + ex.getMessage());
+            alert.accept(I18n.get("common.error"), I18n.format("export.error", Dialogs.reason(ex)));
+        }
+    }
+
+    /** Подбирает свободное имя файла, добавляя суффикс " (1)", " (2)" ... */
+    static File uniqueFile(File directory, String fileName) {
+        File candidate = new File(directory, fileName);
+        if (!candidate.exists()) {
+            return candidate;
+        }
+        int dot = fileName.lastIndexOf('.');
+        String base = dot >= 0 ? fileName.substring(0, dot) : fileName;
+        String extension = dot >= 0 ? fileName.substring(dot) : "";
+        for (int i = 1; ; i++) {
+            File next = new File(directory, base + " (" + i + ")" + extension);
+            if (!next.exists()) {
+                return next;
+            }
         }
     }
 

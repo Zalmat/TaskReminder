@@ -1,8 +1,15 @@
 package com.reminder.settings;
 
 import com.reminder.i18n.I18n;
+import com.reminder.service.ExportFormat;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.EnumSet;
+import java.util.Optional;
+import java.util.Set;
 import java.util.prefs.Preferences;
+import java.util.stream.Collectors;
 
 /** Пользовательские настройки приложения (хранятся в Preferences). */
 public final class AppSettings {
@@ -48,5 +55,77 @@ public final class AppSettings {
 
     public static void setDecimalSeparator(DecimalSeparator separator) {
         PREFS.put("decimalSeparator", separator.key());
+    }
+
+    /** Абсолютный путь к папке для отчётов (пусто = не задано). */
+    public static String exportDirectory() {
+        return PREFS.get("exportDirectory", "");
+    }
+
+    public static void setExportDirectory(String path) {
+        PREFS.put("exportDirectory", path == null ? "" : path);
+    }
+
+    /** Режим использования указанной папки. */
+    public static ExportSaveMode exportSaveMode() {
+        return ExportSaveMode.fromKeyOrDefault(PREFS.get("exportSaveMode", ExportSaveMode.SUGGEST.key()));
+    }
+
+    public static void setExportSaveMode(ExportSaveMode mode) {
+        PREFS.put("exportSaveMode", mode.key());
+    }
+
+    /** Форматы, к которым применяется указанная папка. */
+    public static Set<ExportFormat> exportFolderFormats() {
+        return parseFormats(PREFS.get("exportFolderFormats", ""));
+    }
+
+    public static void setExportFolderFormats(Set<ExportFormat> formats) {
+        PREFS.put("exportFolderFormats", joinFormats(formats));
+    }
+
+    /** Открывать папку после автосохранения. */
+    public static boolean exportOpenFolder() {
+        return Boolean.parseBoolean(PREFS.get("exportOpenFolder", "false"));
+    }
+
+    public static void setExportOpenFolder(boolean value) {
+        PREFS.put("exportOpenFolder", Boolean.toString(value));
+    }
+
+    /** Указанная папка, если она задана и существует. */
+    public static Optional<Path> validExportDirectory() {
+        String directory = exportDirectory();
+        if (directory == null || directory.isBlank()) {
+            return Optional.empty();
+        }
+        Path path = Path.of(directory);
+        return Files.isDirectory(path) ? Optional.of(path) : Optional.empty();
+    }
+
+    static Set<ExportFormat> parseFormats(String raw) {
+        Set<ExportFormat> result = EnumSet.noneOf(ExportFormat.class);
+        if (raw == null || raw.isBlank()) {
+            return result;
+        }
+        for (String part : raw.split(",")) {
+            String name = part.trim();
+            if (name.isEmpty()) {
+                continue;
+            }
+            try {
+                result.add(ExportFormat.valueOf(name));
+            } catch (IllegalArgumentException ignored) {
+                // неизвестный формат — пропускаем
+            }
+        }
+        return result;
+    }
+
+    static String joinFormats(Set<ExportFormat> formats) {
+        if (formats == null || formats.isEmpty()) {
+            return "";
+        }
+        return formats.stream().map(Enum::name).sorted().collect(Collectors.joining(","));
     }
 }
