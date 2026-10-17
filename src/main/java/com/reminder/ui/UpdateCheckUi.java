@@ -7,6 +7,7 @@ import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.ProgramFolder;
 import com.reminder.util.VersionInfo;
 import javafx.application.Platform;
+import javafx.event.ActionEvent;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
@@ -71,6 +72,11 @@ public class UpdateCheckUi {
         if (!folderAvailable) {
             folder.setTooltip(new Tooltip(I18n.get("settings.packagedOnly")));
         }
+        // Клик по кнопке папки не закрывает диалог: открываем папку, окно оставляем открытым.
+        folder.addEventFilter(ActionEvent.ACTION, event -> {
+            event.consume();
+            ProgramFolder.open();
+        });
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent()) {
@@ -79,8 +85,6 @@ public class UpdateCheckUi {
                 openLink(url);
             } else if (result.get() == releaseButton) {
                 openLink(update.releaseUrl());
-            } else if (result.get() == folderButton) {
-                ProgramFolder.open();
             }
         }
     }
