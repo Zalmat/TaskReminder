@@ -10,6 +10,7 @@ work_entries.json
 predefined_tasks.json
 reminders.json
 holidays.json
+.taskreminder.lock
 *.dat
 *.dat.legacy
 *.json.tmp

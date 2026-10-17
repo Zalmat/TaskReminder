@@ -1,5 +1,6 @@
 package com.reminder;
 
+import com.reminder.app.SingleInstanceLock;
 import com.reminder.autostart.AutoStartService;
 import com.reminder.ui.TrayService;
 import com.reminder.ui.controller.MainController;
@@ -22,6 +23,13 @@ public class App extends Application {
 
     @Override
     public void start(Stage primaryStage) {
+        if (!SingleInstanceLock.acquire()) {
+            if (!getParameters().getRaw().contains("--minimized")) {
+                Dialogs.info("Запуск", "Приложение уже запущено (возможно, свёрнуто в трей).");
+            }
+            Platform.exit();
+            return;
+        }
         try {
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/main-view.fxml"));
             Parent root = loader.load();
@@ -88,6 +96,7 @@ public class App extends Application {
             if (tray != null) {
                 tray.remove();
             }
+            SingleInstanceLock.release();
             Platform.exit();
         }
     }
