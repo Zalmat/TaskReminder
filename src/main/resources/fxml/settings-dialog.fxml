@@ -33,6 +33,7 @@
                     <CheckBox fx:id="autostartCheck"
                               text="Запускать при входе в систему (свёрнутым в трей)"
                               wrapText="true"/>
+                    <Button fx:id="openFolderButton" text="Открыть папку с программой" maxWidth="Infinity"/>
                 </VBox>
             </StackPane>
         </HBox>

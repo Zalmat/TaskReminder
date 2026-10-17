@@ -29,6 +29,31 @@ public final class LauncherPath {
     }
 
     /**
+     * Каталог программы (корень app-image) или пусто, если приложение запущено не из app-image.
+     * Windows: папка с {@code TaskReminder.exe}; Linux: корень с {@code bin/} и {@code lib/}.
+     */
+    public static Optional<Path> programDirectory() {
+        return resolve().flatMap(launcher ->
+                programDirectory(launcher, System.getProperty("os.name", "")));
+    }
+
+    static Optional<Path> programDirectory(Path launcher, String osName) {
+        if (launcher == null) {
+            return Optional.empty();
+        }
+        Path parent = launcher.getParent();
+        if (parent == null) {
+            return Optional.empty();
+        }
+        String os = osName == null ? "" : osName.toLowerCase();
+        if (os.contains("linux")) {
+            Path appRoot = parent.getParent();
+            return Optional.of(appRoot != null ? appRoot : parent);
+        }
+        return Optional.of(parent);
+    }
+
+    /**
      * Вычисляет путь к лаунчеру по структуре app-image (без проверки существования).
      * Windows: {@code <app>/runtime} → {@code <app>/<name>.exe}.
      * Linux: {@code <app>/lib/runtime} → {@code <app>/bin/<name>}.

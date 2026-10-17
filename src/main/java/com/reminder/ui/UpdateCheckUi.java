@@ -3,11 +3,14 @@ package com.reminder.ui;
 import com.reminder.model.UpdateInfo;
 import com.reminder.service.UpdateCheckService;
 import com.reminder.ui.util.Dialogs;
+import com.reminder.ui.util.ProgramFolder;
 import com.reminder.util.VersionInfo;
 import javafx.application.Platform;
 import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Tooltip;
 
 import java.awt.Desktop;
 import java.net.URI;
@@ -57,8 +60,16 @@ public class UpdateCheckUi {
 
         ButtonType downloadButton = new ButtonType("Скачать zip", ButtonBar.ButtonData.OK_DONE);
         ButtonType releaseButton = new ButtonType("Открыть релиз");
+        ButtonType folderButton = new ButtonType("Открыть папку с программой");
         ButtonType closeButton = new ButtonType("Закрыть", ButtonBar.ButtonData.CANCEL_CLOSE);
-        alert.getButtonTypes().setAll(downloadButton, releaseButton, closeButton);
+        alert.getButtonTypes().setAll(downloadButton, releaseButton, folderButton, closeButton);
+
+        Button folder = (Button) alert.getDialogPane().lookupButton(folderButton);
+        boolean folderAvailable = ProgramFolder.isAvailable();
+        folder.setDisable(!folderAvailable);
+        if (!folderAvailable) {
+            folder.setTooltip(new Tooltip("Доступно только в собранной версии"));
+        }
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent()) {
@@ -67,6 +78,8 @@ public class UpdateCheckUi {
                 openLink(url);
             } else if (result.get() == releaseButton) {
                 openLink(update.releaseUrl());
+            } else if (result.get() == folderButton) {
+                ProgramFolder.open();
             }
         }
     }

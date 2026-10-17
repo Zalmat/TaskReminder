@@ -4,6 +4,7 @@ import com.reminder.autostart.AutoStartService;
 import com.reminder.settings.AppSettings;
 import com.reminder.settings.Theme;
 import com.reminder.ui.theme.ThemeManager;
+import com.reminder.ui.util.ProgramFolder;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Scene;
@@ -31,6 +32,7 @@ public class SettingsDialogController {
     @FXML private RadioButton darkRadio;
     @FXML private ComboBox<String> typeChoice;
     @FXML private CheckBox autostartCheck;
+    @FXML private Button openFolderButton;
 
     private Scene mainScene;
 
@@ -58,6 +60,12 @@ public class SettingsDialogController {
             autostartCheck.setDisable(true);
             autostartCheck.setTooltip(new Tooltip("Доступно только в собранной версии"));
         }
+
+        openFolderButton.setDisable(!ProgramFolder.isAvailable());
+        if (!ProgramFolder.isAvailable()) {
+            openFolderButton.setTooltip(new Tooltip("Доступно только в собранной версии"));
+        }
+        openFolderButton.setOnAction(e -> ProgramFolder.open());
 
         ButtonType applyType = new ButtonType("Применить", ButtonBar.ButtonData.APPLY);
         ButtonType closeType = new ButtonType("Закрыть", ButtonBar.ButtonData.CANCEL_CLOSE);
