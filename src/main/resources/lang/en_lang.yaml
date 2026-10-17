@@ -252,7 +252,7 @@ strings:
   settings.language.restartUnavailable: "Restart is available only in the packaged version. Please restart the application manually."
   settings.language.damaged: "Damaged"
   settings.language.incomplete: "Incomplete ({0}/{1})"
-  settings.export.decimal: "Decimal separator:"
+  settings.export.decimal: "Decimal separator for CSV:"
   settings.export.folder: "Reports folder:"
   settings.export.choose: "Choose…"
   settings.export.reset: "Reset"

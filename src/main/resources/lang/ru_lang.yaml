@@ -252,7 +252,7 @@ strings:
   settings.language.restartUnavailable: "Перезапуск доступен только в собранной версии. Перезапустите приложение вручную."
   settings.language.damaged: "Повреждён"
   settings.language.incomplete: "Неполный ({0}/{1})"
-  settings.export.decimal: "Десятичный разделитель:"
+  settings.export.decimal: "Десятичный разделитель для CSV:"
   settings.export.folder: "Папка для отчётов:"
   settings.export.choose: "Выбрать…"
   settings.export.reset: "Сбросить"
