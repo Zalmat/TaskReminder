@@ -30,6 +30,9 @@
                     </padding>
                     <Label text="Тип работы по умолчанию:" style="-fx-font-weight: bold;"/>
                     <ComboBox fx:id="typeChoice" maxWidth="Infinity"/>
+                    <CheckBox fx:id="autostartCheck"
+                              text="Запускать при входе в систему (свёрнутым в трей)"
+                              wrapText="true"/>
                 </VBox>
             </StackPane>
         </HBox>

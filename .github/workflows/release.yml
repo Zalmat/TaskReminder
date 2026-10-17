@@ -61,3 +61,33 @@ jobs:
             build/release/*.zip
             build/release/*.sha256
           fail_on_unmatched_files: true
+
+  release-linux:
+    needs: release
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout (full history for git describe)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17 (Zulu)
+        uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '17'
+          cache: gradle
+
+      - name: Build Linux app-image
+        run: |
+          chmod +x ./gradlew ./build-release.sh
+          ./build-release.sh
+
+      - name: Attach Linux artifacts to release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          files: |
+            build/release/*.tar.gz
+            build/release/*.sha256
+          fail_on_unmatched_files: true

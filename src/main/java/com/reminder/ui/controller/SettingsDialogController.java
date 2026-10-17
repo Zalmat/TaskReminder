@@ -1,5 +1,6 @@
 package com.reminder.ui.controller;
 
+import com.reminder.autostart.AutoStartService;
 import com.reminder.settings.AppSettings;
 import com.reminder.settings.Theme;
 import com.reminder.ui.theme.ThemeManager;
@@ -9,10 +10,12 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.ListView;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.Tooltip;
 import javafx.scene.layout.VBox;
 
 import java.util.List;
@@ -27,6 +30,7 @@ public class SettingsDialogController {
     @FXML private RadioButton lightRadio;
     @FXML private RadioButton darkRadio;
     @FXML private ComboBox<String> typeChoice;
+    @FXML private CheckBox autostartCheck;
 
     private Scene mainScene;
 
@@ -46,6 +50,14 @@ public class SettingsDialogController {
 
         typeChoice.getItems().setAll(workTypes);
         typeChoice.setValue(AppSettings.defaultType());
+
+        if (AutoStartService.isSupported()) {
+            autostartCheck.setSelected(AutoStartService.isEnabled());
+        } else {
+            autostartCheck.setSelected(false);
+            autostartCheck.setDisable(true);
+            autostartCheck.setTooltip(new Tooltip("Доступно только в собранной версии"));
+        }
 
         ButtonType applyType = new ButtonType("Применить", ButtonBar.ButtonData.APPLY);
         ButtonType closeType = new ButtonType("Закрыть", ButtonBar.ButtonData.CANCEL_CLOSE);
@@ -71,6 +83,9 @@ public class SettingsDialogController {
         AppSettings.setTheme(darkRadio.isSelected() ? Theme.DARK : Theme.LIGHT);
         if (typeChoice.getValue() != null) {
             AppSettings.setDefaultType(typeChoice.getValue());
+        }
+        if (AutoStartService.isSupported()) {
+            AutoStartService.setEnabled(autostartCheck.isSelected());
         }
         ThemeManager.apply(mainScene);
         ThemeManager.applyTo(dialogPane);

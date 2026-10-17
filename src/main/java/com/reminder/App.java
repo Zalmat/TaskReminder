@@ -1,5 +1,6 @@
 package com.reminder;
 
+import com.reminder.autostart.AutoStartService;
 import com.reminder.ui.TrayService;
 import com.reminder.ui.controller.MainController;
 import com.reminder.ui.theme.ThemeManager;
@@ -39,9 +40,20 @@ public class App extends Application {
                 quit();
             });
 
+            boolean startMinimized = getParameters().getRaw().contains("--minimized");
+            try {
+                AutoStartService.syncPath();
+            } catch (Exception ignored) {
+                // автозагрузка не критична для запуска
+            }
+
             setupTray(primaryStage);
 
-            primaryStage.show();
+            if (startMinimized && tray != null) {
+                tray.showMessage("Напоминалка", "Приложение запущено в трее");
+            } else {
+                primaryStage.show();
+            }
         } catch (Exception e) {
             System.err.println("Ошибка запуска: " + Dialogs.reason(e));
             Dialogs.error("Ошибка запуска", Dialogs.reason(e));
