@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -35,7 +36,11 @@ public final class AppAutoUpdater {
         Path tempDir = Files.createTempDirectory("tr-autoupdater-");
         Path copy = tempDir.resolve(binaryName());
         Files.copy(binary, copy, StandardCopyOption.REPLACE_EXISTING);
-        copy.toFile().setExecutable(true);
+        try {
+            Files.setPosixFilePermissions(copy, PosixFilePermissions.fromString("rwx------"));
+        } catch (UnsupportedOperationException | IOException ignored) {
+            // Windows: POSIX-биты не поддерживаются — не критично
+        }
 
         String exeName = LauncherPath.resolve()
                 .map(path -> path.getFileName().toString())
