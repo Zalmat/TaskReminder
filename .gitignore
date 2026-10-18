@@ -13,6 +13,8 @@ holidays.json
 .taskreminder.lock
 /language/
 dev.flag
+updater/autoupdater
+updater/autoupdater.exe
 *.dat
 *.dat.legacy
 *.json.tmp

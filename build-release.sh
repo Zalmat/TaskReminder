@@ -126,6 +126,17 @@ echo "[5/6] Building app-image from $JAR_NAME..."
 # Чистка служебных файлов данных, попавших в каталог приложения
 find "$APP_DIR" -maxdepth 1 -type f \( -name '*.dat' -o -name 'work_entries.json' -o -name 'predefined_tasks.json' -o -name 'reminders.json' \) -delete 2>/dev/null || true
 
+# Апдейтер (если собран): updater/autoupdater -> <app>/updater/
+UPDATER_BIN="$ROOT/updater/autoupdater"
+if [[ -f "$UPDATER_BIN" ]]; then
+    mkdir -p "$APP_DIR/updater"
+    cp "$UPDATER_BIN" "$APP_DIR/updater/autoupdater"
+    chmod +x "$APP_DIR/updater/autoupdater"
+    echo "Updater added: updater/autoupdater"
+else
+    echo "Updater not found (updater/autoupdater) - auto-update disabled"
+fi
+
 # 6. Архив + контрольная сумма
 echo "[6/6] Creating archive..."
 ARCHIVE_NAME="TaskReminder-${VERSION}-linux-x64.tar.gz"

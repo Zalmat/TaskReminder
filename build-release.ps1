@@ -99,6 +99,17 @@ Get-ChildItem -Path $appDir -Force -File -ErrorAction SilentlyContinue |
     Where-Object { $_.Extension -eq '.dat' -or $_.Name -in @('work_entries.json', 'predefined_tasks.json', 'reminders.json') } |
     Remove-Item -Force -ErrorAction SilentlyContinue
 
+# Апдейтер (если собран): updater/autoupdater.exe -> <app>\updater\
+$updaterExe = Join-Path $Root "updater\autoupdater.exe"
+if (Test-Path $updaterExe) {
+    $updaterDir = Join-Path $appDir "updater"
+    New-Item -ItemType Directory -Force -Path $updaterDir | Out-Null
+    Copy-Item $updaterExe (Join-Path $updaterDir "autoupdater.exe") -Force
+    Write-Host "Updater added: updater\autoupdater.exe"
+} else {
+    Write-Host "Updater not found (updater\autoupdater.exe) - auto-update disabled"
+}
+
 # 6. Архив + контрольная сумма
 Write-Host "[6/6] Creating archive..."
 $zipName = "TaskReminder-$version-win-x64.zip"

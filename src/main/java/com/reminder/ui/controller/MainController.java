@@ -98,6 +98,7 @@ public class MainController {
     private final YamlLoaderService yamlLoaderService = new YamlLoaderService();
     private final UpdateCheckService updateCheckService = new UpdateCheckService();
     private UpdateCheckUi updateCheckUi;
+    private Runnable exitAction = () -> { };
     private final EasterEgg easterEgg = new EasterEgg();
     private EntryForm form;
     private final ReminderUi reminderUi = new ReminderUi(reminderService);
@@ -351,8 +352,16 @@ public class MainController {
 
     private void setupUpdateCheck() {
         updateCheckUi = new UpdateCheckUi(updateCheckService);
+        updateCheckUi.setExitAction(() -> exitAction.run());
         updateButton.setOnAction(e -> updateCheckUi.checkForUpdates(true));
         updateCheckUi.checkForUpdates(false);
+    }
+
+    /** Задаётся приложением: корректное завершение без подтверждения (для автообновления). */
+    public void setExitAction(Runnable exitAction) {
+        if (exitAction != null) {
+            this.exitAction = exitAction;
+        }
     }
 
     public void shutdown() {

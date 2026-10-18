@@ -1,9 +1,11 @@
 package com.reminder.ui;
 
+import com.reminder.app.AppAutoUpdater;
 import com.reminder.app.DevMode;
 import com.reminder.i18n.I18n;
 import com.reminder.model.UpdateInfo;
 import com.reminder.service.UpdateCheckService;
+import com.reminder.service.UpdateDownloader;
 import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.ProgramFolder;
@@ -11,16 +13,22 @@ import com.reminder.ui.util.Tooltips;
 import com.reminder.util.VersionInfo;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
+import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
+import javafx.scene.control.Dialog;
 import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.VBox;
 
 import java.awt.Desktop;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Optional;
 import java.util.prefs.Preferences;
 
@@ -30,9 +38,18 @@ public class UpdateCheckUi {
     private static final int MAX_NOTES_LENGTH = 4000;
 
     private final UpdateCheckService service;
+    private final UpdateDownloader downloader = new UpdateDownloader();
+    private Runnable exitAction = () -> { };
 
     public UpdateCheckUi(UpdateCheckService service) {
         this.service = service;
+    }
+
+    /** Действие корректного завершения приложения (задаётся приложением) — для автообновления. */
+    public void setExitAction(Runnable exitAction) {
+        if (exitAction != null) {
+            this.exitAction = exitAction;
+        }
     }
 
     /** Проверяет наличие обновлений. При manual=true всегда показывает результат. */
@@ -94,11 +111,21 @@ public class UpdateCheckUi {
         }
         alert.getDialogPane().setContent(content);
 
-        ButtonType downloadButton = new ButtonType(I18n.get("updates.download"), ButtonBar.ButtonData.OK_DONE);
+        ButtonType updateButton = new ButtonType(I18n.get("updates.update"), ButtonBar.ButtonData.OK_DONE);
+        ButtonType downloadButton = new ButtonType(I18n.get("updates.download"));
         ButtonType releaseButton = new ButtonType(I18n.get("updates.openRelease"));
         ButtonType folderButton = new ButtonType(I18n.get("updates.openFolder"));
         ButtonType closeButton = new ButtonType(I18n.get("button.close"), ButtonBar.ButtonData.CANCEL_CLOSE);
-        alert.getButtonTypes().setAll(downloadButton, releaseButton, folderButton, closeButton);
+        alert.getButtonTypes().setAll(updateButton, downloadButton, releaseButton, folderButton, closeButton);
+
+        Button updateControl = (Button) alert.getDialogPane().lookupButton(updateButton);
+        boolean archiveAvailable = update.hasArchive();
+        boolean updateAvailable = archiveAvailable && AppAutoUpdater.isAvailable();
+        updateControl.setDisable(!updateAvailable);
+        if (!updateAvailable) {
+            Tooltips.apply(updateControl, I18n.get(archiveAvailable
+                    ? "updates.updaterUnavailable" : "updates.noArchive"));
+        }
 
         Button folder = (Button) alert.getDialogPane().lookupButton(folderButton);
         boolean folderAvailable = ProgramFolder.isAvailable();
@@ -115,14 +142,72 @@ public class UpdateCheckUi {
         ThemeManager.applyTo(alert.getDialogPane());
 
         Optional<ButtonType> result = alert.showAndWait();
-        if (result.isPresent()) {
-            if (result.get() == downloadButton) {
-                String url = !update.downloadUrl().isEmpty() ? update.downloadUrl() : update.releaseUrl();
-                openLink(url);
-            } else if (result.get() == releaseButton) {
-                openLink(update.releaseUrl());
-            }
+        if (result.isEmpty()) {
+            return;
         }
+        ButtonType pressed = result.get();
+        if (pressed == updateButton) {
+            performUpdate(update);
+        } else if (pressed == downloadButton) {
+            String url = !update.archiveUrl().isEmpty() ? update.archiveUrl() : update.releaseUrl();
+            openLink(url);
+        } else if (pressed == releaseButton) {
+            openLink(update.releaseUrl());
+        }
+    }
+
+    /** Подтверждение, скачивание архива с прогрессом, запуск апдейтера и завершение приложения. */
+    private void performUpdate(UpdateInfo update) {
+        if (!Dialogs.confirm(I18n.get("updates.install.title"),
+                I18n.get("updates.install.header"), I18n.get("updates.install.content"))) {
+            return;
+        }
+
+        ProgressBar bar = new ProgressBar();
+        bar.setPrefWidth(320);
+        Label label = new Label(I18n.get("updates.downloading"));
+        label.setWrapText(true);
+        VBox box = new VBox(10, label, bar);
+        box.setPadding(new Insets(10));
+
+        Dialog<Void> progress = new Dialog<>();
+        progress.setTitle(I18n.get("updates.install.title"));
+        progress.getDialogPane().setContent(box);
+        progress.setResizable(false);
+        progress.setOnCloseRequest(javafx.event.Event::consume);
+        ThemeManager.applyTo(progress.getDialogPane());
+
+        Thread worker = new Thread(() -> {
+            try {
+                Path tempDir = Files.createTempDirectory("tr-update-");
+                Path archive = downloader.download(update, tempDir, (downloaded, total) ->
+                        Platform.runLater(() -> {
+                            if (total > 0) {
+                                bar.setProgress((double) downloaded / total);
+                            }
+                        }));
+                Platform.runLater(() -> {
+                    progress.close();
+                    try {
+                        AppAutoUpdater.start(archive);
+                        exitAction.run();
+                    } catch (IOException e) {
+                        Dialogs.error(I18n.get("common.error"),
+                                I18n.format("updates.downloadFailed", Dialogs.reason(e)));
+                    }
+                });
+            } catch (Exception e) {
+                Platform.runLater(() -> {
+                    progress.close();
+                    Dialogs.error(I18n.get("common.error"),
+                            I18n.format("updates.downloadFailed", Dialogs.reason(e)));
+                });
+            }
+        }, "update-download");
+        worker.setDaemon(true);
+        worker.start();
+
+        progress.showAndWait();
     }
 
     private void openLink(String url) {        if (url == null || url.isEmpty()) {

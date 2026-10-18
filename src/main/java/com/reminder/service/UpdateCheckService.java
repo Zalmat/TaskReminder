@@ -1,6 +1,5 @@
 package com.reminder.service;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -60,14 +59,21 @@ public class UpdateCheckService {
                 String name = json.has("name") ? json.get("name").getAsString() : "";
                 String body = json.has("body") && !json.get("body").isJsonNull()
                         ? json.get("body").getAsString() : "";
-                String downloadUrl = findWinZipUrl(json);
 
                 String latest = normalize(tag);
                 boolean newer = !latest.isEmpty()
                         && latest.compareToIgnoreCase(currentVersion) != 0
                         && compareVersions(latest, normalize(currentVersion)) > 0;
 
-                return new UpdateInfo(latest, releaseUrl, downloadUrl, name, body, newer, false);
+                Asset asset = findArchive(json, archiveSuffix());
+                String checksum = asset != null ? asset.checksum() : "";
+                String checksumUrl = (asset != null && checksum.isEmpty())
+                        ? findChecksumUrl(json, asset.name()) : "";
+
+                return new UpdateInfo(latest, releaseUrl, name, body,
+                        asset != null ? asset.url() : "",
+                        asset != null ? asset.name() : "",
+                        checksum, checksumUrl, newer, false);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 return UpdateInfo.error();
@@ -77,21 +83,60 @@ public class UpdateCheckService {
         });
     }
 
-    /** Ищет в списке assets zip c суффиксом -win-x64.zip. */
-    private String findWinZipUrl(JsonObject json) {
+    private static final String WIN_SUFFIX = "-win-x64.zip";
+    private static final String LINUX_SUFFIX = "-linux-x64.tar.gz";
+
+    /** Суффикс имени архива под текущую ОС. */
+    static String archiveSuffix() {
+        String os = System.getProperty("os.name", "").toLowerCase();
+        return os.contains("linux") ? LINUX_SUFFIX : WIN_SUFFIX;
+    }
+
+    /** Ищет ассет-архив под ОС; digest (если есть) → sha256 hex. */
+    private Asset findArchive(JsonObject json, String suffix) {
+        if (!json.has("assets")) {
+            return null;
+        }
+        for (JsonElement el : json.getAsJsonArray("assets")) {
+            JsonObject asset = el.getAsJsonObject();
+            if (!asset.has("name")) {
+                continue;
+            }
+            String assetName = asset.get("name").getAsString();
+            if (!assetName.endsWith(suffix)) {
+                continue;
+            }
+            String url = asset.has("browser_download_url")
+                    ? asset.get("browser_download_url").getAsString() : "";
+            String checksum = "";
+            if (asset.has("digest") && !asset.get("digest").isJsonNull()) {
+                String digest = asset.get("digest").getAsString();
+                if (digest.startsWith("sha256:")) {
+                    checksum = digest.substring("sha256:".length());
+                }
+            }
+            return new Asset(url, assetName, checksum);
+        }
+        return null;
+    }
+
+    /** URL ассета .sha256 для архива (fallback, если нет digest). */
+    private String findChecksumUrl(JsonObject json, String archiveName) {
         if (!json.has("assets")) {
             return "";
         }
-        JsonArray assets = json.getAsJsonArray("assets");
-        for (JsonElement el : assets) {
+        String wanted = archiveName + ".sha256";
+        for (JsonElement el : json.getAsJsonArray("assets")) {
             JsonObject asset = el.getAsJsonObject();
-            if (asset.has("name") && asset.get("name").getAsString().contains("-win-x64.zip")) {
-                if (asset.has("browser_download_url")) {
-                    return asset.get("browser_download_url").getAsString();
-                }
+            if (asset.has("name") && wanted.equals(asset.get("name").getAsString())) {
+                return asset.has("browser_download_url")
+                        ? asset.get("browser_download_url").getAsString() : "";
             }
         }
         return "";
+    }
+
+    private record Asset(String url, String name, String checksum) {
     }
 
     /** Приводит тег/версию к виду "X.Y.Z": убирает ведущий v и суффикс после '-'. */

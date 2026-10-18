@@ -35,6 +35,7 @@ public class App extends Application {
             loader.setResources(I18n.bundle());
             Parent root = loader.load();
             mainController = loader.getController();
+            mainController.setExitAction(this::performQuit);
 
             Scene scene = new Scene(root, 1200, 800);
             ThemeManager.apply(scene);
@@ -97,15 +98,20 @@ public class App extends Application {
     private void quit() {
         if (Dialogs.confirm(I18n.get("app.quit.title"),
                 I18n.get("app.quit.header"), I18n.get("app.quit.content"))) {
-            if (mainController != null) {
-                mainController.shutdown();
-            }
-            if (tray != null) {
-                tray.remove();
-            }
-            SingleInstanceLock.release();
-            Platform.exit();
+            performQuit();
         }
+    }
+
+    /** Корректное завершение без подтверждения (используется в т.ч. при автообновлении). */
+    private void performQuit() {
+        if (mainController != null) {
+            mainController.shutdown();
+        }
+        if (tray != null) {
+            tray.remove();
+        }
+        SingleInstanceLock.release();
+        Platform.exit();
     }
 
     @SuppressWarnings("unused")
