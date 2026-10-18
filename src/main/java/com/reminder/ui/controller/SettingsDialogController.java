@@ -30,6 +30,8 @@ import javafx.scene.control.Label;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.RadioButton;
+import javafx.scene.control.Spinner;
+import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
@@ -52,6 +54,7 @@ public class SettingsDialogController {
     @FXML private VBox generalPane;
     @FXML private VBox languagePane;
     @FXML private VBox exportPane;
+    @FXML private VBox updatesPane;
     @FXML private RadioButton lightRadio;
     @FXML private RadioButton darkRadio;
     @FXML private ComboBox<String> typeChoice;
@@ -68,6 +71,9 @@ public class SettingsDialogController {
     @FXML private RadioButton exportModeAlwaysRadio;
     @FXML private VBox formatChecks;
     @FXML private CheckBox exportOpenFolderCheck;
+    @FXML private CheckBox updateCheckEnabledCheck;
+    @FXML private Spinner<Integer> updateHourSpinner;
+    @FXML private Spinner<Integer> updateMinuteSpinner;
 
     private final Map<ExportFormat, CheckBox> formatCheckBoxes = new EnumMap<>(ExportFormat.class);
 
@@ -82,7 +88,8 @@ public class SettingsDialogController {
                 I18n.get("settings.section.appearance"),
                 I18n.get("settings.section.general"),
                 I18n.get("settings.section.language"),
-                I18n.get("settings.section.export"));
+                I18n.get("settings.section.export"),
+                I18n.get("settings.section.updates"));
         sectionList.getSelectionModel().selectedIndexProperty().addListener((obs, oldIdx, newIdx) ->
                 showSection(newIdx.intValue()));
         sectionList.getSelectionModel().selectFirst();
@@ -113,6 +120,7 @@ public class SettingsDialogController {
         setupLanguage();
         setupDecimal();
         setupExportOptions();
+        setupUpdates();
 
         ButtonType applyType = new ButtonType(I18n.get("button.apply"), ButtonBar.ButtonData.APPLY);
         ButtonType closeType = new ButtonType(I18n.get("button.close"), ButtonBar.ButtonData.CANCEL_CLOSE);
@@ -228,8 +236,15 @@ public class SettingsDialogController {
         exportOpenFolderCheck.setSelected(AppSettings.exportOpenFolder());
     }
 
-    private void chooseExportDirectory() {
-        DirectoryChooser chooser = new DirectoryChooser();
+    private void setupUpdates() {
+        updateCheckEnabledCheck.setSelected(AppSettings.updateCheckEnabled());
+        updateHourSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(
+                0, 23, AppSettings.updateCheckHour()));
+        updateMinuteSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(
+                0, 59, AppSettings.updateCheckMinute()));
+    }
+
+    private void chooseExportDirectory() {        DirectoryChooser chooser = new DirectoryChooser();
         chooser.setTitle(I18n.get("settings.export.folder"));
         AppSettings.validExportDirectory().ifPresent(path -> chooser.setInitialDirectory(path.toFile()));
         Window owner = dialogPane.getScene() != null ? dialogPane.getScene().getWindow() : null;
@@ -303,6 +318,7 @@ public class SettingsDialogController {
         setActive(generalPane, index == 1);
         setActive(languagePane, index == 2);
         setActive(exportPane, index == 3);
+        setActive(updatesPane, index == 4);
     }
 
     private static void setActive(VBox pane, boolean active) {
@@ -336,6 +352,8 @@ public class SettingsDialogController {
         }
         AppSettings.setExportFolderFormats(formats);
         AppSettings.setExportOpenFolder(exportOpenFolderCheck.isSelected());
+        AppSettings.setUpdateCheckEnabled(updateCheckEnabledCheck.isSelected());
+        AppSettings.setUpdateCheckTime(updateHourSpinner.getValue(), updateMinuteSpinner.getValue());
         ThemeManager.apply(mainScene);
         ThemeManager.applyTo(dialogPane);
     }

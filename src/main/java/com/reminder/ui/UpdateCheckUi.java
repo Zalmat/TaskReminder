@@ -29,7 +29,14 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.prefs.Preferences;
 
 /** UI-обвязка проверки обновлений через {@link UpdateCheckService}. */
@@ -37,12 +44,31 @@ public class UpdateCheckUi {
 
     private static final int MAX_NOTES_LENGTH = 4000;
 
+    /** Режим проверки обновлений. */
+    public enum CheckMode {
+        /** Ручная (клик по кнопке): всегда показывает результат окном. */
+        MANUAL,
+        /** При запуске: окно при наличии обновления (один раз на версию). */
+        STARTUP,
+        /** Фоновая ежедневная: без окна, только индикатор кнопки. */
+        SILENT
+    }
+
     private final UpdateCheckService service;
     private final UpdateDownloader downloader = new UpdateDownloader();
     private Runnable exitAction = () -> { };
+    private Consumer<UpdateInfo> updateIndicator;
+    private UpdateInfo pendingUpdate;
+    private ScheduledExecutorService scheduler;
+    private ScheduledFuture<?> dailyTask;
 
     public UpdateCheckUi(UpdateCheckService service) {
         this.service = service;
+    }
+
+    /** Колбэк-индикатор: получает найденное обновление или {@code null}. */
+    public void setUpdateIndicator(Consumer<UpdateInfo> consumer) {
+        this.updateIndicator = consumer;
     }
 
     /** Действие корректного завершения приложения (задаётся приложением) — для автообновления. */
@@ -52,27 +78,100 @@ public class UpdateCheckUi {
         }
     }
 
-    /** Проверяет наличие обновлений. При manual=true всегда показывает результат. */
-    public void checkForUpdates(boolean manual) {
-        // Режим разработки: показываем диалог с демо-описанием без обращения к сети.
+    /** Клик по кнопке проверки обновлений (ручной режим). */
+    public void manualCheck() {
+        if (pendingUpdate != null) {
+            showUpdateDialog(pendingUpdate, true);
+        } else {
+            checkForUpdates(CheckMode.MANUAL);
+        }
+    }
+
+    /** Проверяет наличие обновлений в заданном режиме. */
+    public void checkForUpdates(CheckMode mode) {
         if (DevMode.isEnabled()) {
-            Platform.runLater(() -> showUpdateDialog(DevMode.demoUpdate(), true));
+            UpdateInfo demo = DevMode.demoUpdate();
+            Platform.runLater(() -> handleUpdateResult(demo, mode));
             return;
         }
         service.checkLatest().thenAccept(update ->
-                Platform.runLater(() -> handleUpdateResult(update, manual)));
+                Platform.runLater(() -> handleUpdateResult(update, mode)));
     }
 
-    private void handleUpdateResult(UpdateInfo update, boolean manual) {
+    private void handleUpdateResult(UpdateInfo update, CheckMode mode) {
         if (update.failed()) {
-            if (manual) {
+            if (mode == CheckMode.MANUAL) {
                 Dialogs.warn(I18n.get("updates.title"), I18n.get("updates.checkFailed"));
             }
-        } else if (update.newer()) {
-            showUpdateDialog(update, manual);
-        } else if (manual) {
-            Dialogs.info(I18n.get("updates.title"), I18n.format("updates.actual", VersionInfo.load().version()));
+            return;
         }
+        if (update.newer()) {
+            pendingUpdate = update;
+            notifyIndicator(update);
+            if (mode != CheckMode.SILENT) {
+                showUpdateDialog(update, mode == CheckMode.MANUAL);
+            }
+        } else {
+            pendingUpdate = null;
+            notifyIndicator(null);
+            if (mode == CheckMode.MANUAL) {
+                Dialogs.info(I18n.get("updates.title"),
+                        I18n.format("updates.actual", VersionInfo.load().version()));
+            }
+        }
+    }
+
+    private void notifyIndicator(UpdateInfo update) {
+        if (updateIndicator != null) {
+            updateIndicator.accept(update);
+        }
+    }
+
+    /** Включает/выключает ежедневную фоновую проверку по настройкам. */
+    public void applySchedule(boolean enabled, int hour, int minute) {
+        if (enabled) {
+            startDailyChecks(hour, minute);
+        } else {
+            stopDailyChecks();
+        }
+    }
+
+    private void startDailyChecks(int hour, int minute) {
+        stopDailyChecks();
+        scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread thread = new Thread(r, "update-check");
+            thread.setDaemon(true);
+            return thread;
+        });
+        long initialDelay = initialDelayMillis(LocalDateTime.now(), hour, minute);
+        long period = Duration.ofDays(1).toMillis();
+        dailyTask = scheduler.scheduleAtFixedRate(() -> checkForUpdates(CheckMode.SILENT),
+                initialDelay, period, TimeUnit.MILLISECONDS);
+    }
+
+    private void stopDailyChecks() {
+        if (dailyTask != null) {
+            dailyTask.cancel(false);
+            dailyTask = null;
+        }
+        if (scheduler != null) {
+            scheduler.shutdownNow();
+            scheduler = null;
+        }
+    }
+
+    /** Останавливает фоновые проверки (при завершении приложения). */
+    public void shutdown() {
+        stopDailyChecks();
+    }
+
+    /** Задержка до следующего срабатывания в {@code hour:minute} (сегодня или завтра). */
+    static long initialDelayMillis(LocalDateTime now, int hour, int minute) {
+        LocalDateTime next = now.toLocalDate().atTime(hour, minute);
+        if (!next.isAfter(now)) {
+            next = next.plusDays(1);
+        }
+        return Duration.between(now, next).toMillis();
     }
 
     private void showUpdateDialog(UpdateInfo update, boolean manual) {

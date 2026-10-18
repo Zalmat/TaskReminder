@@ -52,6 +52,7 @@ strings:
   main.weekEditHint: "(двойно щракване за редактиране)"
   main.settings: "⚙ Настройки"
   main.checkUpdates: "🔍 Проверка за актуализации"
+  main.updateAvailable: "📥 Налична актуализация"
   main.reminders: "⏰ Напомняния"
   main.export: "📊 Експорт"
 
@@ -247,6 +248,9 @@ strings:
   settings.section.general: "Общи"
   settings.section.language: "Език"
   settings.section.export: "Експорт"
+  settings.section.updates: "Актуализации"
+  settings.updates.enabled: "Автоматична проверка за актуализации"
+  settings.updates.time: "Час за проверка:"
   settings.theme: "Тема:"
   settings.theme.light: "Светла"
   settings.theme.dark: "Тъмна"

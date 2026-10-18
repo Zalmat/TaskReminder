@@ -2,6 +2,7 @@ package com.reminder.ui.controller;
 
 import com.reminder.i18n.I18n;
 import com.reminder.model.Task;
+import com.reminder.model.UpdateInfo;
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
 import com.reminder.service.ExportService;
@@ -10,6 +11,7 @@ import com.reminder.service.TaskService;
 import com.reminder.service.UpdateCheckService;
 import com.reminder.service.WorkTimeService;
 import com.reminder.service.YamlLoaderService;
+import com.reminder.settings.AppSettings;
 import com.reminder.ui.UpdateCheckUi;
 import com.reminder.ui.component.ClockUi;
 import com.reminder.ui.component.EasterEgg;
@@ -297,6 +299,11 @@ public class MainController {
             dialog.setTitle(I18n.get("dialog.settings.title"));
             dialog.setDialogPane(pane);
             dialog.showAndWait();
+
+            if (updateCheckUi != null) {
+                updateCheckUi.applySchedule(AppSettings.updateCheckEnabled(),
+                        AppSettings.updateCheckHour(), AppSettings.updateCheckMinute());
+            }
         } catch (IOException e) {
             Dialogs.error(I18n.get("common.error"),
                     I18n.format("dialog.settings.error", Dialogs.reason(e)));
@@ -353,8 +360,21 @@ public class MainController {
     private void setupUpdateCheck() {
         updateCheckUi = new UpdateCheckUi(updateCheckService);
         updateCheckUi.setExitAction(() -> exitAction.run());
-        updateButton.setOnAction(e -> updateCheckUi.checkForUpdates(true));
-        updateCheckUi.checkForUpdates(false);
+        updateCheckUi.setUpdateIndicator(this::applyUpdateIndicator);
+        updateButton.setOnAction(e -> updateCheckUi.manualCheck());
+        if (AppSettings.updateCheckEnabled()) {
+            updateCheckUi.checkForUpdates(UpdateCheckUi.CheckMode.STARTUP);
+            updateCheckUi.applySchedule(true, AppSettings.updateCheckHour(), AppSettings.updateCheckMinute());
+        }
+    }
+
+    /** Меняет текст кнопки проверки обновлений при наличии/отсутствии обновления. */
+    private void applyUpdateIndicator(UpdateInfo update) {
+        if (update != null && update.newer()) {
+            updateButton.setText(I18n.get("main.updateAvailable"));
+        } else {
+            updateButton.setText(I18n.get("main.checkUpdates"));
+        }
     }
 
     /** Задаётся приложением: корректное завершение без подтверждения (для автообновления). */
@@ -366,6 +386,9 @@ public class MainController {
 
     public void shutdown() {
         reminderService.shutdown();
+        if (updateCheckUi != null) {
+            updateCheckUi.shutdown();
+        }
     }
 
     @FXML

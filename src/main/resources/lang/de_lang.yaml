@@ -52,6 +52,7 @@ strings:
   main.weekEditHint: "(Doppelklick zum Bearbeiten)"
   main.settings: "⚙ Einstellungen"
   main.checkUpdates: "🔍 Nach Updates suchen"
+  main.updateAvailable: "📥 Update verfügbar"
   main.reminders: "⏰ Erinnerungen"
   main.export: "📊 Export"
 
@@ -247,6 +248,9 @@ strings:
   settings.section.general: "Allgemein"
   settings.section.language: "Sprache"
   settings.section.export: "Export"
+  settings.section.updates: "Updates"
+  settings.updates.enabled: "Automatisch nach Updates suchen"
+  settings.updates.time: "Prüfzeit:"
   settings.theme: "Design:"
   settings.theme.light: "Hell"
   settings.theme.dark: "Dunkel"

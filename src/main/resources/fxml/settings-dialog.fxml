@@ -70,6 +70,18 @@
 
                     <CheckBox fx:id="exportOpenFolderCheck" text="%settings.export.openFolder" wrapText="true"/>
                 </VBox>
+                <VBox fx:id="updatesPane" spacing="10">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding>
+                    <CheckBox fx:id="updateCheckEnabledCheck" text="%settings.updates.enabled" wrapText="true"/>
+                    <Label text="%settings.updates.time" style="-fx-font-weight: bold;"/>
+                    <HBox spacing="5" alignment="CENTER_LEFT">
+                        <Spinner fx:id="updateHourSpinner" editable="true" maxWidth="80"/>
+                        <Label text=":"/>
+                        <Spinner fx:id="updateMinuteSpinner" editable="true" maxWidth="80"/>
+                    </HBox>
+                </VBox>
             </StackPane>
         </HBox>
     </content>

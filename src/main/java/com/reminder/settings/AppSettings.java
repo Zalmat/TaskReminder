@@ -93,6 +93,28 @@ public final class AppSettings {
         PREFS.put("exportOpenFolder", Boolean.toString(value));
     }
 
+    /** Автоматическая проверка обновлений (при запуске и ежедневно). */
+    public static boolean updateCheckEnabled() {
+        return Boolean.parseBoolean(PREFS.get("updateCheckEnabled", "true"));
+    }
+
+    public static void setUpdateCheckEnabled(boolean value) {
+        PREFS.put("updateCheckEnabled", Boolean.toString(value));
+    }
+
+    public static int updateCheckHour() {
+        return PREFS.getInt("updateCheckHour", 2);
+    }
+
+    public static int updateCheckMinute() {
+        return PREFS.getInt("updateCheckMinute", 0);
+    }
+
+    public static void setUpdateCheckTime(int hour, int minute) {
+        PREFS.putInt("updateCheckHour", hour);
+        PREFS.putInt("updateCheckMinute", minute);
+    }
+
     /** Указанная папка, если она задана и существует. */
     public static Optional<Path> validExportDirectory() {
         String directory = exportDirectory();
