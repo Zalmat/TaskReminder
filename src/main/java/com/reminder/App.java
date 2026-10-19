@@ -1,6 +1,7 @@
 package com.reminder;
 
 import com.reminder.app.DevMode;
+import com.reminder.app.LogConfig;
 import com.reminder.app.SingleInstanceLock;
 import com.reminder.autostart.AutoStartService;
 import com.reminder.i18n.I18n;
@@ -8,6 +9,7 @@ import com.reminder.ui.TrayService;
 import com.reminder.ui.controller.MainController;
 import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.Dialogs;
+import com.reminder.util.Log;
 import com.reminder.util.VersionInfo;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -70,6 +72,7 @@ public class App extends Application {
                 primaryStage.show();
             }
         } catch (Exception e) {
+            Log.log("App", "startup failed: " + Dialogs.reason(e), e);
             System.err.println("Ошибка запуска: " + Dialogs.reason(e));
             Dialogs.error(I18n.get("app.startError.title"), Dialogs.reason(e));
         }
@@ -77,6 +80,7 @@ public class App extends Application {
 
     private void setupTray(Stage primaryStage) {
         if (!TrayService.isSupported()) {
+            Log.log("Tray", "SystemTray not supported");
             return;
         }
         Platform.setImplicitExit(false);
@@ -116,9 +120,11 @@ public class App extends Application {
 
     @SuppressWarnings("unused")
     public static void main(String[] args) {
+        LogConfig.init(java.util.Arrays.asList(args));
         DevMode.init(java.util.Arrays.asList(args));
         // Инициализация локализации: читает сохранённый язык и фиксирует локаль до старта JavaFX.
         I18n.init();
+        LogConfig.logStartupInfo();
         launch(args);
     }
 }

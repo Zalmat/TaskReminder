@@ -1,6 +1,7 @@
 package com.reminder.i18n;
 
 import com.reminder.settings.AppSettings;
+import com.reminder.util.Log;
 
 import java.util.Enumeration;
 import java.util.LinkedHashSet;
@@ -64,6 +65,10 @@ public final class I18n {
         current = chosen != null ? chosen.strings() : Map.of();
         locale = localeFor(activeCode);
         Locale.setDefault(locale);
+        Log.log("I18n", "language=" + activeCode + ", available=" + available.size());
+        if (startupWarning) {
+            Log.log("I18n", "startup warning: language pack damaged or missing: " + startupWarningDetail);
+        }
     }
 
     /** Текущий язык (код). */

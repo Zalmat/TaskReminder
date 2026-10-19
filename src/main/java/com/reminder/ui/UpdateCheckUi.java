@@ -10,6 +10,7 @@ import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.ProgramFolder;
 import com.reminder.ui.util.Tooltips;
+import com.reminder.util.Log;
 import com.reminder.util.VersionInfo;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -89,6 +90,7 @@ public class UpdateCheckUi {
 
     /** Проверяет наличие обновлений в заданном режиме. */
     public void checkForUpdates(CheckMode mode) {
+        Log.log("Update", "check (mode=" + mode + ")");
         if (DevMode.isEnabled()) {
             UpdateInfo demo = DevMode.demoUpdate();
             Platform.runLater(() -> handleUpdateResult(demo, mode));
@@ -99,6 +101,8 @@ public class UpdateCheckUi {
     }
 
     private void handleUpdateResult(UpdateInfo update, CheckMode mode) {
+        Log.log("Update", "result: new=" + update.newer() + ", version=" + update.version()
+                + ", failed=" + update.failed() + " (mode=" + mode + ")");
         if (update.failed()) {
             if (mode == CheckMode.MANUAL) {
                 Dialogs.warn(I18n.get("updates.title"), I18n.get("updates.checkFailed"));
@@ -261,6 +265,9 @@ public class UpdateCheckUi {
                 I18n.get("updates.install.header"), I18n.get("updates.install.content"))) {
             return;
         }
+        String scenario = Long.toString(System.currentTimeMillis() % 100000);
+        Log.log("Update", "start install: version=" + update.version()
+                + ", archive=" + update.archiveName(), scenario);
 
         ProgressBar bar = new ProgressBar();
         bar.setPrefWidth(320);
@@ -285,17 +292,20 @@ public class UpdateCheckUi {
                                 bar.setProgress((double) downloaded / total);
                             }
                         }));
+                Log.log("Update", "downloaded: " + archive, scenario);
                 Platform.runLater(() -> {
                     progress.close();
                     try {
                         AppAutoUpdater.start(archive);
                         exitAction.run();
                     } catch (IOException e) {
+                        Log.log("Update", "updater launch failed: " + e.getMessage(), e, scenario);
                         Dialogs.error(I18n.get("common.error"),
                                 I18n.format("updates.downloadFailed", Dialogs.reason(e)));
                     }
                 });
             } catch (Exception e) {
+                Log.log("Update", "install failed: " + e.getMessage(), e, scenario);
                 Platform.runLater(() -> {
                     progress.close();
                     Dialogs.error(I18n.get("common.error"),

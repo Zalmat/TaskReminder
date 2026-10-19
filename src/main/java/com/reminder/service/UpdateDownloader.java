@@ -1,6 +1,7 @@
 package com.reminder.service;
 
 import com.reminder.model.UpdateInfo;
+import com.reminder.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,6 +47,7 @@ public class UpdateDownloader {
         String name = update.archiveName() != null && !update.archiveName().isBlank()
                 ? update.archiveName() : fileNameFrom(url);
         Path target = tempDir.resolve(sanitize(name));
+        Log.log("Update", "download start: " + url);
 
         boolean local = isLocal(url);
         if (local) {
@@ -60,6 +62,7 @@ public class UpdateDownloader {
         }
 
         verifyChecksum(update, target, local);
+        Log.log("Update", "download complete: " + target + " (bytes=" + Files.size(target) + ")");
         return target;
     }
 
@@ -73,6 +76,7 @@ public class UpdateDownloader {
         }
         String actual = sha256(target);
         if (!actual.equalsIgnoreCase(expected.trim())) {
+            Log.log("Update", "checksum mismatch");
             Files.deleteIfExists(target);
             throw new IOException("Контрольная сумма не совпадает");
         }

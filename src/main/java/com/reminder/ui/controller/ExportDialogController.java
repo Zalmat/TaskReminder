@@ -11,6 +11,7 @@ import com.reminder.util.DateUtils;
 import com.reminder.ui.util.DatePickerUtils;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.ProgramFolder;
+import com.reminder.util.Log;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
@@ -133,9 +134,11 @@ public class ExportDialogController {
                 filePath += "." + format.extension();
             }
             exportService.export(entries, format, filePath);
+            Log.log("Export", "exported " + entries.size() + " entries to " + filePath);
             closeDialog();
             alert.accept(I18n.get("common.success"), I18n.format("export.success", entries.size()));
         } catch (Exception ex) {
+            Log.log("Export", "failed: " + ex.getMessage(), ex);
             System.err.println("Export failed: " + ex.getMessage());
             alert.accept(I18n.get("common.error"), I18n.format("export.error", Dialogs.reason(ex)));
         }
@@ -146,12 +149,14 @@ public class ExportDialogController {
         try {
             File target = uniqueFile(directory.toFile(), fileName);
             exportService.export(entries, format, target.getAbsolutePath());
+            Log.log("Export", "autosaved " + entries.size() + " entries to " + target.getAbsolutePath());
             closeDialog();
             if (AppSettings.exportOpenFolder()) {
                 ProgramFolder.openDirectory(directory);
             }
             alert.accept(I18n.get("common.success"), I18n.format("export.savedTo", target.getName()));
         } catch (Exception ex) {
+            Log.log("Export", "autosave failed: " + ex.getMessage(), ex);
             System.err.println("Export failed: " + ex.getMessage());
             alert.accept(I18n.get("common.error"), I18n.format("export.error", Dialogs.reason(ex)));
         }

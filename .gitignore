@@ -12,7 +12,9 @@ reminders.json
 holidays.json
 .taskreminder.lock
 /language/
+/logs/
 dev.flag
+log.flag
 updater/autoupdater
 updater/autoupdater.exe
 *.dat

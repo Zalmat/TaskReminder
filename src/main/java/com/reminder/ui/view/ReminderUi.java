@@ -4,6 +4,7 @@ import com.reminder.i18n.I18n;
 import com.reminder.model.Reminder;
 import com.reminder.service.ReminderService;
 import com.reminder.ui.theme.ThemeManager;
+import com.reminder.util.Log;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonBar;
@@ -37,6 +38,7 @@ public class ReminderUi {
     }
 
     private void showDialog(Reminder reminder) {
+        Log.log("Reminder", "fired: " + reminder.getText());
         playSound();
         Alert alert = new Alert(Alert.AlertType.INFORMATION);
         alert.setTitle(I18n.get("reminder.popup.title"));

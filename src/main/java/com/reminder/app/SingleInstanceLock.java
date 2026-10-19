@@ -9,6 +9,8 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
+import com.reminder.util.Log;
+
 /**
  * Защита от запуска второй копии приложения.
  * Берёт эксклюзивную блокировку на файл {@value #LOCK_FILE} в рабочем каталоге.
@@ -38,17 +40,21 @@ public final class SingleInstanceLock {
                     StandardOpenOption.CREATE, StandardOpenOption.WRITE);
             FileLock candidateLock = candidateChannel.tryLock();
             if (candidateLock == null) {
+                Log.log("SingleInstanceLock", "another instance is already running");
                 closeQuietly(candidateChannel);
                 return false;
             }
             channel = candidateChannel;
             lock = candidateLock;
+            Log.log("SingleInstanceLock", "acquired");
             return true;
         } catch (OverlappingFileLockException e) {
+            Log.log("SingleInstanceLock", "another instance is already running");
             closeQuietly(candidateChannel);
             return false;
         } catch (IOException e) {
             // Не блокируем запуск при проблемах с лок-файлом (fail-open).
+            Log.log("SingleInstanceLock", "lock error (fail-open): " + e.getMessage());
             System.err.println("Cannot acquire single-instance lock: " + e.getMessage());
             closeQuietly(candidateChannel);
             return true;

@@ -1,6 +1,7 @@
 package com.reminder.ui;
 
 import com.reminder.i18n.I18n;
+import com.reminder.util.Log;
 import javafx.application.Platform;
 import javafx.stage.Stage;
 
@@ -54,7 +55,9 @@ public class TrayService {
 
         try {
             SystemTray.getSystemTray().add(trayIcon);
+            Log.log("Tray", "tray icon installed");
         } catch (AWTException e) {
+            Log.log("Tray", "cannot add tray icon: " + e.getMessage(), e);
             System.err.println("Cannot add tray icon: " + e.getMessage());
         }
     }

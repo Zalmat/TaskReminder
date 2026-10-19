@@ -7,6 +7,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
+import com.reminder.util.Log;
+
 /**
  * Автозагрузка при входе в систему (только текущий пользователь, без прав администратора).
  * Windows: ключ HKCU\...\Run. Linux: ~/.config/autostart/taskreminder.desktop.
@@ -44,6 +46,7 @@ public final class AutoStartService {
         if (launcher.isEmpty()) {
             return;
         }
+        Log.log("AutoStart", (enabled ? "enable" : "disable") + " launcher=" + launcher.get());
         if (isWindows()) {
             if (enabled) {
                 runCommand(List.of("reg", "add", RUN_KEY, "/v", APP_NAME,
@@ -61,6 +64,7 @@ public final class AutoStartService {
                     Files.deleteIfExists(file);
                 }
             } catch (IOException e) {
+                Log.log("AutoStart", "change failed: " + e.getMessage(), e);
                 System.err.println("Autostart change failed: " + e.getMessage());
             }
         }

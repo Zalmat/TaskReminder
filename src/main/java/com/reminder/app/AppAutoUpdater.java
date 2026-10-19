@@ -1,6 +1,7 @@
 package com.reminder.app;
 
 import com.reminder.autostart.LauncherPath;
+import com.reminder.util.Log;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -58,6 +59,7 @@ public final class AppAutoUpdater {
         command.add("-exe");
         command.add(exeName);
 
+        Log.log("Update", "launch updater: " + command);
         new ProcessBuilder(command).start();
     }
 
