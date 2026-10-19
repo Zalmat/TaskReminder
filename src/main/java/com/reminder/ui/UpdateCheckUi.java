@@ -222,12 +222,32 @@ public class UpdateCheckUi {
         alert.getButtonTypes().setAll(updateButton, downloadButton, releaseButton, folderButton, closeButton);
 
         Button updateControl = (Button) alert.getDialogPane().lookupButton(updateButton);
-        boolean archiveAvailable = update.hasArchive();
+        boolean devMode = DevMode.isEnabled();
+        boolean devSourceConfigured = devMode && DevMode.hasUpdateSource();
+        boolean devSourceAvailable = !devSourceConfigured || DevMode.updateSourceAvailable();
+        boolean archiveAvailable = update.hasArchive() && devSourceAvailable;
         boolean updateAvailable = archiveAvailable && AppAutoUpdater.isAvailable();
-        updateControl.setDisable(!updateAvailable);
+        // JavaFX не показывает тултип у disabled-кнопки, поэтому недоступную кнопку
+        // оставляем активной, но приглушённой: тултип виден, а клик показывает подсказку.
+        updateControl.setDisable(false);
+        updateControl.setOpacity(updateAvailable ? 1.0 : 0.55);
         if (!updateAvailable) {
-            Tooltips.apply(updateControl, I18n.get(archiveAvailable
-                    ? "updates.updaterUnavailable" : "updates.noArchive"));
+            String tooltip;
+            if (!update.hasArchive() && devMode && !DevMode.hasUpdateSource()) {
+                tooltip = I18n.get("updates.devSourceRequired");
+            } else if (devSourceConfigured && !devSourceAvailable) {
+                tooltip = I18n.format("updates.updateSourceMissing", DevMode.updateFrom());
+            } else if (!archiveAvailable) {
+                tooltip = I18n.get("updates.noArchive");
+            } else {
+                tooltip = I18n.get("updates.updaterUnavailable");
+            }
+            Tooltips.apply(updateControl, tooltip);
+            String hint = tooltip;
+            updateControl.addEventFilter(ActionEvent.ACTION, event -> {
+                event.consume();
+                Dialogs.info(I18n.get("updates.install.title"), hint);
+            });
         }
 
         Button folder = (Button) alert.getDialogPane().lookupButton(folderButton);

@@ -185,6 +185,8 @@ strings:
   updates.downloading: "Update wird heruntergeladen…"
   updates.downloadFailed: "Update konnte nicht heruntergeladen werden: {0}"
   updates.noArchive: "Kein Update-Archiv für dieses System gefunden"
+  updates.devSourceRequired: "Dev-Modus: Um ein Update zu simulieren, fügen Sie diese Zeilen in dev.flag ein:\nupdateFrom=C:\\Temp\\TaskReminder-1.6.2-win-x64.zip\nupdateVersion=9.9.9"
+  updates.updateSourceMissing: "Update-Datei nicht gefunden: {0}"
   updates.whatsNew: "Neuerungen"
 
   reminders.header: "Neue Erinnerung hinzufügen oder vorhandene verwalten"

@@ -185,6 +185,8 @@ strings:
   updates.downloading: "Загрузка обновления…"
   updates.downloadFailed: "Не удалось скачать обновление: {0}"
   updates.noArchive: "Не найден архив обновления для этой системы"
+  updates.devSourceRequired: "Dev-режим: чтобы симулировать обновление, добавьте в dev.flag строки:\nupdateFrom=C:\\Temp\\TaskReminder-1.6.2-win-x64.zip\nupdateVersion=9.9.9"
+  updates.updateSourceMissing: "Файл обновления не найден: {0}"
   updates.whatsNew: "Что нового"
 
   reminders.header: "Добавьте новое или управляйте существующими напоминаниями"

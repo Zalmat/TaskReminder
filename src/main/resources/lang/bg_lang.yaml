@@ -185,6 +185,8 @@ strings:
   updates.downloading: "Изтегляне на актуализацията…"
   updates.downloadFailed: "Актуализацията не можа да се изтегли: {0}"
   updates.noArchive: "Не е намерен архив за актуализация за тази система"
+  updates.devSourceRequired: "Dev режим: за да симулирате актуализация, добавете тези редове в dev.flag:\nupdateFrom=C:\\Temp\\TaskReminder-1.6.2-win-x64.zip\nupdateVersion=9.9.9"
+  updates.updateSourceMissing: "Файлът за актуализация не е намерен: {0}"
   updates.whatsNew: "Какво ново"
 
   reminders.header: "Добавете ново напомняне или управлявайте съществуващите"

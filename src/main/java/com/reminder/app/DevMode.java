@@ -2,7 +2,9 @@ package com.reminder.app;
 
 import com.reminder.model.UpdateInfo;
 import com.reminder.service.UpdateDownloader;
+import com.reminder.util.Log;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -46,6 +48,9 @@ public final class DevMode {
             loadFlagFile();
         }
         enabled = byArg || Boolean.getBoolean("reminder.dev") || hasFlagFile;
+        if (enabled && !hasUpdateSource()) {
+            Log.log("DevMode", "updateFrom is not set (dev mode without update source)");
+        }
     }
 
     public static boolean isEnabled() {
@@ -55,6 +60,22 @@ public final class DevMode {
     /** Задан ли источник архива для теста реального обновления. */
     public static boolean hasUpdateSource() {
         return !updateFrom().isBlank();
+    }
+
+    /** Доступен ли заданный источник (для локального пути — существует ли файл). */
+    public static boolean updateSourceAvailable() {
+        String from = updateFrom();
+        if (from.isBlank()) {
+            return false;
+        }
+        if (!UpdateDownloader.isLocal(from)) {
+            return true;
+        }
+        try {
+            return Files.isRegularFile(UpdateDownloader.localPath(from));
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public static String updateFrom() {
@@ -129,20 +150,31 @@ public final class DevMode {
     }
 
     private static void loadFlagFile() {
+        flagProperties.putAll(parseFlag(Path.of(FLAG_FILE)));
+    }
+
+    /** Разбирает файл флагов в пары key=value; устойчив к UTF-8 BOM. */
+    static Map<String, String> parseFlag(Path file) {
+        Map<String, String> result = new HashMap<>();
         try {
-            for (String line : Files.readAllLines(Path.of(FLAG_FILE))) {
+            String content = Files.readString(file, StandardCharsets.UTF_8);
+            if (content.startsWith("\uFEFF")) {
+                content = content.substring(1);
+            }
+            for (String line : content.split("\\R")) {
                 String trimmed = line.trim();
                 if (trimmed.isEmpty() || trimmed.startsWith("#")) {
                     continue;
                 }
                 int eq = trimmed.indexOf('=');
                 if (eq > 0) {
-                    flagProperties.put(trimmed.substring(0, eq).trim(), trimmed.substring(eq + 1).trim());
+                    result.put(trimmed.substring(0, eq).trim(), trimmed.substring(eq + 1).trim());
                 }
             }
         } catch (Exception ignored) {
-            // маркер-файл не читается — просто включённый dev-режим
+            // файл не читается — пустая карта
         }
+        return result;
     }
 
     private static String fileName(String from) {
