@@ -17,6 +17,8 @@ import java.awt.TrayIcon;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.io.InputStream;
+import javax.imageio.ImageIO;
 
 /** Сворачивает приложение в системный трей через java.awt.SystemTray. */
 public class TrayService {
@@ -88,6 +90,20 @@ public class TrayService {
     }
 
     private static Image createTrayImage() {
+        try (InputStream in = TrayService.class.getResourceAsStream("/icons/app-32.png")) {
+            if (in != null) {
+                BufferedImage image = ImageIO.read(in);
+                if (image != null) {
+                    return image;
+                }
+            }
+        } catch (Exception ignored) {
+            // перейдём к нарисованной иконке
+        }
+        return drawnTrayImage();
+    }
+
+    private static Image drawnTrayImage() {
         int size = 16;
         BufferedImage image = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
         Graphics2D g = image.createGraphics();

@@ -121,6 +121,7 @@ echo "[5/6] Building app-image from $JAR_NAME..."
     --module-path "$JMODS" \
     --add-modules javafx.controls,javafx.fxml,javafx.media,java.desktop,java.net.http,java.prefs,java.xml,java.logging,java.management,java.naming,java.sql,jdk.crypto.ec,jdk.crypto.cryptoki \
     --java-options "-Dfile.encoding=UTF-8" \
+    --icon "$ROOT/src/main/resources/icons/app-256.png" \
     --app-version "$NUMERIC"
 
 # Чистка служебных файлов данных, попавших в каталог приложения

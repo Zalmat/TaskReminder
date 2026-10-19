@@ -2,6 +2,7 @@ package com.reminder.ui.util;
 
 import com.reminder.i18n.I18n;
 import com.reminder.ui.theme.ThemeManager;
+import com.reminder.ui.util.AppIcons;
 import javafx.scene.control.Alert;
 import javafx.scene.control.ButtonBar;
 import javafx.scene.control.ButtonType;
@@ -31,6 +32,7 @@ public final class Dialogs {
         alert.setHeaderText(header);
         alert.setContentText(content);
         ThemeManager.applyTo(alert.getDialogPane());
+        AppIcons.applyTo(alert);
         return alert.showAndWait().orElse(ButtonType.CANCEL) == ButtonType.OK;
     }
 
@@ -44,6 +46,7 @@ public final class Dialogs {
         ButtonType noButton = new ButtonType(I18n.get("dialog.no"), ButtonBar.ButtonData.CANCEL_CLOSE);
         alert.getButtonTypes().setAll(yesButton, noButton);
         ThemeManager.applyTo(alert.getDialogPane());
+        AppIcons.applyTo(alert);
         return alert.showAndWait().orElse(noButton) == yesButton;
     }
 
@@ -88,6 +91,7 @@ public final class Dialogs {
         alert.setHeaderText(null);
         alert.setContentText(content);
         ThemeManager.applyTo(alert.getDialogPane());
+        AppIcons.applyTo(alert);
         alert.showAndWait();
     }
 }

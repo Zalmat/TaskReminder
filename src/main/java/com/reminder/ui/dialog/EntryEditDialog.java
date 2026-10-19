@@ -2,6 +2,7 @@ package com.reminder.ui.dialog;
 
 import com.reminder.i18n.I18n;
 import com.reminder.ui.theme.ThemeManager;
+import com.reminder.ui.util.AppIcons;
 import com.reminder.util.TaskValidationUtils;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
@@ -75,6 +76,7 @@ public final class EntryEditDialog {
         });
 
         ThemeManager.applyTo(dialog.getDialogPane());
+        AppIcons.applyTo(dialog);
         return dialog.showAndWait().orElse(null);
     }
 }

@@ -17,6 +17,7 @@ import com.reminder.ui.component.ClockUi;
 import com.reminder.ui.component.EasterEgg;
 import com.reminder.ui.component.EntryForm;
 import com.reminder.ui.theme.ThemeManager;
+import com.reminder.ui.util.AppIcons;
 import com.reminder.ui.util.DatePickerUtils;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.view.DayView;
@@ -236,6 +237,7 @@ public class MainController {
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle(I18n.get("dialog.reminders.title"));
             dialog.setDialogPane(pane);
+            AppIcons.applyTo(dialog);
             dialog.showAndWait();
         } catch (IOException e) {
             Dialogs.error(I18n.get("common.error"),
@@ -255,6 +257,7 @@ public class MainController {
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle(I18n.get("dialog.export.title"));
             dialog.setDialogPane(pane);
+            AppIcons.applyTo(dialog);
             dialog.showAndWait();
         } catch (IOException e) {
             Dialogs.error(I18n.get("common.error"),
@@ -274,6 +277,7 @@ public class MainController {
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle(I18n.get("dialog.holidays.title"));
             dialog.setDialogPane(pane);
+            AppIcons.applyTo(dialog);
             dialog.showAndWait();
 
             if (isWeekView) {
@@ -298,6 +302,7 @@ public class MainController {
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle(I18n.get("dialog.settings.title"));
             dialog.setDialogPane(pane);
+            AppIcons.applyTo(dialog);
             dialog.showAndWait();
 
             if (updateCheckUi != null) {

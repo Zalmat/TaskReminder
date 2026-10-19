@@ -7,6 +7,7 @@ import com.reminder.model.UpdateInfo;
 import com.reminder.service.UpdateCheckService;
 import com.reminder.service.UpdateDownloader;
 import com.reminder.ui.theme.ThemeManager;
+import com.reminder.ui.util.AppIcons;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.ProgramFolder;
 import com.reminder.ui.util.Tooltips;
@@ -263,6 +264,7 @@ public class UpdateCheckUi {
         });
 
         ThemeManager.applyTo(alert.getDialogPane());
+        AppIcons.applyTo(alert);
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isEmpty()) {
@@ -302,6 +304,7 @@ public class UpdateCheckUi {
         progress.setResizable(false);
         progress.setOnCloseRequest(javafx.event.Event::consume);
         ThemeManager.applyTo(progress.getDialogPane());
+        AppIcons.applyTo(progress);
 
         Thread worker = new Thread(() -> {
             try {

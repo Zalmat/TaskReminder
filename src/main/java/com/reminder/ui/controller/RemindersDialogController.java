@@ -3,6 +3,7 @@ package com.reminder.ui.controller;
 import com.reminder.i18n.I18n;
 import com.reminder.model.Reminder;
 import com.reminder.service.ReminderService;
+import com.reminder.ui.util.AppIcons;
 import com.reminder.ui.util.Dialogs;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
@@ -100,6 +101,7 @@ public class RemindersDialogController {
         Dialog<Reminder> dialog = new Dialog<>();
         dialog.setTitle(I18n.get("reminders.editTitle"));
         dialog.setHeaderText(I18n.get("reminders.editHeader"));
+        AppIcons.applyTo(dialog);
 
         ButtonType saveType = new ButtonType(I18n.get("button.save"), ButtonBar.ButtonData.OK_DONE);
         dialog.getDialogPane().getButtonTypes().addAll(saveType, ButtonType.CANCEL);

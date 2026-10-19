@@ -2,6 +2,7 @@ package com.reminder.ui.component;
 
 import com.reminder.i18n.I18n;
 import com.reminder.ui.theme.ThemeManager;
+import com.reminder.ui.util.AppIcons;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.scene.control.Alert;
@@ -36,6 +37,7 @@ public class EasterEgg {
         alert.setHeaderText(I18n.get("easteregg.header"));
         alert.setContentText(I18n.get("easteregg.content"));
         ThemeManager.applyTo(alert.getDialogPane());
+        AppIcons.applyTo(alert);
         alert.showAndWait();
     }
 }

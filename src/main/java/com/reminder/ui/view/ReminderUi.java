@@ -4,6 +4,7 @@ import com.reminder.i18n.I18n;
 import com.reminder.model.Reminder;
 import com.reminder.service.ReminderService;
 import com.reminder.ui.theme.ThemeManager;
+import com.reminder.ui.util.AppIcons;
 import com.reminder.util.Log;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
@@ -54,6 +55,7 @@ public class ReminderUi {
         vbox.setPadding(new Insets(10));
         alert.getDialogPane().setExpandableContent(vbox);
         ThemeManager.applyTo(alert.getDialogPane());
+        AppIcons.applyTo(alert);
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent()) {

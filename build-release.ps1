@@ -91,6 +91,7 @@ Write-Host "[5/6] Building app-image from $($jar.Name)..."
     --module-path $jmods `
     --add-modules javafx.controls,javafx.fxml,javafx.media,java.desktop,java.net.http,java.prefs,java.xml,java.logging,java.management,java.naming,java.sql,jdk.crypto.ec,jdk.crypto.cryptoki `
     --java-options "-Dfile.encoding=UTF-8" `
+    --icon (Join-Path $Root "packaging\app.ico") `
     --app-version $numeric
 if ($LASTEXITCODE -ne 0) { throw "jpackage failed (exit $LASTEXITCODE)" }
 

@@ -8,6 +8,7 @@ import com.reminder.i18n.I18n;
 import com.reminder.ui.TrayService;
 import com.reminder.ui.controller.MainController;
 import com.reminder.ui.theme.ThemeManager;
+import com.reminder.ui.util.AppIcons;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.util.Log;
 import com.reminder.util.VersionInfo;
@@ -41,6 +42,7 @@ public class App extends Application {
 
             Scene scene = new Scene(root, 1200, 800);
             ThemeManager.apply(scene);
+            AppIcons.apply(primaryStage);
 
             primaryStage.setTitle(I18n.get("app.title") + "  v" + VersionInfo.load().version());
             primaryStage.setScene(scene);
