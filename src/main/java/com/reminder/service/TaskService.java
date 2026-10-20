@@ -1,5 +1,6 @@
 package com.reminder.service;
 
+import com.reminder.catalog.TaskCatalogService;
 import com.reminder.model.Task;
 import com.reminder.model.WorkEntry;
 import com.reminder.storage.DataStore;
@@ -20,6 +21,7 @@ public class TaskService {
     private static final String TASKS_FILE = "predefined_tasks.json";
 
     private final DataStore store;
+    private final TaskCatalogService catalog;
     private final List<WorkEntry> entries;
     private final List<Task> predefinedTasks;
 
@@ -29,6 +31,7 @@ public class TaskService {
 
     public TaskService(DataStore store) {
         this.store = store;
+        this.catalog = new TaskCatalogService(store);
         migrateLegacy();
         this.entries = store.loadList(ENTRIES_FILE, WorkEntry.class);
         this.predefinedTasks = store.loadList(TASKS_FILE, Task.class);
@@ -112,6 +115,7 @@ public class TaskService {
         Set<String> projects = new HashSet<>();
         entries.forEach(e -> projects.add(e.getProject()));
         predefinedTasks.forEach(t -> projects.add(t.getProject()));
+        projects.addAll(catalog.getProjects());
         return new ArrayList<>(projects);
     }
 
@@ -119,7 +123,22 @@ public class TaskService {
         Set<String> taskNames = new HashSet<>();
         entries.forEach(e -> taskNames.add(e.getTaskName()));
         predefinedTasks.forEach(t -> taskNames.add(t.getTaskName()));
+        taskNames.addAll(catalog.getTaskNames());
         return new ArrayList<>(taskNames);
+    }
+
+    /** Типы работ для автоподстановки (из каталога). */
+    public List<String> getWorkTypes() {
+        return catalog.getTypes();
+    }
+
+    /** Засевает типы по умолчанию, если каталог типов пуст. */
+    public void ensureDefaultTypes(List<String> defaults) {
+        catalog.ensureDefaultTypes(defaults);
+    }
+
+    public TaskCatalogService getCatalog() {
+        return catalog;
     }
 
     public void addPredefinedTask(Task task) {

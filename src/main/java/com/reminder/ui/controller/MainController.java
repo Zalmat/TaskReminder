@@ -1,7 +1,11 @@
 package com.reminder.ui.controller;
 
 import com.reminder.i18n.I18n;
-import com.reminder.model.Task;
+import com.reminder.catalog.importing.CatalogImportService;
+import com.reminder.catalog.importing.ImportOutcome;
+import com.reminder.catalog.importing.YamlCatalogImporter;
+import com.reminder.importing.ImportScheduler;
+import com.reminder.importing.ImportStateStore;
 import com.reminder.model.UpdateInfo;
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
@@ -10,8 +14,9 @@ import com.reminder.service.ReminderService;
 import com.reminder.service.TaskService;
 import com.reminder.service.UpdateCheckService;
 import com.reminder.service.WorkTimeService;
-import com.reminder.service.YamlLoaderService;
 import com.reminder.settings.AppSettings;
+import com.reminder.settings.WorkTypes;
+import com.reminder.ui.ImportNotifier;
 import com.reminder.ui.UpdateCheckUi;
 import com.reminder.ui.component.ClockUi;
 import com.reminder.ui.component.EasterEgg;
@@ -23,6 +28,7 @@ import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.view.DayView;
 import com.reminder.ui.view.ReminderUi;
 import com.reminder.ui.view.WeekView;
+import com.reminder.util.Log;
 import com.reminder.util.YamlTemplate;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -47,8 +53,10 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.LocalDate;
-import java.util.List;
+import java.time.LocalDateTime;
+import java.util.function.BiConsumer;
 
 /** Контроллер главного окна. Собирает слой UI поверх сервисов бизнес-логики. */
 public class MainController {
@@ -61,6 +69,7 @@ public class MainController {
     @FXML private Label dayOvertimeLabel;
     @FXML private Label weekTotalLabel;
     @FXML private Label clockLabel;
+    @FXML private Label importBell;
     @FXML private DatePicker datePicker;
     @FXML private ComboBox<String> projectChoice;
     @FXML private ComboBox<String> taskChoice;
@@ -98,8 +107,12 @@ public class MainController {
     private final WorkTimeService workTimeService = new WorkTimeService();
     private final ReminderService reminderService = new ReminderService();
     private final ExportService exportService = new ExportService();
-    private final YamlLoaderService yamlLoaderService = new YamlLoaderService();
     private final UpdateCheckService updateCheckService = new UpdateCheckService();
+    private final ImportStateStore importState = new ImportStateStore();
+    private final ImportScheduler importScheduler = new ImportScheduler();
+    private CatalogImportService catalogImportService;
+    private ImportNotifier importNotifier;
+    private BiConsumer<String, String> trayNotifier = (caption, text) -> { };
     private UpdateCheckUi updateCheckUi;
     private Runnable exitAction = () -> { };
     private final EasterEgg easterEgg = new EasterEgg();
@@ -112,7 +125,8 @@ public class MainController {
     @FXML
     private void initialize() {
         form = new EntryForm(projectChoice, taskChoice, typeChoice, hoursField, commentArea);
-        form.loadTypeChoices();
+        taskService.ensureDefaultTypes(WorkTypes.defaults());
+        form.loadTypeChoices(taskService);
 
         configureDatePicker();
 
@@ -131,6 +145,7 @@ public class MainController {
 
         reminderUi.setup();
         setupUpdateCheck();
+        setupTaskImport();
         ClockUi.start(clockLabel);
 
         dayView.update(datePicker.getValue());
@@ -297,7 +312,7 @@ public class MainController {
             loader.setResources(I18n.bundle());
             DialogPane pane = loader.load();
             SettingsDialogController ctrl = loader.getController();
-            ctrl.init(datePicker.getScene(), form.typeItems());
+            ctrl.init(datePicker.getScene(), form.typeItems(), this::importFromSettings);
 
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle(I18n.get("dialog.settings.title"));
@@ -309,6 +324,7 @@ public class MainController {
                 updateCheckUi.applySchedule(AppSettings.updateCheckEnabled(),
                         AppSettings.updateCheckHour(), AppSettings.updateCheckMinute());
             }
+            applyImportSchedule();
         } catch (IOException e) {
             Dialogs.error(I18n.get("common.error"),
                     I18n.format("dialog.settings.error", Dialogs.reason(e)));
@@ -326,19 +342,26 @@ public class MainController {
         File file = fileChooser.showOpenDialog(datePicker.getScene().getWindow());
         if (file == null) return;
 
-        try {
-            List<Task> tasks = yamlLoaderService.loadTasksFromYaml(file.getAbsolutePath());
-            if (tasks.isEmpty()) {
-                Dialogs.warn(I18n.get("common.warning"), I18n.get("yaml.empty"));
-                return;
-            }
-            for (Task task : tasks) {
-                taskService.addPredefinedTask(task);
-            }
-            form.refreshChoices(taskService);
-            Dialogs.info(I18n.get("common.success"), I18n.format("yaml.loaded", tasks.size()));
-        } catch (Exception e) {
-            Dialogs.error(I18n.get("common.error"), I18n.format("yaml.loadError", e.getMessage()));
+        ImportOutcome outcome = runImport(file.toPath(), true, false);
+        if (outcome != null) {
+            showImportResult(outcome);
+        }
+    }
+
+    private void showImportResult(ImportOutcome outcome) {
+        if (outcome.hasNew()) {
+            Dialogs.info(I18n.get("common.success"), I18n.format("tasks.import.result",
+                    outcome.added().projects(), outcome.added().taskNames(), outcome.added().types()));
+        } else {
+            Dialogs.info(I18n.get("common.success"), I18n.get("tasks.import.nothingNew"));
+        }
+    }
+
+    /** Импорт из окна настроек (кнопки «Создать пример…»/«Выбрать…», ответ «Да»). */
+    private void importFromSettings(Path file) {
+        ImportOutcome outcome = runImport(file, true, false);
+        if (outcome != null) {
+            showImportResult(outcome);
         }
     }
 
@@ -382,6 +405,88 @@ public class MainController {
         }
     }
 
+    // ==================== ИМПОРТ КАТЕГОРИЙ ====================
+
+    private void setupTaskImport() {
+        catalogImportService = new CatalogImportService(
+                new YamlCatalogImporter(), taskService.getCatalog(), importState);
+        importNotifier = new ImportNotifier(importBell,
+                (caption, text) -> trayNotifier.accept(caption, text));
+        applyImportSchedule();
+        javafx.application.Platform.runLater(this::runStartupImportIfEnabled);
+    }
+
+    private void runStartupImportIfEnabled() {
+        if (!AppSettings.taskImportOnStartup()) {
+            return;
+        }
+        Path file = configuredImportFile();
+        if (file != null) {
+            runImport(file, false, true);
+        }
+    }
+
+    private void applyImportSchedule() {
+        boolean enabled = AppSettings.taskImportScheduleEnabled() && configuredImportFile() != null;
+        importScheduler.applySchedule(enabled, AppSettings.taskImportHour(),
+                AppSettings.taskImportMinute(), this::scheduledImport);
+    }
+
+    private void scheduledImport() {
+        javafx.application.Platform.runLater(() -> {
+            Path file = configuredImportFile();
+            if (file != null) {
+                runImport(file, false, true);
+            }
+        });
+    }
+
+    private Path configuredImportFile() {
+        String path = AppSettings.taskImportFile();
+        if (path == null || path.isBlank()) {
+            return null;
+        }
+        Path file = Path.of(path);
+        return Files.isRegularFile(file) ? file : null;
+    }
+
+    /** Импортирует файл; возвращает итог или {@code null} при ошибке. */
+    private ImportOutcome runImport(Path file, boolean force, boolean notify) {
+        try {
+            ImportOutcome outcome = catalogImportService.importFile(file, force);
+            if (outcome.unchangedFile()) {
+                Log.log("TaskImport", "unchanged: " + file);
+                return outcome;
+            }
+            Log.log("TaskImport", "imported " + file + ": projects+" + outcome.added().projects()
+                    + ", tasks+" + outcome.added().taskNames() + ", types+" + outcome.added().types()
+                    + " (rows=" + outcome.totalRows() + ", skipped=" + outcome.skipped() + ")");
+            if (outcome.hasNew()) {
+                form.refreshChoices(taskService);
+                form.refreshTypeChoices(taskService);
+                if (notify) {
+                    importNotifier.notifyImported(LocalDateTime.now(), outcome,
+                            AppSettings.taskImportTrayNotify());
+                }
+            }
+            return outcome;
+        } catch (Exception e) {
+            Log.log("TaskImport", "failed: " + e.getMessage(), e);
+            if (force) {
+                Dialogs.error(I18n.get("common.error"),
+                        I18n.format("tasks.import.error", Dialogs.reason(e)));
+            }
+            return null;
+        }
+    }
+
+    /** Задаётся приложением: показ сообщения в трее. */
+    public void setTrayNotifier(BiConsumer<String, String> trayNotifier) {
+        if (trayNotifier != null) {
+            this.trayNotifier = trayNotifier;
+        }
+    }
+
     /** Задаётся приложением: корректное завершение без подтверждения (для автообновления). */
     public void setExitAction(Runnable exitAction) {
         if (exitAction != null) {
@@ -394,6 +499,7 @@ public class MainController {
         if (updateCheckUi != null) {
             updateCheckUi.shutdown();
         }
+        importScheduler.shutdown();
     }
 
     @FXML

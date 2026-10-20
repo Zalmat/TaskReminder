@@ -115,6 +115,55 @@ public final class AppSettings {
         PREFS.putInt("updateCheckMinute", minute);
     }
 
+    /** Путь к YAML-файлу со списком категорий (пусто = не задан). */
+    public static String taskImportFile() {
+        return PREFS.get("taskImportFile", "");
+    }
+
+    public static void setTaskImportFile(String path) {
+        PREFS.put("taskImportFile", path == null ? "" : path);
+    }
+
+    /** Импортировать категории при запуске. */
+    public static boolean taskImportOnStartup() {
+        return Boolean.parseBoolean(PREFS.get("taskImportOnStartup", "false"));
+    }
+
+    public static void setTaskImportOnStartup(boolean value) {
+        PREFS.put("taskImportOnStartup", Boolean.toString(value));
+    }
+
+    /** Импортировать категории ежедневно. */
+    public static boolean taskImportScheduleEnabled() {
+        return Boolean.parseBoolean(PREFS.get("taskImportScheduleEnabled", "false"));
+    }
+
+    public static void setTaskImportScheduleEnabled(boolean value) {
+        PREFS.put("taskImportScheduleEnabled", Boolean.toString(value));
+    }
+
+    public static int taskImportHour() {
+        return PREFS.getInt("taskImportHour", 9);
+    }
+
+    public static int taskImportMinute() {
+        return PREFS.getInt("taskImportMinute", 0);
+    }
+
+    public static void setTaskImportTime(int hour, int minute) {
+        PREFS.putInt("taskImportHour", hour);
+        PREFS.putInt("taskImportMinute", minute);
+    }
+
+    /** Показывать уведомление в трее после авто-импорта. */
+    public static boolean taskImportTrayNotify() {
+        return Boolean.parseBoolean(PREFS.get("taskImportTrayNotify", "true"));
+    }
+
+    public static void setTaskImportTrayNotify(boolean value) {
+        PREFS.put("taskImportTrayNotify", Boolean.toString(value));
+    }
+
     /** Указанная папка, если она задана и существует. */
     public static Optional<Path> validExportDirectory() {
         String directory = exportDirectory();

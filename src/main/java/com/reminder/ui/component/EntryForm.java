@@ -28,12 +28,24 @@ public class EntryForm {
         this.commentArea = commentArea;
     }
 
-    public void loadTypeChoices() {
-        typeChoice.getItems().addAll(
-                I18n.get("worktype.development"), I18n.get("worktype.testing"), I18n.get("worktype.design"),
-                I18n.get("worktype.analytics"), I18n.get("worktype.management"),
-                I18n.get("worktype.communication"), I18n.get("worktype.other"));
-        typeChoice.setValue(defaultType());
+    public void loadTypeChoices(TaskService taskService) {
+        typeChoice.getItems().setAll(taskService.getWorkTypes());
+        String defaultType = defaultType();
+        if (!typeChoice.getItems().contains(defaultType)) {
+            typeChoice.getItems().add(defaultType);
+        }
+        typeChoice.setValue(defaultType);
+    }
+
+    /** Перечитывает типы из каталога, сохраняя текущий выбор. */
+    public void refreshTypeChoices(TaskService taskService) {
+        String current = typeChoice.getValue();
+        typeChoice.getItems().setAll(taskService.getWorkTypes());
+        String value = current != null ? current : defaultType();
+        if (!typeChoice.getItems().contains(value)) {
+            typeChoice.getItems().add(value);
+        }
+        typeChoice.setValue(value);
     }
 
     public void refreshChoices(TaskService taskService) {

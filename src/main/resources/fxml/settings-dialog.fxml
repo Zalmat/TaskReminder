@@ -30,7 +30,7 @@
                         <Insets top="10" right="10" bottom="10" left="10"/>
                     </padding>
                     <Label text="%settings.defaultType" style="-fx-font-weight: bold;"/>
-                    <ComboBox fx:id="typeChoice" maxWidth="Infinity"/>
+                    <ComboBox fx:id="typeChoice" visibleRowCount="15" maxWidth="Infinity"/>
                     <CheckBox fx:id="autostartCheck" text="%settings.autostart" wrapText="true"/>
                     <Button fx:id="openFolderButton" text="%settings.openFolder" maxWidth="Infinity"/>
                 </VBox>
@@ -81,6 +81,31 @@
                         <Label text=":"/>
                         <Spinner fx:id="updateMinuteSpinner" editable="true" maxWidth="80"/>
                     </HBox>
+                </VBox>
+                <VBox fx:id="tasksPane" spacing="10">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding>
+                    <Label text="%settings.tasks.file" style="-fx-font-weight: bold;"/>
+                    <HBox spacing="5">
+                        <TextField fx:id="taskImportFileField" editable="false" maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="taskImportFileButton" text="%settings.tasks.choose"/>
+                        <Button fx:id="taskImportFileResetButton" text="%settings.tasks.reset"/>
+                    </HBox>
+                    <HBox spacing="5">
+                        <Button fx:id="taskImportCreateExampleButton" text="%settings.tasks.createExample"/>
+                    </HBox>
+                    <Label fx:id="taskImportNoFileHint" text="%settings.tasks.noFileHint"
+                           wrapText="true" styleClass="hint"/>
+                    <CheckBox fx:id="taskImportOnStartupCheck" text="%settings.tasks.onStartup" wrapText="true"/>
+                    <CheckBox fx:id="taskImportScheduleCheck" text="%settings.tasks.schedule" wrapText="true"/>
+                    <Label fx:id="taskImportTimeLabel" text="%settings.tasks.time" style="-fx-font-weight: bold;"/>
+                    <HBox fx:id="taskImportTimeBox" spacing="5" alignment="CENTER_LEFT">
+                        <Spinner fx:id="taskImportHourSpinner" editable="true" maxWidth="80"/>
+                        <Label text=":"/>
+                        <Spinner fx:id="taskImportMinuteSpinner" editable="true" maxWidth="80"/>
+                    </HBox>
+                    <CheckBox fx:id="taskImportTrayNotifyCheck" text="%settings.tasks.notifyTray" wrapText="true"/>
                 </VBox>
             </StackPane>
         </HBox>

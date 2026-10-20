@@ -16,8 +16,12 @@
 
     <top>
         <VBox spacing="10" style="-fx-padding: 5 0 10 0;">
-            <Label text="%main.title"
-                   style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+            <HBox spacing="8" alignment="CENTER_LEFT">
+                <Label text="%main.title"
+                       style="-fx-font-size: 20px; -fx-font-weight: bold;"/>
+                <Label fx:id="importBell" text="🔔" visible="false" managed="false"
+                       style="-fx-font-size: 16px; -fx-cursor: hand;"/>
+            </HBox>
 
             <HBox alignment="CENTER_LEFT" spacing="10">
                 <RadioButton fx:id="dayRadio" text="%main.day" selected="true" toggleGroup="$viewGroup"/>
@@ -45,13 +49,13 @@
                    style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
             <!-- Конец шутки -->
             <Label text="%main.label.project"/>
-            <ComboBox fx:id="projectChoice" editable="true" promptText="%main.prompt.project" maxWidth="Infinity"/>
+            <ComboBox fx:id="projectChoice" editable="true" visibleRowCount="15" promptText="%main.prompt.project" maxWidth="Infinity"/>
 
             <Label text="%main.label.task"/>
-            <ComboBox fx:id="taskChoice" editable="true" promptText="%main.prompt.task" maxWidth="Infinity"/>
+            <ComboBox fx:id="taskChoice" editable="true" visibleRowCount="15" promptText="%main.prompt.task" maxWidth="Infinity"/>
 
             <Label text="%main.label.type"/>
-            <ComboBox fx:id="typeChoice" promptText="%main.prompt.type" maxWidth="Infinity"/>
+            <ComboBox fx:id="typeChoice" visibleRowCount="15" promptText="%main.prompt.type" maxWidth="Infinity"/>
 
             <VBox fx:id="hoursContainer" spacing="5">
                 <Label text="%main.label.hours"/>

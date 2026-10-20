@@ -15,6 +15,7 @@ import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.ProgramFolder;
 import com.reminder.ui.util.Tooltips;
+import com.reminder.util.YamlTemplate;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
@@ -33,17 +34,23 @@ import javafx.scene.control.RadioButton;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.DirectoryChooser;
+import javafx.stage.FileChooser;
 import javafx.stage.Window;
 import javafx.util.StringConverter;
 
 import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
 
 /** Контроллер окна «Настройки». */
 public class SettingsDialogController {
@@ -55,6 +62,7 @@ public class SettingsDialogController {
     @FXML private VBox languagePane;
     @FXML private VBox exportPane;
     @FXML private VBox updatesPane;
+    @FXML private VBox tasksPane;
     @FXML private RadioButton lightRadio;
     @FXML private RadioButton darkRadio;
     @FXML private ComboBox<String> typeChoice;
@@ -74,6 +82,20 @@ public class SettingsDialogController {
     @FXML private CheckBox updateCheckEnabledCheck;
     @FXML private Spinner<Integer> updateHourSpinner;
     @FXML private Spinner<Integer> updateMinuteSpinner;
+    @FXML private TextField taskImportFileField;
+    @FXML private Button taskImportFileButton;
+    @FXML private Button taskImportCreateExampleButton;
+    @FXML private Button taskImportFileResetButton;
+    @FXML private Label taskImportNoFileHint;
+    @FXML private CheckBox taskImportOnStartupCheck;
+    @FXML private CheckBox taskImportScheduleCheck;
+    @FXML private Spinner<Integer> taskImportHourSpinner;
+    @FXML private Spinner<Integer> taskImportMinuteSpinner;
+    @FXML private Label taskImportTimeLabel;
+    @FXML private HBox taskImportTimeBox;
+    @FXML private CheckBox taskImportTrayNotifyCheck;
+
+    private Consumer<Path> importNow = path -> { };
 
     private final Map<ExportFormat, CheckBox> formatCheckBoxes = new EnumMap<>(ExportFormat.class);
 
@@ -81,15 +103,17 @@ public class SettingsDialogController {
     private Language previousLanguage;
     private boolean adjusting;
 
-    public void init(Scene mainScene, List<String> workTypes) {
+    public void init(Scene mainScene, List<String> workTypes, Consumer<Path> importNow) {
         this.mainScene = mainScene;
+        this.importNow = importNow != null ? importNow : path -> { };
 
         sectionList.getItems().setAll(
                 I18n.get("settings.section.appearance"),
                 I18n.get("settings.section.general"),
                 I18n.get("settings.section.language"),
                 I18n.get("settings.section.export"),
-                I18n.get("settings.section.updates"));
+                I18n.get("settings.section.updates"),
+                I18n.get("settings.section.tasks"));
         sectionList.getSelectionModel().selectedIndexProperty().addListener((obs, oldIdx, newIdx) ->
                 showSection(newIdx.intValue()));
         sectionList.getSelectionModel().selectFirst();
@@ -121,6 +145,7 @@ public class SettingsDialogController {
         setupDecimal();
         setupExportOptions();
         setupUpdates();
+        setupTasks();
 
         ButtonType applyType = new ButtonType(I18n.get("button.apply"), ButtonBar.ButtonData.APPLY);
         ButtonType closeType = new ButtonType(I18n.get("button.close"), ButtonBar.ButtonData.CANCEL_CLOSE);
@@ -244,7 +269,102 @@ public class SettingsDialogController {
                 0, 59, AppSettings.updateCheckMinute()));
     }
 
-    private void chooseExportDirectory() {        DirectoryChooser chooser = new DirectoryChooser();
+    private void setupTasks() {
+        taskImportFileField.setText(AppSettings.taskImportFile());
+        taskImportFileButton.setOnAction(e -> chooseTaskImportFile());
+        taskImportCreateExampleButton.setOnAction(e -> createTaskImportExample());
+        taskImportFileResetButton.setOnAction(e -> {
+            taskImportFileField.clear();
+            taskImportOnStartupCheck.setSelected(false);
+            taskImportScheduleCheck.setSelected(false);
+            updateTaskImportControls();
+        });
+        Tooltips.apply(taskImportFileResetButton, I18n.get("settings.tasks.reset.tip"));
+        taskImportOnStartupCheck.setSelected(AppSettings.taskImportOnStartup());
+        taskImportScheduleCheck.setSelected(AppSettings.taskImportScheduleEnabled());
+        taskImportScheduleCheck.selectedProperty().addListener((obs, oldValue, newValue) ->
+                updateTaskImportControls());
+        taskImportHourSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(
+                0, 23, AppSettings.taskImportHour()));
+        taskImportMinuteSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(
+                0, 59, AppSettings.taskImportMinute()));
+        taskImportTrayNotifyCheck.setSelected(AppSettings.taskImportTrayNotify());
+        updateTaskImportControls();
+    }
+
+    private void updateTaskImportControls() {
+        boolean hasFile = taskImportFileField.getText() != null && !taskImportFileField.getText().isBlank();
+        taskImportOnStartupCheck.setDisable(!hasFile);
+        taskImportScheduleCheck.setDisable(!hasFile);
+        taskImportHourSpinner.setDisable(!hasFile);
+        taskImportMinuteSpinner.setDisable(!hasFile);
+        taskImportTrayNotifyCheck.setDisable(!hasFile);
+        taskImportNoFileHint.setVisible(!hasFile);
+        taskImportNoFileHint.setManaged(!hasFile);
+        boolean showTime = hasFile && taskImportScheduleCheck.isSelected();
+        taskImportTimeLabel.setVisible(showTime);
+        taskImportTimeLabel.setManaged(showTime);
+        taskImportTimeBox.setVisible(showTime);
+        taskImportTimeBox.setManaged(showTime);
+    }
+
+    private void chooseTaskImportFile() {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(I18n.get("settings.tasks.file"));
+        chooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter(I18n.get("yaml.filter"), "*.yaml", "*.yml"));
+        Window owner = dialogPane.getScene() != null ? dialogPane.getScene().getWindow() : null;
+        File file = chooser.showOpenDialog(owner);
+        if (file == null) {
+            return;
+        }
+        taskImportFileField.setText(file.getAbsolutePath());
+        taskImportOnStartupCheck.setSelected(true);
+        updateTaskImportControls();
+        if (Dialogs.yesNo(I18n.get("settings.tasks.choose.importNow.title"),
+                I18n.get("settings.tasks.choose.importNow.header"),
+                I18n.format("settings.tasks.choose.importNow.text", I18n.get("main.loadYaml")))) {
+            importNow.accept(file.toPath());
+        }
+    }
+
+    private void createTaskImportExample() {
+        Dialogs.info(I18n.get("settings.tasks.createExample.info.title"),
+                I18n.get("settings.tasks.createExample.info.text"));
+
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(I18n.get("settings.tasks.createExample"));
+        chooser.getExtensionFilters().add(
+                new FileChooser.ExtensionFilter(I18n.get("yaml.filter"), "*.yaml", "*.yml"));
+        chooser.setInitialFileName("tasks-import.yaml");
+        Window owner = dialogPane.getScene() != null ? dialogPane.getScene().getWindow() : null;
+        File file = chooser.showSaveDialog(owner);
+        if (file == null) {
+            return;
+        }
+        try {
+            Path path = file.toPath();
+            String name = file.getName().toLowerCase();
+            if (!name.endsWith(".yaml") && !name.endsWith(".yml")) {
+                path = Path.of(file.getAbsolutePath() + ".yaml");
+            }
+            Files.writeString(path, YamlTemplate.content(), StandardCharsets.UTF_8);
+            taskImportFileField.setText(path.toString());
+            taskImportOnStartupCheck.setSelected(true);
+            updateTaskImportControls();
+            if (Dialogs.yesNo(I18n.get("settings.tasks.createExample.apply.title"),
+                    I18n.get("settings.tasks.createExample.apply.header"),
+                    I18n.format("settings.tasks.createExample.apply.text", I18n.get("main.loadYaml")))) {
+                importNow.accept(path);
+            }
+        } catch (Exception e) {
+            Dialogs.error(I18n.get("common.error"),
+                    I18n.format("tasks.import.error", Dialogs.reason(e)));
+        }
+    }
+
+    private void chooseExportDirectory() {
+        DirectoryChooser chooser = new DirectoryChooser();
         chooser.setTitle(I18n.get("settings.export.folder"));
         AppSettings.validExportDirectory().ifPresent(path -> chooser.setInitialDirectory(path.toFile()));
         Window owner = dialogPane.getScene() != null ? dialogPane.getScene().getWindow() : null;
@@ -319,6 +439,7 @@ public class SettingsDialogController {
         setActive(languagePane, index == 2);
         setActive(exportPane, index == 3);
         setActive(updatesPane, index == 4);
+        setActive(tasksPane, index == 5);
     }
 
     private static void setActive(VBox pane, boolean active) {
@@ -354,6 +475,13 @@ public class SettingsDialogController {
         AppSettings.setExportOpenFolder(exportOpenFolderCheck.isSelected());
         AppSettings.setUpdateCheckEnabled(updateCheckEnabledCheck.isSelected());
         AppSettings.setUpdateCheckTime(updateHourSpinner.getValue(), updateMinuteSpinner.getValue());
+        String importFile = taskImportFileField.getText() == null ? "" : taskImportFileField.getText().trim();
+        boolean hasImportFile = !importFile.isBlank();
+        AppSettings.setTaskImportFile(importFile);
+        AppSettings.setTaskImportOnStartup(hasImportFile && taskImportOnStartupCheck.isSelected());
+        AppSettings.setTaskImportScheduleEnabled(hasImportFile && taskImportScheduleCheck.isSelected());
+        AppSettings.setTaskImportTime(taskImportHourSpinner.getValue(), taskImportMinuteSpinner.getValue());
+        AppSettings.setTaskImportTrayNotify(hasImportFile && taskImportTrayNotifyCheck.isSelected());
         ThemeManager.apply(mainScene);
         ThemeManager.applyTo(dialogPane);
     }

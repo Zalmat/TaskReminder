@@ -39,6 +39,11 @@ public class App extends Application {
             Parent root = loader.load();
             mainController = loader.getController();
             mainController.setExitAction(this::performQuit);
+            mainController.setTrayNotifier((caption, text) -> {
+                if (tray != null) {
+                    tray.showMessage(caption, text);
+                }
+            });
 
             Scene scene = new Scene(root, 1200, 800);
             ThemeManager.apply(scene);

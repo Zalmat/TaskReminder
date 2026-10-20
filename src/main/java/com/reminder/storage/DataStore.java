@@ -76,6 +76,17 @@ public class DataStore {
         return data != null ? data : new ArrayList<>();
     }
 
+    public <T> T loadObject(String fileName, Class<T> type) {
+        return load(fileName, type);
+    }
+
+    public <T> void saveObject(String fileName, T value) {
+        if (value == null) {
+            return;
+        }
+        save(fileName, value, value.getClass());
+    }
+
     public <T> void saveList(String fileName, List<T> list) {
         List<T> safe = list != null ? list : new ArrayList<>();
         Type type;
