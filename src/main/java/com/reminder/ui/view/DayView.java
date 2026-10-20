@@ -187,7 +187,7 @@ public class DayView {
 
             if (taskService.addWorkEntry(entry, allowOvertime)) {
                 taskService.addPredefinedTask(new Task(project, taskName, type));
-                form.refreshChoices(taskService);
+                form.refreshSuggestions();
                 form.clear();
                 update(date);
                 Dialogs.info(I18n.get("common.success"), I18n.get("success.workAdded"));
@@ -243,7 +243,7 @@ public class DayView {
 
         if (taskService.updateWorkEntry(selected, updated, allowOvertime)) {
             taskService.addPredefinedTask(new Task(result.project(), result.taskName(), result.type()));
-            form.refreshChoices(taskService);
+            form.refreshSuggestions();
             update(selected.getDate());
             Dialogs.info(I18n.get("common.success"), I18n.get("success.entryUpdated"));
         } else {

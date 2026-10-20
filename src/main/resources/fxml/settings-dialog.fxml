@@ -82,7 +82,7 @@
                         <Spinner fx:id="updateMinuteSpinner" editable="true" maxWidth="80"/>
                     </HBox>
                 </VBox>
-                <VBox fx:id="tasksPane" spacing="10">
+                <VBox fx:id="tasksPane" spacing="6">
                     <padding>
                         <Insets top="10" right="10" bottom="10" left="10"/>
                     </padding>
@@ -94,6 +94,7 @@
                     </HBox>
                     <HBox spacing="5">
                         <Button fx:id="taskImportCreateExampleButton" text="%settings.tasks.createExample"/>
+                        <Button fx:id="taskManageButton" text="%settings.tasks.manage"/>
                     </HBox>
                     <Label fx:id="taskImportNoFileHint" text="%settings.tasks.noFileHint"
                            wrapText="true" styleClass="hint"/>
@@ -106,6 +107,9 @@
                         <Spinner fx:id="taskImportMinuteSpinner" editable="true" maxWidth="80"/>
                     </HBox>
                     <CheckBox fx:id="taskImportTrayNotifyCheck" text="%settings.tasks.notifyTray" wrapText="true"/>
+                    <Label text="%settings.tasks.history" style="-fx-font-weight: bold;"/>
+                    <ComboBox fx:id="suggestionHistoryChoice" maxWidth="Infinity"/>
+                    <CheckBox fx:id="indexInactiveCheck" text="%settings.tasks.indexInactive" wrapText="true"/>
                 </VBox>
             </StackPane>
         </HBox>

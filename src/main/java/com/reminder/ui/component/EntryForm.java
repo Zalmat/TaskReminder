@@ -3,6 +3,9 @@ package com.reminder.ui.component;
 import com.reminder.i18n.I18n;
 import com.reminder.service.TaskService;
 import com.reminder.settings.AppSettings;
+import com.reminder.suggest.SuggestionKind;
+import com.reminder.suggest.SuggestionService;
+import com.reminder.ui.autocomplete.AutoCompleteSupport;
 import com.reminder.ui.util.ComboCells;
 import com.reminder.ui.util.NumericFields;
 import com.reminder.util.TaskValidationUtils;
@@ -20,18 +23,27 @@ public class EntryForm {
     private final ComboBox<String> typeChoice;
     private final TextField hoursField;
     private final TextArea commentArea;
+    private final AutoCompleteSupport projectSupport;
+    private final AutoCompleteSupport taskSupport;
+    private final Runnable dataChanged;
 
     public EntryForm(ComboBox<String> projectChoice, ComboBox<String> taskChoice,
-                     ComboBox<String> typeChoice, TextField hoursField, TextArea commentArea) {
+                     ComboBox<String> typeChoice, TextField hoursField, TextArea commentArea,
+                     SuggestionService suggestions, Runnable dataChanged) {
         this.projectChoice = projectChoice;
         this.taskChoice = taskChoice;
         this.typeChoice = typeChoice;
         this.hoursField = hoursField;
         this.commentArea = commentArea;
+        this.dataChanged = dataChanged == null ? () -> { } : dataChanged;
         projectChoice.setCellFactory(list -> ComboCells.wrapping());
         taskChoice.setCellFactory(list -> ComboCells.wrapping());
         typeChoice.setCellFactory(list -> ComboCells.wrapping());
         NumericFields.digitsOnly(hoursField, 2);
+        projectSupport = new AutoCompleteSupport(projectChoice, SuggestionKind.PROJECT,
+                suggestions, null);
+        taskSupport = new AutoCompleteSupport(taskChoice, SuggestionKind.TASK,
+                suggestions, () -> projectChoice.getEditor().getText());
     }
 
     public void loadTypeChoices(TaskService taskService) {
@@ -54,22 +66,16 @@ public class EntryForm {
         typeChoice.setValue(value);
     }
 
-    public void refreshChoices(TaskService taskService) {
-        String currentProject = projectChoice.getEditor().getText();
-        projectChoice.getItems().clear();
-        projectChoice.getItems().addAll(taskService.getAllProjects());
-        if (currentProject.isEmpty() && !projectChoice.getItems().isEmpty()) {
-            projectChoice.setValue(projectChoice.getItems().get(0));
-        } else if (!currentProject.isEmpty()) {
-            projectChoice.getEditor().setText(currentProject);
-        }
+    /** Перечитывает подсказки после изменения истории/каталога. */
+    public void refreshSuggestions() {
+        dataChanged.run();
+        refreshSuggestionsOnly();
+    }
 
-        String currentTask = taskChoice.getEditor().getText();
-        taskChoice.getItems().clear();
-        taskChoice.getItems().addAll(TaskValidationUtils.filterTaskNames(taskService.getAllTaskNames()));
-        if (!currentTask.isEmpty()) {
-            taskChoice.getEditor().setText(currentTask);
-        }
+    /** Обновляет только списки, без запроса переиндексации истории. */
+    public void refreshSuggestionsOnly() {
+        projectSupport.refresh();
+        taskSupport.refresh();
     }
 
     public void clear() {

@@ -68,6 +68,58 @@ public class TaskCatalogService {
         }
     }
 
+    public boolean removeProject(String value) {
+        return remove(projects, value);
+    }
+
+    public boolean removeTaskName(String value) {
+        return remove(taskNames, value);
+    }
+
+    public boolean removeType(String value) {
+        return remove(types, value);
+    }
+
+    /** Добавляет тип вручную; пустые и дубликаты игнорируются. */
+    public boolean addType(String value) {
+        String name = value == null ? "" : value.trim();
+        if (name.isEmpty() || !types.add(name)) {
+            return false;
+        }
+        save();
+        return true;
+    }
+
+    public int clearProjects() {
+        return clear(projects);
+    }
+
+    public int clearTaskNames() {
+        return clear(taskNames);
+    }
+
+    public int clearTypes() {
+        return clear(types);
+    }
+
+    private boolean remove(Set<String> target, String value) {
+        String name = value == null ? "" : value.trim();
+        if (name.isEmpty() || !target.remove(name)) {
+            return false;
+        }
+        save();
+        return true;
+    }
+
+    private int clear(Set<String> target) {
+        int count = target.size();
+        if (count > 0) {
+            target.clear();
+            save();
+        }
+        return count;
+    }
+
     private void load() {
         TaskCatalogData data = store.loadObject(FILE, TaskCatalogData.class);
         if (data == null) {

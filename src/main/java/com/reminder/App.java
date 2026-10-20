@@ -53,6 +53,7 @@ public class App extends Application {
             primaryStage.setScene(scene);
             primaryStage.setMinWidth(1000);
             primaryStage.setMinHeight(700);
+            mainController.attachStage(primaryStage);
 
             primaryStage.setOnCloseRequest(e -> {
                 e.consume();

@@ -16,11 +16,14 @@ import com.reminder.service.UpdateCheckService;
 import com.reminder.service.WorkTimeService;
 import com.reminder.settings.AppSettings;
 import com.reminder.settings.WorkTypes;
+import com.reminder.suggest.SuggestionService;
 import com.reminder.ui.ImportNotifier;
+import com.reminder.ui.SuggestionIndexingCoordinator;
 import com.reminder.ui.UpdateCheckUi;
 import com.reminder.ui.component.ClockUi;
 import com.reminder.ui.component.EasterEgg;
 import com.reminder.ui.component.EntryForm;
+import com.reminder.ui.dialog.SuggestionManagerDialog;
 import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.AppIcons;
 import com.reminder.ui.util.DatePickerUtils;
@@ -40,6 +43,8 @@ import javafx.scene.control.Dialog;
 import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.control.ProgressIndicator;
 import javafx.scene.control.RadioButton;
 import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
@@ -47,6 +52,12 @@ import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import javafx.stage.Window;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
+import javafx.util.Duration;
 
 import java.awt.Desktop;
 import java.io.File;
@@ -71,6 +82,10 @@ public class MainController {
     @FXML private Label weekTotalLabel;
     @FXML private Label clockLabel;
     @FXML private Label importBell;
+    @FXML private VBox indexingStatus;
+    @FXML private ProgressIndicator indexingSpinner;
+    @FXML private Label indexingLabel;
+    @FXML private ProgressBar indexingProgress;
     @FXML private DatePicker datePicker;
     @FXML private ComboBox<String> projectChoice;
     @FXML private ComboBox<String> taskChoice;
@@ -111,6 +126,9 @@ public class MainController {
     private final UpdateCheckService updateCheckService = new UpdateCheckService();
     private final ImportStateStore importState = new ImportStateStore();
     private final ImportScheduler importScheduler = new ImportScheduler();
+    private SuggestionService suggestionService;
+    private SuggestionIndexingCoordinator suggestionIndexing;
+    private Timeline indexingPoller;
     private CatalogImportService catalogImportService;
     private ImportNotifier importNotifier;
     private BiConsumer<String, String> trayNotifier = (caption, text) -> { };
@@ -125,7 +143,9 @@ public class MainController {
 
     @FXML
     private void initialize() {
-        form = new EntryForm(projectChoice, taskChoice, typeChoice, hoursField, commentArea);
+        suggestionService = new SuggestionService(taskService);
+        form = new EntryForm(projectChoice, taskChoice, typeChoice, hoursField, commentArea,
+                suggestionService, this::onSuggestionDataChanged);
         taskService.ensureDefaultTypes(WorkTypes.defaults());
         form.loadTypeChoices(taskService);
 
@@ -142,7 +162,7 @@ public class MainController {
 
         wireButtons();
         wireViewToggle();
-        form.refreshChoices(taskService);
+        form.refreshSuggestions();
 
         reminderUi.setup();
         setupUpdateCheck();
@@ -313,7 +333,8 @@ public class MainController {
             loader.setResources(I18n.bundle());
             DialogPane pane = loader.load();
             SettingsDialogController ctrl = loader.getController();
-            ctrl.init(datePicker.getScene(), form.typeItems(), this::importFromSettings);
+            ctrl.init(datePicker.getScene(), form.typeItems(), this::importFromSettings,
+                    this::openSuggestionManager, this::suggestionsSettingsChanged);
 
             Dialog<Void> dialog = new Dialog<>();
             dialog.setTitle(I18n.get("dialog.settings.title"));
@@ -478,7 +499,8 @@ public class MainController {
                     + ", tasks+" + outcome.added().taskNames() + ", types+" + outcome.added().types()
                     + " (rows=" + outcome.totalRows() + ", skipped=" + outcome.skipped() + ")");
             if (outcome.hasNew()) {
-                form.refreshChoices(taskService);
+                suggestionService.reloadCatalog();
+                form.refreshSuggestionsOnly();
                 form.refreshTypeChoices(taskService);
                 if (notify) {
                     importNotifier.notifyImported(LocalDateTime.now(), outcome,
@@ -516,6 +538,91 @@ public class MainController {
             updateCheckUi.shutdown();
         }
         importScheduler.shutdown();
+        if (suggestionIndexing != null) {
+            suggestionIndexing.shutdown();
+        }
+        if (suggestionService != null) {
+            suggestionService.shutdown();
+        }
+        if (indexingPoller != null) {
+            indexingPoller.stop();
+            indexingPoller = null;
+        }
+    }
+
+    /** Вызывается приложением после установки сцены: подключает фоновую индексацию. */
+    public void attachStage(Stage stage) {
+        if (stage == null || suggestionService == null || suggestionIndexing != null) {
+            return;
+        }
+        suggestionIndexing = new SuggestionIndexingCoordinator(stage, suggestionService);
+        suggestionIndexing.start();
+        startIndexingStatusPolling();
+    }
+
+    private void startIndexingStatusPolling() {
+        if (indexingPoller != null) {
+            return;
+        }
+        indexingPoller = new Timeline(new KeyFrame(Duration.millis(200), event -> updateIndexingStatus()));
+        indexingPoller.setCycleCount(Animation.INDEFINITE);
+        indexingPoller.play();
+    }
+
+    private void updateIndexingStatus() {
+        if (indexingStatus == null || suggestionService == null) {
+            return;
+        }
+        if (!suggestionService.isIndexing()) {
+            indexingStatus.setVisible(false);
+            indexingStatus.setManaged(false);
+            indexingProgress.setVisible(false);
+            indexingProgress.setManaged(false);
+            return;
+        }
+        long elapsed = System.currentTimeMillis() - suggestionService.indexingStartedAtMillis();
+        if (elapsed < 400) {
+            indexingStatus.setVisible(false);
+            indexingStatus.setManaged(false);
+            return;
+        }
+        indexingStatus.setVisible(true);
+        indexingStatus.setManaged(true);
+        boolean showProgress = elapsed >= 2000;
+        indexingProgress.setVisible(showProgress);
+        indexingProgress.setManaged(showProgress);
+        if (showProgress) {
+            indexingProgress.setProgress(suggestionService.progress());
+        }
+    }
+
+    private void onSuggestionDataChanged() {
+        if (suggestionIndexing != null) {
+            suggestionIndexing.onDataChanged();
+        }
+    }
+
+    private void openSuggestionManager(Window owner) {
+        SuggestionManagerDialog.show(owner, taskService, suggestionService,
+                this::catalogChanged,
+                () -> {
+                    if (suggestionIndexing != null) {
+                        suggestionIndexing.refreshNow();
+                    }
+                });
+    }
+
+    private void catalogChanged() {
+        suggestionService.reloadCatalog();
+        form.refreshSuggestionsOnly();
+        form.refreshTypeChoices(taskService);
+    }
+
+    private void suggestionsSettingsChanged() {
+        if (suggestionIndexing != null) {
+            suggestionIndexing.onSettingsChanged();
+        }
+        form.refreshSuggestionsOnly();
     }
 
     @FXML

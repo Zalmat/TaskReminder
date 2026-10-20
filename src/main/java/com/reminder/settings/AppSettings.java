@@ -164,6 +164,24 @@ public final class AppSettings {
         PREFS.put("taskImportTrayNotify", Boolean.toString(value));
     }
 
+    /** Глубина истории для подсказок в месяцах; 0 — вся история. */
+    public static int suggestionHistoryMonths() {
+        return PREFS.getInt("suggestionHistoryMonths", 24);
+    }
+
+    public static void setSuggestionHistoryMonths(int months) {
+        PREFS.putInt("suggestionHistoryMonths", Math.max(0, months));
+    }
+
+    /** Индексировать историю только когда окно неактивно/свёрнуто. */
+    public static boolean indexOnlyWhenInactive() {
+        return Boolean.parseBoolean(PREFS.get("indexOnlyWhenInactive", "true"));
+    }
+
+    public static void setIndexOnlyWhenInactive(boolean value) {
+        PREFS.put("indexOnlyWhenInactive", Boolean.toString(value));
+    }
+
     /** Указанная папка, если она задана и существует. */
     public static Optional<Path> validExportDirectory() {
         String directory = exportDirectory();

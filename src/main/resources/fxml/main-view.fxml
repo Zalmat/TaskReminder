@@ -57,6 +57,14 @@
             <Label text="%main.label.type"/>
             <ComboBox fx:id="typeChoice" visibleRowCount="15" promptText="%main.prompt.type" maxWidth="Infinity"/>
 
+            <VBox fx:id="indexingStatus" spacing="4" visible="false" managed="false">
+                <HBox spacing="8" alignment="CENTER_LEFT">
+                    <ProgressIndicator fx:id="indexingSpinner" prefWidth="18" prefHeight="18"/>
+                    <Label fx:id="indexingLabel" text="%main.indexing" wrapText="true" styleClass="hint"/>
+                </HBox>
+                <ProgressBar fx:id="indexingProgress" maxWidth="Infinity" visible="false" managed="false"/>
+            </VBox>
+
             <VBox fx:id="hoursContainer" spacing="5">
                 <Label text="%main.label.hours"/>
                 <TextField fx:id="hoursField" promptText="%main.prompt.hours"/>

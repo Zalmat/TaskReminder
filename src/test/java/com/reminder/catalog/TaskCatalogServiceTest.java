@@ -8,6 +8,8 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TaskCatalogServiceTest {
 
@@ -55,5 +57,31 @@ class TaskCatalogServiceTest {
         catalog.ensureDefaultTypes(List.of("A", "B"));
         catalog.ensureDefaultTypes(List.of("C"));
         assertEquals(List.of("A", "B"), catalog.getTypes());
+    }
+
+    @Test
+    void removesAddsAndClearsValues(@TempDir Path dir) {
+        DataStore store = new DataStore(dir);
+        TaskCatalogService catalog = new TaskCatalogService(store);
+        catalog.merge(new ImportResult(List.of("P", "P2"), List.of("T"), List.of("Dev"), 2, 0));
+
+        assertTrue(catalog.removeProject("P"));
+        assertFalse(catalog.removeProject("P"));
+        assertTrue(catalog.removeTaskName("T"));
+        assertTrue(catalog.addType("QA"));
+        assertFalse(catalog.addType("QA"));
+
+        assertEquals(List.of("P2"), catalog.getProjects());
+        assertEquals(List.of(), catalog.getTaskNames());
+        assertEquals(List.of("Dev", "QA"), catalog.getTypes());
+
+        TaskCatalogService reloaded = new TaskCatalogService(store);
+        assertEquals(List.of("P2"), reloaded.getProjects());
+        assertEquals(List.of("Dev", "QA"), reloaded.getTypes());
+
+        assertEquals(1, catalog.clearProjects());
+        assertEquals(2, catalog.clearTypes());
+        assertEquals(List.of(), catalog.getProjects());
+        assertEquals(List.of(), catalog.getTypes());
     }
 }

@@ -97,8 +97,13 @@ public class SettingsDialogController {
     @FXML private Label taskImportTimeLabel;
     @FXML private HBox taskImportTimeBox;
     @FXML private CheckBox taskImportTrayNotifyCheck;
+    @FXML private Button taskManageButton;
+    @FXML private ComboBox<Integer> suggestionHistoryChoice;
+    @FXML private CheckBox indexInactiveCheck;
 
     private Consumer<Path> importNow = path -> { };
+    private Consumer<Window> openManager = window -> { };
+    private Runnable onSuggestionsChanged = () -> { };
 
     private final Map<ExportFormat, CheckBox> formatCheckBoxes = new EnumMap<>(ExportFormat.class);
 
@@ -106,9 +111,12 @@ public class SettingsDialogController {
     private Language previousLanguage;
     private boolean adjusting;
 
-    public void init(Scene mainScene, List<String> workTypes, Consumer<Path> importNow) {
+    public void init(Scene mainScene, List<String> workTypes, Consumer<Path> importNow,
+                     Consumer<Window> openManager, Runnable onSuggestionsChanged) {
         this.mainScene = mainScene;
         this.importNow = importNow != null ? importNow : path -> { };
+        this.openManager = openManager != null ? openManager : window -> { };
+        this.onSuggestionsChanged = onSuggestionsChanged != null ? onSuggestionsChanged : () -> { };
 
         sectionList.getItems().setAll(
                 I18n.get("settings.section.appearance"),
@@ -297,7 +305,35 @@ public class SettingsDialogController {
         NumericFields.timeSpinner(taskImportHourSpinner, 23);
         NumericFields.timeSpinner(taskImportMinuteSpinner, 59);
         taskImportTrayNotifyCheck.setSelected(AppSettings.taskImportTrayNotify());
+        taskManageButton.setOnAction(e -> openManager.accept(window()));
+
+        suggestionHistoryChoice.getItems().setAll(12, 24, 36, 0);
+        suggestionHistoryChoice.setConverter(new StringConverter<>() {
+            @Override
+            public String toString(Integer months) {
+                if (months == null) {
+                    return "";
+                }
+                return months == 0 ? I18n.get("settings.tasks.history.all")
+                        : I18n.format("settings.tasks.history.months", months);
+            }
+
+            @Override
+            public Integer fromString(String text) {
+                return null;
+            }
+        });
+        int months = AppSettings.suggestionHistoryMonths();
+        if (!suggestionHistoryChoice.getItems().contains(months)) {
+            suggestionHistoryChoice.getItems().add(months);
+        }
+        suggestionHistoryChoice.setValue(months);
+        indexInactiveCheck.setSelected(AppSettings.indexOnlyWhenInactive());
         updateTaskImportControls();
+    }
+
+    private Window window() {
+        return dialogPane.getScene() != null ? dialogPane.getScene().getWindow() : null;
     }
 
     private void updateTaskImportControls() {
@@ -500,6 +536,16 @@ public class SettingsDialogController {
         AppSettings.setTaskImportScheduleEnabled(hasImportFile && taskImportScheduleCheck.isSelected());
         AppSettings.setTaskImportTime(taskImportHourSpinner.getValue(), taskImportMinuteSpinner.getValue());
         AppSettings.setTaskImportTrayNotify(hasImportFile && taskImportTrayNotifyCheck.isSelected());
+
+        int oldHistory = AppSettings.suggestionHistoryMonths();
+        boolean oldInactive = AppSettings.indexOnlyWhenInactive();
+        int history = suggestionHistoryChoice.getValue() == null
+                ? 24 : suggestionHistoryChoice.getValue();
+        AppSettings.setSuggestionHistoryMonths(history);
+        AppSettings.setIndexOnlyWhenInactive(indexInactiveCheck.isSelected());
+        if (oldHistory != history || oldInactive != indexInactiveCheck.isSelected()) {
+            onSuggestionsChanged.run();
+        }
         ThemeManager.apply(mainScene);
         ThemeManager.applyTo(dialogPane);
     }

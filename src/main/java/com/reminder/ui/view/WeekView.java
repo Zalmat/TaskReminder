@@ -188,7 +188,7 @@ public class WeekView {
             entries.add(newEntry);
             taskService.addPredefinedTask(new Task(project, taskName, type));
 
-            form.refreshChoices(taskService);
+            form.refreshSuggestions();
             form.clear();
             updateTotals();
             table.refresh();
@@ -220,7 +220,7 @@ public class WeekView {
         saveEntryToService(updated, selected);
         taskService.addPredefinedTask(new Task(result.project(), result.taskName(), result.type()));
 
-        form.refreshChoices(taskService);
+        form.refreshSuggestions();
         updateTotals();
         highlightOvertimeDays();
         table.refresh();

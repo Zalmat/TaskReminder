@@ -103,6 +103,10 @@ public class TaskService {
                 .collect(Collectors.toList());
     }
 
+    public List<WorkEntry> getAllEntries() {
+        return new ArrayList<>(entries);
+    }
+
     public List<WorkEntry> getEntriesForDateRange(LocalDate start, LocalDate end) {
         return entries.stream()
                 .filter(e -> !e.getDate().isBefore(start) && !e.getDate().isAfter(end))
