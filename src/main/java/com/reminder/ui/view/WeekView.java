@@ -12,6 +12,7 @@ import com.reminder.ui.component.WeekTotalCell;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.TableCells;
 import com.reminder.ui.util.Tooltips;
+import com.reminder.ui.util.WrappingTableRow;
 import com.reminder.util.DateUtils;
 import com.reminder.util.RussianDays;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -79,6 +80,7 @@ public class WeekView {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setItems(entries);
         table.setFixedCellSize(-1);
+        table.setRowFactory(tv -> new WrappingTableRow<>());
         table.widthProperty().addListener((obs, oldWidth, newWidth) -> table.refresh());
 
         projectColumn.setCellValueFactory(cd -> new ReadOnlyStringWrapper(cd.getValue().getProject()));

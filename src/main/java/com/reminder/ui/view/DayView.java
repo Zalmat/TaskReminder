@@ -8,6 +8,7 @@ import com.reminder.service.WorkTimeService;
 import com.reminder.ui.component.EntryForm;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.TableCells;
+import com.reminder.ui.util.WrappingTableRow;
 import com.reminder.util.DateUtils;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
@@ -75,6 +76,7 @@ public class DayView {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setItems(entries);
         table.setFixedCellSize(-1);
+        table.setRowFactory(tv -> new WrappingTableRow<>());
         table.widthProperty().addListener((obs, oldWidth, newWidth) -> table.refresh());
 
         projectColumn.setCellValueFactory(cd -> new ReadOnlyStringWrapper(cd.getValue().getProject()));

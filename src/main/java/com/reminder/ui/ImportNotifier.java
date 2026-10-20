@@ -62,15 +62,21 @@ public class ImportNotifier {
         }
         shake = new Timeline(
                 new KeyFrame(Duration.ZERO, new KeyValue(bell.translateXProperty(), 0)),
-                new KeyFrame(Duration.millis(80), new KeyValue(bell.translateXProperty(), -3, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(160), new KeyValue(bell.translateXProperty(), 3, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(240), new KeyValue(bell.translateXProperty(), -3, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(320), new KeyValue(bell.translateXProperty(), 3, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(400), new KeyValue(bell.translateXProperty(), -3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(120), new KeyValue(bell.translateXProperty(), -3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(240), new KeyValue(bell.translateXProperty(), 3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(360), new KeyValue(bell.translateXProperty(), -3, Interpolator.EASE_BOTH)),
                 new KeyFrame(Duration.millis(480), new KeyValue(bell.translateXProperty(), 3, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(560), new KeyValue(bell.translateXProperty(), 0, Interpolator.EASE_BOTH))
+                new KeyFrame(Duration.millis(600), new KeyValue(bell.translateXProperty(), 0, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(900), new KeyValue(bell.translateXProperty(), 0)),
+                new KeyFrame(Duration.millis(1020), new KeyValue(bell.translateXProperty(), -3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(1140), new KeyValue(bell.translateXProperty(), 3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(1260), new KeyValue(bell.translateXProperty(), -3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(1380), new KeyValue(bell.translateXProperty(), 3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(1500), new KeyValue(bell.translateXProperty(), 0, Interpolator.EASE_BOTH))
         );
+        shake.setDelay(Duration.millis(400));
         shake.playFromStart();
+        Log.log("TaskImport", "bell shake started");
     }
 
     private void hideBell() {

@@ -14,6 +14,11 @@ public final class ComboCells {
     public static <T> ListCell<T> wrapping() {
         return new ListCell<>() {
             @Override
+            protected double computePrefWidth(double height) {
+                return Math.min(MAX_WIDTH, super.computePrefWidth(height));
+            }
+
+            @Override
             protected void updateItem(T item, boolean empty) {
                 super.updateItem(item, empty);
                 if (empty || item == null) {
