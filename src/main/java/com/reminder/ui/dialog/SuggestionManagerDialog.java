@@ -11,6 +11,8 @@ import com.reminder.suggest.TextNormalizer;
 import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.AppIcons;
 import com.reminder.ui.util.Dialogs;
+import com.reminder.ui.util.TableCells;
+import com.reminder.ui.util.WrappingTableRow;
 import com.reminder.util.DateUtils;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
@@ -108,12 +110,17 @@ public final class SuggestionManagerDialog {
                                   Label status) {
         ObservableList<Suggestion> data = FXCollections.observableArrayList();
         FilteredList<Suggestion> filtered = new FilteredList<>(data, item -> true);
+        String[] pinned = {null};
         TableView<Suggestion> table = new TableView<>(filtered);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(-1);
+        table.setRowFactory(tv -> new WrappingTableRow<>());
+        table.widthProperty().addListener((obs, oldWidth, newWidth) -> table.refresh());
 
         TableColumn<Suggestion, String> valueColumn =
                 new TableColumn<>(I18n.get("suggest.column.value"));
         valueColumn.setCellValueFactory(cd -> new ReadOnlyStringWrapper(cd.getValue().value()));
+        valueColumn.setCellFactory(column -> TableCells.wrapping());
         valueColumn.setPrefWidth(280);
         TableColumn<Suggestion, String> sourceColumn =
                 new TableColumn<>(I18n.get("suggest.column.source"));
@@ -182,19 +189,62 @@ public final class SuggestionManagerDialog {
             status.setText(I18n.get("suggest.refreshStarted"));
         });
 
+        TextField newValue = new TextField();
+        newValue.setPromptText(kind == SuggestionKind.PROJECT
+                ? I18n.get("suggest.newProject") : I18n.get("suggest.newTask"));
+        Button add = new Button(kind == SuggestionKind.PROJECT
+                ? I18n.get("suggest.addProject") : I18n.get("suggest.addTask"));
+        add.setOnAction(event -> {
+            String value = newValue.getText();
+            if (value == null || value.isBlank()) {
+                Dialogs.error(I18n.get("common.error"), I18n.get("suggest.valueEmpty"));
+                return;
+            }
+            String clean = value.trim();
+            boolean added = kind == SuggestionKind.PROJECT
+                    ? catalog.addProject(clean) : catalog.addTaskName(clean);
+            if (!added) {
+                Dialogs.info(I18n.get("suggest.manager.title"), I18n.get("suggest.valueExists"));
+                return;
+            }
+            newValue.clear();
+            pinned[0] = TextNormalizer.key(clean);
+            onCatalogChanged.run();
+            search.clear();
+            reloadAll(reloaders);
+            if (!data.isEmpty()) {
+                table.getSelectionModel().select(0);
+                table.scrollTo(0);
+            }
+        });
+        newValue.setOnAction(event -> add.fire());
+
         Label warning = new Label(I18n.get("suggest.warning"));
         warning.setWrapText(true);
         warning.getStyleClass().add("hint");
 
-        HBox actions = new HBox(8, delete, clear, refresh);
-        HBox searchRow = new HBox(8, search, actions);
+        HBox searchRow = new HBox(8, search);
         HBox.setHgrow(search, Priority.ALWAYS);
+        HBox addRow = new HBox(8, newValue, add, delete, clear, refresh);
+        HBox.setHgrow(newValue, Priority.ALWAYS);
 
-        VBox box = new VBox(8, searchRow, table, warning);
+        VBox box = new VBox(8, searchRow, table, addRow, warning);
         box.setPadding(new Insets(10));
         VBox.setVgrow(table, Priority.ALWAYS);
 
-        reloaders.add(() -> data.setAll(suggestions.stats(kind)));
+        reloaders.add(() -> {
+            List<Suggestion> list = new ArrayList<>(suggestions.stats(kind));
+            if (pinned[0] != null) {
+                for (int i = 0; i < list.size(); i++) {
+                    if (list.get(i).normalized().equals(pinned[0])) {
+                        Suggestion item = list.remove(i);
+                        list.add(0, item);
+                        break;
+                    }
+                }
+            }
+            data.setAll(list);
+        });
         return box;
     }
 
@@ -204,10 +254,14 @@ public final class SuggestionManagerDialog {
         FilteredList<Suggestion> filtered = new FilteredList<>(data, item -> true);
         TableView<Suggestion> table = new TableView<>(filtered);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        table.setFixedCellSize(-1);
+        table.setRowFactory(tv -> new WrappingTableRow<>());
+        table.widthProperty().addListener((obs, oldWidth, newWidth) -> table.refresh());
 
         TableColumn<Suggestion, String> valueColumn =
                 new TableColumn<>(I18n.get("suggest.column.value"));
         valueColumn.setCellValueFactory(cd -> new ReadOnlyStringWrapper(cd.getValue().value()));
+        valueColumn.setCellFactory(column -> TableCells.wrapping());
         valueColumn.setPrefWidth(320);
         TableColumn<Suggestion, Integer> usesColumn =
                 new TableColumn<>(I18n.get("suggest.column.uses"));
@@ -230,19 +284,27 @@ public final class SuggestionManagerDialog {
         TextField newType = new TextField();
         newType.setPromptText(I18n.get("suggest.addType.prompt"));
         Button add = new Button(I18n.get("suggest.addType"));
+        String[] pinned = {null};
         add.setOnAction(event -> {
             String value = newType.getText();
             if (value == null || value.isBlank()) {
                 Dialogs.error(I18n.get("common.error"), I18n.get("suggest.typeEmpty"));
                 return;
             }
-            if (!catalog.addType(value)) {
+            String clean = value.trim();
+            if (!catalog.addType(clean)) {
                 Dialogs.info(I18n.get("suggest.manager.title"), I18n.get("suggest.typeExists"));
                 return;
             }
             newType.clear();
+            pinned[0] = TextNormalizer.key(clean);
             onCatalogChanged.run();
+            search.clear();
             reloadAll(reloaders);
+            if (!data.isEmpty()) {
+                table.getSelectionModel().select(0);
+                table.scrollTo(0);
+            }
         });
         newType.setOnAction(event -> add.fire());
 
@@ -283,7 +345,19 @@ public final class SuggestionManagerDialog {
         box.setPadding(new Insets(10));
         VBox.setVgrow(table, Priority.ALWAYS);
 
-        reloaders.add(() -> data.setAll(suggestions.typeStats()));
+        reloaders.add(() -> {
+            List<Suggestion> list = new ArrayList<>(suggestions.typeStats());
+            if (pinned[0] != null) {
+                for (int i = 0; i < list.size(); i++) {
+                    if (list.get(i).normalized().equals(pinned[0])) {
+                        Suggestion item = list.remove(i);
+                        list.add(0, item);
+                        break;
+                    }
+                }
+            }
+            data.setAll(list);
+        });
         return box;
     }
 

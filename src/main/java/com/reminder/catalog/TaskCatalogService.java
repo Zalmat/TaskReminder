@@ -82,12 +82,17 @@ public class TaskCatalogService {
 
     /** Добавляет тип вручную; пустые и дубликаты игнорируются. */
     public boolean addType(String value) {
-        String name = value == null ? "" : value.trim();
-        if (name.isEmpty() || !types.add(name)) {
-            return false;
-        }
-        save();
-        return true;
+        return add(types, value);
+    }
+
+    /** Добавляет проект вручную; пустые и дубликаты игнорируются. */
+    public boolean addProject(String value) {
+        return add(projects, value);
+    }
+
+    /** Добавляет задачу вручную; пустые и дубликаты игнорируются. */
+    public boolean addTaskName(String value) {
+        return add(taskNames, value);
     }
 
     public int clearProjects() {
@@ -105,6 +110,15 @@ public class TaskCatalogService {
     private boolean remove(Set<String> target, String value) {
         String name = value == null ? "" : value.trim();
         if (name.isEmpty() || !target.remove(name)) {
+            return false;
+        }
+        save();
+        return true;
+    }
+
+    private boolean add(Set<String> target, String value) {
+        String name = value == null ? "" : value.trim();
+        if (name.isEmpty() || !target.add(name)) {
             return false;
         }
         save();

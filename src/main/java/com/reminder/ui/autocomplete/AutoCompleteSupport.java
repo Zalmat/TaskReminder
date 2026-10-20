@@ -29,6 +29,7 @@ public class AutoCompleteSupport {
     private boolean updating;
     private boolean showScheduled;
     private boolean showingFromTyping;
+    private String lastSelected;
 
     public AutoCompleteSupport(ComboBox<String> combo, SuggestionKind kind,
                                SuggestionService service, Supplier<String> projectSupplier) {
@@ -45,14 +46,16 @@ public class AutoCompleteSupport {
                 onTextChanged(newText);
             }
         });
-        combo.valueProperty().addListener((obs, oldValue, newValue) -> {
-            if (!updating && newValue != null) {
+        combo.getSelectionModel().selectedItemProperty().addListener((obs, oldItem, item) -> {
+            if (!updating && item != null) {
+                lastSelected = item;
+            }
+        });
+        combo.getSelectionModel().selectedItemProperty().addListener((obs, oldItem, item) -> {
+            if (!updating && item != null) {
                 Platform.runLater(() -> {
-                    updating = true;
-                    try {
-                        showFullList();
-                    } finally {
-                        updating = false;
+                    if (item.equals(editorText())) {
+                        lastSelected = item;
                     }
                 });
             }
@@ -61,7 +64,7 @@ public class AutoCompleteSupport {
             if (Boolean.TRUE.equals(showing)) {
                 if (!updating && !showingFromTyping) {
                     String text = editorText();
-                    if (text.isEmpty() || text.equals(combo.getValue())) {
+                    if (text.isEmpty() || (lastSelected != null && text.equals(lastSelected))) {
                         showFullList();
                     }
                 }
@@ -75,7 +78,7 @@ public class AutoCompleteSupport {
     /** Перечитывает текущий объединённый снимок, сохраняя введённый текст. */
     public void refresh() {
         String text = editorText();
-        if (text.isEmpty() || text.equals(combo.getValue())) {
+        if (text.isEmpty()) {
             showFullList();
         } else {
             applyQuery(text, false);
@@ -84,8 +87,13 @@ public class AutoCompleteSupport {
 
     private void onTextChanged(String value) {
         String text = value == null ? "" : value;
-        if (text.isEmpty() || text.equals(combo.getValue())) {
+        if (text.isEmpty()) {
+            lastSelected = null;
             showFullList();
+            return;
+        }
+        if (text.equals(lastSelected) || combo.getItems().contains(text)) {
+            // Навигация по списку/выбор: не сужаем уже показанный отфильтрованный список.
             return;
         }
         applyQuery(text, true);

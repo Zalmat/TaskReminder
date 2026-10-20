@@ -84,4 +84,19 @@ class TaskCatalogServiceTest {
         assertEquals(List.of(), catalog.getProjects());
         assertEquals(List.of(), catalog.getTypes());
     }
+
+    @Test
+    void addsProjectsAndTasksManually(@TempDir Path dir) {
+        DataStore store = new DataStore(dir);
+        TaskCatalogService catalog = new TaskCatalogService(store);
+
+        assertTrue(catalog.addProject("P"));
+        assertFalse(catalog.addProject(" P "));
+        assertTrue(catalog.addTaskName("T"));
+        assertFalse(catalog.addTaskName(" "));
+
+        TaskCatalogService reloaded = new TaskCatalogService(store);
+        assertEquals(List.of("P"), reloaded.getProjects());
+        assertEquals(List.of("T"), reloaded.getTaskNames());
+    }
 }
