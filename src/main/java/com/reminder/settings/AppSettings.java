@@ -171,7 +171,8 @@ public final class AppSettings {
             return Optional.empty();
         }
         Path path = Path.of(directory);
-        return Files.isDirectory(path) ? Optional.of(path) : Optional.empty();
+        return Files.isDirectory(path) && Files.isWritable(path)
+                ? Optional.of(path) : Optional.empty();
     }
 
     static Set<ExportFormat> parseFormats(String raw) {

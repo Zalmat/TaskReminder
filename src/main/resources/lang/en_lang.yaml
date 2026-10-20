@@ -167,6 +167,7 @@ strings:
   yaml.saveTitle: "Save YAML template"
   yaml.saved: "✅ Template saved: {0}"
   yaml.saveError: "❌ Failed to save the template: {0}"
+  yaml.invalidFile: "Choose an existing YAML file (.yaml or .yml)."
 
   updates.title: "Updates"
   updates.checkFailed: "⚠ Failed to check for updates (no internet or GitHub API problem)."
@@ -298,6 +299,7 @@ strings:
   settings.export.mode.always: "Always save to the specified folder"
   settings.export.formats: "Apply to formats:"
   settings.export.openFolder: "Open the folder after auto-save"
+  settings.export.invalidDir: "Choose an existing folder that is writable."
   settings.decimal.system: "System locale"
   settings.decimal.dot: "Dot"
   settings.decimal.comma: "Comma"

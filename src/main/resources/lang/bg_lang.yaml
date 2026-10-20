@@ -167,6 +167,7 @@ strings:
   yaml.saveTitle: "Запазване на YAML шаблон"
   yaml.saved: "✅ Шаблонът е запазен: {0}"
   yaml.saveError: "❌ Шаблонът не можа да се запази: {0}"
+  yaml.invalidFile: "Изберете съществуващ YAML файл (.yaml или .yml)."
 
   updates.title: "Актуализации"
   updates.checkFailed: "⚠ Проверката за актуализации не бе успешна (няма интернет или проблем с GitHub API)."
@@ -298,6 +299,7 @@ strings:
   settings.export.mode.always: "Винаги запазване в посочената папка"
   settings.export.formats: "Прилагане за формати:"
   settings.export.openFolder: "Отваряне на папката след автоматично запазване"
+  settings.export.invalidDir: "Изберете съществуваща папка с права за запис."
   settings.decimal.system: "Както в системата"
   settings.decimal.dot: "Точка"
   settings.decimal.comma: "Запетая"

@@ -1,7 +1,9 @@
 package com.reminder.catalog.importing;
 
 import com.reminder.catalog.ImportResult;
+import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
+import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -20,15 +22,27 @@ import java.util.Set;
  */
 public class YamlCatalogImporter implements CatalogImporter {
 
+    private static final long MAX_FILE_BYTES = 5L * 1024 * 1024;
+    private static final int MAX_ROWS = 50_000;
+    private static final int MAX_VALUES_PER_KIND = 20_000;
+
     @Override
     public ImportResult importFrom(Path file) throws IOException {
+        if (Files.size(file) > MAX_FILE_BYTES) {
+            throw new IOException("YAML-файл слишком большой (максимум 5 МБ)");
+        }
         String content = Files.readString(file, StandardCharsets.UTF_8);
         if (content.startsWith("\uFEFF")) {
             content = content.substring(1);
         }
         Object loaded;
         try {
-            loaded = new Yaml().load(content);
+            LoaderOptions options = new LoaderOptions();
+            options.setAllowDuplicateKeys(false);
+            options.setMaxAliasesForCollections(50);
+            options.setNestingDepthLimit(50);
+            options.setCodePointLimit((int) MAX_FILE_BYTES);
+            loaded = new Yaml(new SafeConstructor(options)).load(content);
         } catch (RuntimeException e) {
             throw new IOException("Некорректный YAML: " + e.getMessage(), e);
         }
@@ -38,6 +52,9 @@ public class YamlCatalogImporter implements CatalogImporter {
         Object tasksValue = root.get("tasks");
         if (!(tasksValue instanceof List<?> rows)) {
             return ImportResult.empty();
+        }
+        if (rows.size() > MAX_ROWS) {
+            throw new IOException("Слишком много строк в YAML (максимум " + MAX_ROWS + ")");
         }
 
         Set<String> projects = new LinkedHashSet<>();
@@ -71,6 +88,12 @@ public class YamlCatalogImporter implements CatalogImporter {
             if (!any) {
                 skipped++;
             }
+        }
+
+        if (projects.size() > MAX_VALUES_PER_KIND || taskNames.size() > MAX_VALUES_PER_KIND
+                || types.size() > MAX_VALUES_PER_KIND) {
+            throw new IOException("Слишком много значений в YAML (максимум "
+                    + MAX_VALUES_PER_KIND + " на категорию)");
         }
 
         return new ImportResult(new ArrayList<>(projects), new ArrayList<>(taskNames),

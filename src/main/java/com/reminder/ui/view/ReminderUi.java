@@ -5,6 +5,7 @@ import com.reminder.model.Reminder;
 import com.reminder.service.ReminderService;
 import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.AppIcons;
+import com.reminder.ui.util.NumericFields;
 import com.reminder.util.Log;
 import javafx.geometry.Insets;
 import javafx.scene.control.Alert;
@@ -51,6 +52,7 @@ public class ReminderUi {
         alert.getButtonTypes().setAll(snoozeButton, dismissButton);
 
         Spinner<Integer> snoozeMinutes = new Spinner<>(10, 120, 10, 5);
+        NumericFields.numberSpinner(snoozeMinutes, 3);
         VBox vbox = new VBox(10, new Label(I18n.get("reminder.snoozeMinutes")), snoozeMinutes);
         vbox.setPadding(new Insets(10));
         alert.getDialogPane().setExpandableContent(vbox);

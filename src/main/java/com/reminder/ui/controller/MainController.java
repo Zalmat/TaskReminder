@@ -29,6 +29,7 @@ import com.reminder.ui.view.DayView;
 import com.reminder.ui.view.ReminderUi;
 import com.reminder.ui.view.WeekView;
 import com.reminder.util.Log;
+import com.reminder.util.FileValidation;
 import com.reminder.util.YamlTemplate;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
@@ -342,6 +343,11 @@ public class MainController {
         File file = fileChooser.showOpenDialog(datePicker.getScene().getWindow());
         if (file == null) return;
 
+        if (!FileValidation.isReadableYaml(file.toPath())) {
+            Dialogs.error(I18n.get("common.error"), I18n.get("yaml.invalidFile"));
+            return;
+        }
+
         ImportOutcome outcome = runImport(file.toPath(), true, false);
         if (outcome != null) {
             showImportResult(outcome);
@@ -446,8 +452,18 @@ public class MainController {
         if (path == null || path.isBlank()) {
             return null;
         }
-        Path file = Path.of(path);
-        return Files.isRegularFile(file) ? file : null;
+        Path file;
+        try {
+            file = Path.of(path);
+        } catch (RuntimeException e) {
+            Log.log("TaskImport", "invalid configured path: " + path, e);
+            return null;
+        }
+        if (!FileValidation.isReadableYaml(file)) {
+            Log.log("TaskImport", "configured file is not a readable YAML: " + path);
+            return null;
+        }
+        return file;
     }
 
     /** Импортирует файл; возвращает итог или {@code null} при ошибке. */

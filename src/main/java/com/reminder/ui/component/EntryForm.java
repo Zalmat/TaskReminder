@@ -3,6 +3,8 @@ package com.reminder.ui.component;
 import com.reminder.i18n.I18n;
 import com.reminder.service.TaskService;
 import com.reminder.settings.AppSettings;
+import com.reminder.ui.util.ComboCells;
+import com.reminder.ui.util.NumericFields;
 import com.reminder.util.TaskValidationUtils;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.TextArea;
@@ -26,6 +28,10 @@ public class EntryForm {
         this.typeChoice = typeChoice;
         this.hoursField = hoursField;
         this.commentArea = commentArea;
+        projectChoice.setCellFactory(list -> ComboCells.wrapping());
+        taskChoice.setCellFactory(list -> ComboCells.wrapping());
+        typeChoice.setCellFactory(list -> ComboCells.wrapping());
+        NumericFields.digitsOnly(hoursField, 2);
     }
 
     public void loadTypeChoices(TaskService taskService) {

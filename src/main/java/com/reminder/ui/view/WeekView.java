@@ -78,6 +78,8 @@ public class WeekView {
     public void configure() {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setItems(entries);
+        table.setFixedCellSize(-1);
+        table.widthProperty().addListener((obs, oldWidth, newWidth) -> table.refresh());
 
         projectColumn.setCellValueFactory(cd -> new ReadOnlyStringWrapper(cd.getValue().getProject()));
         projectColumn.setCellFactory(c -> TableCells.wrapping());

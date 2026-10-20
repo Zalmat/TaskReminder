@@ -1,6 +1,7 @@
 package com.reminder.ui.component;
 
 import com.reminder.model.WeekEntry;
+import com.reminder.ui.util.NumericFields;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
@@ -51,6 +52,7 @@ public class WeekEntryCell extends TableCell<WeekEntry, Integer> {
     private void createTextField() {
         textField = new TextField(getItem() != null ? getItem().toString() : "0");
         textField.setMinWidth(this.getWidth() - this.getGraphicTextGap() * 2);
+        NumericFields.digitsOnly(textField, 2);
         textField.setOnKeyPressed(t -> {
             if (t.getCode() == KeyCode.ENTER) {
                 commitEdit(parseValue(textField.getText()));
@@ -61,11 +63,6 @@ public class WeekEntryCell extends TableCell<WeekEntry, Integer> {
         textField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
             if (!isNowFocused && isEditing()) {
                 commitEdit(parseValue(textField.getText()));
-            }
-        });
-        textField.textProperty().addListener((obs, oldVal, newVal) -> {
-            if (!newVal.matches("\\d*")) {
-                textField.setText(oldVal);
             }
         });
     }

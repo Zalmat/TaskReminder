@@ -74,6 +74,8 @@ public class DayView {
     public void configure() {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setItems(entries);
+        table.setFixedCellSize(-1);
+        table.widthProperty().addListener((obs, oldWidth, newWidth) -> table.refresh());
 
         projectColumn.setCellValueFactory(cd -> new ReadOnlyStringWrapper(cd.getValue().getProject()));
         projectColumn.setCellFactory(c -> TableCells.wrapping());
@@ -99,6 +101,7 @@ public class DayView {
     public void update(LocalDate date) {
         List<WorkEntry> dayEntries = taskService.getEntriesForDate(date);
         entries.setAll(dayEntries);
+        table.refresh();
 
         double total = workTimeService.getDayTotal(dayEntries, date);
         double remaining = workTimeService.getRemainingForDay(dayEntries, date);

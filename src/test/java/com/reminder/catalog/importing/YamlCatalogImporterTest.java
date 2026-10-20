@@ -73,4 +73,11 @@ class YamlCatalogImporterTest {
         Files.writeString(file, "tasks: [unclosed", StandardCharsets.UTF_8);
         assertThrows(IOException.class, () -> new YamlCatalogImporter().importFrom(file));
     }
+
+    @Test
+    void rejectsCustomTags(@TempDir Path dir) throws IOException {
+        Path file = dir.resolve("tasks.yaml");
+        Files.writeString(file, "tasks: !!java.lang.ProcessBuilder [\"calc\"]\n", StandardCharsets.UTF_8);
+        assertThrows(IOException.class, () -> new YamlCatalogImporter().importFrom(file));
+    }
 }

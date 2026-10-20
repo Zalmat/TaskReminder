@@ -167,6 +167,7 @@ strings:
   yaml.saveTitle: "Сохранить шаблон YAML"
   yaml.saved: "✅ Шаблон сохранен: {0}"
   yaml.saveError: "❌ Не удалось сохранить шаблон: {0}"
+  yaml.invalidFile: "Выберите существующий YAML-файл (.yaml или .yml)."
 
   updates.title: "Обновления"
   updates.checkFailed: "⚠ Не удалось проверить обновления (нет интернета или проблема с GitHub API)."
@@ -298,6 +299,7 @@ strings:
   settings.export.mode.always: "Всегда сохранять в указанную папку"
   settings.export.formats: "Применять для форматов:"
   settings.export.openFolder: "Открывать папку после автосохранения"
+  settings.export.invalidDir: "Выберите существующий каталог, доступный для записи."
   settings.decimal.system: "Как в системе"
   settings.decimal.dot: "Точка"
   settings.decimal.comma: "Запятая"

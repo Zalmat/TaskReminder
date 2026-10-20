@@ -5,6 +5,7 @@ import com.reminder.model.Reminder;
 import com.reminder.service.ReminderService;
 import com.reminder.ui.util.AppIcons;
 import com.reminder.ui.util.Dialogs;
+import com.reminder.ui.util.NumericFields;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -53,6 +54,8 @@ public class RemindersDialogController {
 
         hourSpinner.setValueFactory(new javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory(0, 23, LocalTime.now().getHour()));
         minuteSpinner.setValueFactory(new javafx.scene.control.SpinnerValueFactory.IntegerSpinnerValueFactory(0, 59, LocalTime.now().getMinute()));
+        NumericFields.timeSpinner(hourSpinner, 23);
+        NumericFields.timeSpinner(minuteSpinner, 59);
 
         timeColumn.setCellValueFactory(cd -> new ReadOnlyStringWrapper(cd.getValue().getFormattedTime()));
         textColumn.setCellValueFactory(cd -> new ReadOnlyStringWrapper(cd.getValue().getText()));
@@ -115,6 +118,8 @@ public class RemindersDialogController {
         hour.setEditable(true);
         Spinner<Integer> minute = new Spinner<>(0, 59, selected.getTime().getMinute());
         minute.setEditable(true);
+        NumericFields.timeSpinner(hour, 23);
+        NumericFields.timeSpinner(minute, 59);
         HBox timeBox = new HBox(5, hour, new Label(":"), minute);
 
         TextArea text = new TextArea(selected.getText());

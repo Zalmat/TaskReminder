@@ -167,6 +167,7 @@ strings:
   yaml.saveTitle: "YAML-Vorlage speichern"
   yaml.saved: "✅ Vorlage gespeichert: {0}"
   yaml.saveError: "❌ Vorlage konnte nicht gespeichert werden: {0}"
+  yaml.invalidFile: "Wählen Sie eine vorhandene YAML-Datei (.yaml oder .yml)."
 
   updates.title: "Updates"
   updates.checkFailed: "⚠ Updates konnten nicht geprüft werden (kein Internet oder GitHub-API-Problem)."
@@ -298,6 +299,7 @@ strings:
   settings.export.mode.always: "Immer im angegebenen Ordner speichern"
   settings.export.formats: "Anwenden auf Formate:"
   settings.export.openFolder: "Ordner nach dem automatischen Speichern öffnen"
+  settings.export.invalidDir: "Wählen Sie einen vorhandenen, beschreibbaren Ordner."
   settings.decimal.system: "Systemgebietsschema"
   settings.decimal.dot: "Punkt"
   settings.decimal.comma: "Komma"

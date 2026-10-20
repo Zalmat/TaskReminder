@@ -3,10 +3,12 @@ package com.reminder.ui;
 import com.reminder.catalog.importing.ImportOutcome;
 import com.reminder.i18n.I18n;
 import com.reminder.ui.util.Tooltips;
+import com.reminder.util.Log;
 import javafx.animation.Interpolator;
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.Timeline;
+import javafx.application.Platform;
 import javafx.scene.control.Label;
 import javafx.util.Duration;
 
@@ -21,6 +23,7 @@ public class ImportNotifier {
 
     private final Label bell;
     private final BiConsumer<String, String> tray;
+    private Timeline shake;
 
     public ImportNotifier(Label bell, BiConsumer<String, String> tray) {
         this.bell = bell;
@@ -42,7 +45,8 @@ public class ImportNotifier {
             bell.setTooltip(Tooltips.create(text));
             bell.setVisible(true);
             bell.setManaged(true);
-            shakeBell();
+            Log.log("TaskImport", "bell shown");
+            Platform.runLater(this::shakeBell);
         }
         if (trayEnabled && tray != null) {
             tray.accept(I18n.get("app.tray.caption"), text);
@@ -53,15 +57,20 @@ public class ImportNotifier {
         if (bell == null) {
             return;
         }
-        Timeline timeline = new Timeline(
+        if (shake != null) {
+            shake.stop();
+        }
+        shake = new Timeline(
                 new KeyFrame(Duration.ZERO, new KeyValue(bell.translateXProperty(), 0)),
-                new KeyFrame(Duration.millis(60), new KeyValue(bell.translateXProperty(), -3, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(120), new KeyValue(bell.translateXProperty(), 3, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(180), new KeyValue(bell.translateXProperty(), -2, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(240), new KeyValue(bell.translateXProperty(), 2, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(300), new KeyValue(bell.translateXProperty(), 0, Interpolator.EASE_BOTH))
+                new KeyFrame(Duration.millis(80), new KeyValue(bell.translateXProperty(), -3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(160), new KeyValue(bell.translateXProperty(), 3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(240), new KeyValue(bell.translateXProperty(), -3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(320), new KeyValue(bell.translateXProperty(), 3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(400), new KeyValue(bell.translateXProperty(), -3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(480), new KeyValue(bell.translateXProperty(), 3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(560), new KeyValue(bell.translateXProperty(), 0, Interpolator.EASE_BOTH))
         );
-        timeline.play();
+        shake.playFromStart();
     }
 
     private void hideBell() {

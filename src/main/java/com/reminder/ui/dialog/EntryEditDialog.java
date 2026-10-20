@@ -3,6 +3,8 @@ package com.reminder.ui.dialog;
 import com.reminder.i18n.I18n;
 import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.AppIcons;
+import com.reminder.ui.util.ComboCells;
+import com.reminder.ui.util.NumericFields;
 import com.reminder.util.TaskValidationUtils;
 import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
@@ -49,7 +51,9 @@ public final class EntryEditDialog {
         ComboBox<String> typeField = new ComboBox<>(FXCollections.observableArrayList(types));
         typeField.setEditable(true);
         typeField.setValue(type);
+        typeField.setCellFactory(list -> ComboCells.wrapping());
         TextField hoursFieldDialog = new TextField(hours);
+        NumericFields.digitsOnly(hoursFieldDialog, 2);
         TextArea commentField = new TextArea(comment);
         commentField.setPrefRowCount(3);
 

@@ -13,8 +13,11 @@ import com.reminder.settings.Theme;
 import com.reminder.service.ExportFormat;
 import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.Dialogs;
+import com.reminder.ui.util.ComboCells;
+import com.reminder.ui.util.NumericFields;
 import com.reminder.ui.util.ProgramFolder;
 import com.reminder.ui.util.Tooltips;
+import com.reminder.util.FileValidation;
 import com.reminder.util.YamlTemplate;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
@@ -126,6 +129,7 @@ public class SettingsDialogController {
 
         typeChoice.getItems().setAll(workTypes);
         typeChoice.setValue(AppSettings.defaultType());
+        typeChoice.setCellFactory(list -> ComboCells.wrapping());
 
         if (AutoStartService.isSupported()) {
             autostartCheck.setSelected(AutoStartService.isEnabled());
@@ -267,6 +271,8 @@ public class SettingsDialogController {
                 0, 23, AppSettings.updateCheckHour()));
         updateMinuteSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(
                 0, 59, AppSettings.updateCheckMinute()));
+        NumericFields.timeSpinner(updateHourSpinner, 23);
+        NumericFields.timeSpinner(updateMinuteSpinner, 59);
     }
 
     private void setupTasks() {
@@ -288,6 +294,8 @@ public class SettingsDialogController {
                 0, 23, AppSettings.taskImportHour()));
         taskImportMinuteSpinner.setValueFactory(new SpinnerValueFactory.IntegerSpinnerValueFactory(
                 0, 59, AppSettings.taskImportMinute()));
+        NumericFields.timeSpinner(taskImportHourSpinner, 23);
+        NumericFields.timeSpinner(taskImportMinuteSpinner, 59);
         taskImportTrayNotifyCheck.setSelected(AppSettings.taskImportTrayNotify());
         updateTaskImportControls();
     }
@@ -318,13 +326,18 @@ public class SettingsDialogController {
         if (file == null) {
             return;
         }
+        Path path = file.toPath();
+        if (!FileValidation.isReadableYaml(path)) {
+            Dialogs.error(I18n.get("common.error"), I18n.get("yaml.invalidFile"));
+            return;
+        }
         taskImportFileField.setText(file.getAbsolutePath());
         taskImportOnStartupCheck.setSelected(true);
         updateTaskImportControls();
         if (Dialogs.yesNo(I18n.get("settings.tasks.choose.importNow.title"),
                 I18n.get("settings.tasks.choose.importNow.header"),
                 I18n.format("settings.tasks.choose.importNow.text", I18n.get("main.loadYaml")))) {
-            importNow.accept(file.toPath());
+            importNow.accept(path);
         }
     }
 
@@ -370,6 +383,11 @@ public class SettingsDialogController {
         Window owner = dialogPane.getScene() != null ? dialogPane.getScene().getWindow() : null;
         File directory = chooser.showDialog(owner);
         if (directory != null) {
+            Path path = directory.toPath();
+            if (!Files.isDirectory(path) || !Files.isWritable(path)) {
+                Dialogs.error(I18n.get("common.error"), I18n.get("settings.export.invalidDir"));
+                return;
+            }
             exportDirField.setText(directory.getAbsolutePath());
         }
     }
