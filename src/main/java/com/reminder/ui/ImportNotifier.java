@@ -75,11 +75,15 @@ public class ImportNotifier {
                 new KeyFrame(Duration.millis(1500), new KeyValue(bell.translateXProperty(), 0, Interpolator.EASE_BOTH))
         );
         shake.setDelay(Duration.millis(400));
+        shake.setCycleCount(40);
         shake.playFromStart();
         Log.log("TaskImport", "bell shake started");
     }
 
     private void hideBell() {
+        if (shake != null) {
+            shake.stop();
+        }
         if (bell != null) {
             bell.setVisible(false);
             bell.setManaged(false);
