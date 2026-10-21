@@ -1,14 +1,28 @@
 package com.reminder.ui.component;
 
+import com.reminder.i18n.I18n;
 import com.reminder.model.WeekEntry;
 import com.reminder.ui.util.NumericFields;
+import com.reminder.util.Hours;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
 
+import java.util.OptionalInt;
+import java.util.function.Consumer;
+
 /** Редактируемая ячейка с количеством часов для недельного режима. */
 public class WeekEntryCell extends TableCell<WeekEntry, Integer> {
     private TextField textField;
+    private final Consumer<String> onInvalid;
+
+    public WeekEntryCell() {
+        this(message -> { });
+    }
+
+    public WeekEntryCell(Consumer<String> onInvalid) {
+        this.onInvalid = onInvalid == null ? message -> { } : onInvalid;
+    }
 
     @Override
     public void startEdit() {
@@ -55,24 +69,25 @@ public class WeekEntryCell extends TableCell<WeekEntry, Integer> {
         NumericFields.digitsOnly(textField, 2);
         textField.setOnKeyPressed(t -> {
             if (t.getCode() == KeyCode.ENTER) {
-                commitEdit(parseValue(textField.getText()));
+                commitOrWarn(textField.getText());
             } else if (t.getCode() == KeyCode.ESCAPE) {
                 cancelEdit();
             }
         });
         textField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
             if (!isNowFocused && isEditing()) {
-                commitEdit(parseValue(textField.getText()));
+                commitOrWarn(textField.getText());
             }
         });
     }
 
-    private Integer parseValue(String value) {
-        try {
-            if (value == null || value.trim().isEmpty()) return 0;
-            return Math.max(0, Math.min(24, Integer.parseInt(value.trim())));
-        } catch (NumberFormatException e) {
-            return 0;
+    private void commitOrWarn(String text) {
+        OptionalInt value = Hours.parseWeekCell(text);
+        if (value.isPresent()) {
+            commitEdit(value.getAsInt());
+        } else {
+            onInvalid.accept(I18n.get("week.hoursInvalid"));
+            cancelEdit();
         }
     }
 }

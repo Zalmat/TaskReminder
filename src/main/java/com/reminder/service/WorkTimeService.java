@@ -7,6 +7,7 @@ import com.reminder.model.HolidaysData;
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
 import com.reminder.storage.DataStore;
+import com.reminder.util.Hours;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -335,6 +336,9 @@ public class WorkTimeService {
     public List<WeekEntry> aggregateWeek(List<WorkEntry> weekEntries) {
         Map<String, WeekEntry> map = new LinkedHashMap<>();
         for (WorkEntry entry : weekEntries) {
+            if (entry == null || entry.getDate() == null || !Hours.validEntry(entry.getHours())) {
+                continue;
+            }
             String key = entry.getProject() + "|" + entry.getTaskName() + "|" + entry.getType();
             WeekEntry weekEntry = map.get(key);
             if (weekEntry == null) {

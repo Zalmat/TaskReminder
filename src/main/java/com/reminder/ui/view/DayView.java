@@ -10,6 +10,7 @@ import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.TableCells;
 import com.reminder.ui.util.WrappingTableRow;
 import com.reminder.util.DateUtils;
+import com.reminder.util.Hours;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -161,7 +162,7 @@ public class DayView {
                 form.focusHours();
                 return;
             }
-            if (hours <= 0 || hours > 24) {
+            if (!Hours.validEntry(hours)) {
                 Dialogs.error(I18n.get("common.error"), I18n.get("error.durationRange"));
                 form.focusHours();
                 return;
@@ -217,7 +218,7 @@ public class DayView {
             Dialogs.error(I18n.get("common.error"), I18n.get("error.durationInt"));
             return;
         }
-        if (hours <= 0 || hours > 24) {
+        if (!Hours.validEntry(hours)) {
             Dialogs.error(I18n.get("common.error"), I18n.get("error.durationRange"));
             return;
         }

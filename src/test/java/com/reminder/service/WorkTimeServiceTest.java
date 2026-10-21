@@ -87,6 +87,19 @@ class WorkTimeServiceTest {
     }
 
     @Test
+    void aggregateWeekSkipsInvalidHours(@TempDir Path dir) {
+        LocalDate d = LocalDate.of(2026, 10, 12);
+        WorkTimeService svc = service(dir);
+        WorkEntry good = entry("P", "T", "Дизайн", 3, d);
+        WorkEntry negative = entry("P", "T", "Дизайн", -1, d);
+        WorkEntry tooLarge = entry("P", "T", "Дизайн", 25, d);
+
+        List<WeekEntry> week = svc.aggregateWeek(List.of(negative, tooLarge, good));
+        assertEquals(1, week.size());
+        assertEquals(3, week.get(0).getTotal());
+    }
+
+    @Test
     void dayTotalWithinLimitBoundaries(@TempDir Path dir) {
         LocalDate d = LocalDate.of(2026, 10, 12);
         WorkTimeService svc = service(dir);

@@ -127,6 +127,7 @@ strings:
 
   week.exists: "⚠️ Diese Aufgabe existiert in dieser Woche bereits"
   week.overtimeTooltip: "Achtung. Arbeitsstunden überschritten"
+  week.hoursInvalid: "Stunden müssen zwischen 0 und 24 liegen."
 
   confirm.delete.title: "Löschen bestätigen"
   confirm.delete.entry: "🗑️ Eintrag löschen?"

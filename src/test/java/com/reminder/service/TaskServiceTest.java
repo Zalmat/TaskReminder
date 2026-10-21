@@ -87,4 +87,19 @@ class TaskServiceTest {
         assertTrue(s.getAllProjects().containsAll(List.of("P", "P2")));
         assertTrue(s.getAllTaskNames().containsAll(List.of("T1", "T2")));
     }
+
+    @Test
+    void rejectsInvalidHours(@TempDir Path dir) {
+        TaskService s = service(dir);
+        LocalDate d = LocalDate.of(2026, 10, 12);
+
+        assertFalse(s.addWorkEntry(entry("A", -1, d), true));
+        assertFalse(s.addWorkEntry(entry("A", 0, d), true));
+        assertFalse(s.addWorkEntry(entry("A", 25, d), true));
+
+        WorkEntry original = entry("A", 2, d);
+        assertTrue(s.addWorkEntry(original, false));
+        assertFalse(s.updateWorkEntry(original, entry("A", -1, d), true));
+        assertFalse(s.updateWorkEntry(original, entry("A", 25, d), true));
+    }
 }

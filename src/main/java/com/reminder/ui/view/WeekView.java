@@ -24,6 +24,7 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import com.reminder.util.DateUtils;
+import com.reminder.util.Hours;
 import com.reminder.util.RussianDays;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
@@ -151,7 +152,7 @@ public class WeekView {
             col.setPrefWidth(70);
             col.setStyle("-fx-alignment: CENTER;");
             col.setEditable(true);
-            col.setCellFactory(cf -> new WeekEntryCell());
+            col.setCellFactory(cf -> new WeekEntryCell(this::warnInvalidHours));
             col.setOnEditCommit(this::handleCellEdit);
             dayColumns.add(col);
         }
@@ -289,8 +290,11 @@ public class WeekView {
         }
     }
 
-    private void handleCellEdit(TableColumn.CellEditEvent<WeekEntry, Integer> event) {
-        if (editInProgress) {
+    private void warnInvalidHours(String message) {
+        Dialogs.warn(I18n.get("common.warning"), message);
+    }
+
+    private void handleCellEdit(TableColumn.CellEditEvent<WeekEntry, Integer> event) {        if (editInProgress) {
             table.refresh();
             return;
         }
@@ -307,7 +311,8 @@ public class WeekView {
         WeekEntry entry = event.getRowValue();
         LocalDate day = col.date();
         Integer newValue = event.getNewValue();
-        if (newValue == null || newValue < 0) {
+        if (newValue == null || !Hours.validWeekCell(newValue)) {
+            warnInvalidHours(I18n.get("week.hoursInvalid"));
             table.refresh();
             return;
         }

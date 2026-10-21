@@ -5,6 +5,7 @@ import com.reminder.model.Task;
 import com.reminder.model.WorkEntry;
 import com.reminder.storage.DataStore;
 import com.reminder.storage.LegacyMigrator;
+import com.reminder.util.Hours;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -45,7 +46,7 @@ public class TaskService {
 
     /** Добавляет запись. При allowOvertime пропускается проверка дневного лимита. */
     public boolean addWorkEntry(WorkEntry entry, boolean allowOvertime) {
-        if (entry == null || entry.getHours() <= 0) {
+        if (entry == null || !Hours.validEntry(entry.getHours())) {
             return false;
         }
         if (!allowOvertime
@@ -63,7 +64,7 @@ public class TaskService {
         if (idx < 0) {
             return false;
         }
-        if (updated.getHours() <= 0) {
+        if (!Hours.validEntry(updated.getHours())) {
             return false;
         }
         double otherTotal = entries.stream()

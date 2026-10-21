@@ -127,6 +127,7 @@ strings:
 
   week.exists: "⚠️ This task already exists in this week"
   week.overtimeTooltip: "Warning. Work hours exceeded"
+  week.hoursInvalid: "Hours must be between 0 and 24."
 
   confirm.delete.title: "Delete confirmation"
   confirm.delete.entry: "🗑️ Delete entry?"

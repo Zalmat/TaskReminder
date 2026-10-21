@@ -127,6 +127,7 @@ strings:
 
   week.exists: "⚠️ Тази задача вече съществува в тази седмица"
   week.overtimeTooltip: "Внимание. Превишени работни часове"
+  week.hoursInvalid: "Часовете трябва да са между 0 и 24."
 
   confirm.delete.title: "Потвърждение за изтриване"
   confirm.delete.entry: "🗑️ Да се изтрие ли записът?"
