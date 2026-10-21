@@ -9,11 +9,14 @@ import com.google.gson.reflect.TypeToken;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
+import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.AtomicMoveNotSupportedException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -117,16 +120,36 @@ public class DataStore {
     }
 
     private void save(String fileName, Object value, Type type) {
+        Path target = resolve(fileName);
+        Path tmp = resolve(fileName + ".tmp");
         try {
             Files.createDirectories(directory);
-            Path target = resolve(fileName);
-            Path tmp = resolve(fileName + ".tmp");
             String json = gson.toJson(value, type);
             Files.writeString(tmp, json, StandardCharsets.UTF_8);
-            Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING,
-                    StandardCopyOption.ATOMIC_MOVE);
-        } catch (IOException e) {
-            System.err.println("Cannot save " + fileName + ": " + e.getMessage());
+            try (FileChannel channel = FileChannel.open(tmp, StandardOpenOption.WRITE)) {
+                channel.force(true);
+            }
+            try {
+                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                throw new StorageException(fileName,
+                        "Атомарная замена файла не поддерживается: " + fileName, e);
+            }
+        } catch (IOException | RuntimeException e) {
+            deleteQuietly(tmp);
+            if (e instanceof StorageException storageException) {
+                throw storageException;
+            }
+            throw new StorageException(fileName, "Не удалось сохранить " + fileName, e);
+        }
+    }
+
+    private static void deleteQuietly(Path path) {
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException ignored) {
+            // Временный файл не критичен для целостности основного файла.
         }
     }
 }

@@ -3,6 +3,7 @@ package com.reminder.ui.dialog;
 import com.reminder.catalog.TaskCatalogService;
 import com.reminder.i18n.I18n;
 import com.reminder.service.TaskService;
+import com.reminder.storage.StorageException;
 import com.reminder.suggest.Suggestion;
 import com.reminder.suggest.SuggestionKind;
 import com.reminder.suggest.SuggestionService;
@@ -155,10 +156,16 @@ public final class SuggestionManagerDialog {
                 return;
             }
             for (Suggestion item : selected) {
-                if (kind == SuggestionKind.PROJECT) {
-                    catalog.removeProject(item.value());
-                } else {
-                    catalog.removeTaskName(item.value());
+                try {
+                    if (kind == SuggestionKind.PROJECT) {
+                        catalog.removeProject(item.value());
+                    } else {
+                        catalog.removeTaskName(item.value());
+                    }
+                } catch (StorageException e) {
+                    Dialogs.error(I18n.get("common.error"),
+                            I18n.get("error.save") + "\n" + Dialogs.reason(e));
+                    return;
                 }
             }
             onCatalogChanged.run();
@@ -174,10 +181,16 @@ public final class SuggestionManagerDialog {
                     I18n.get("suggest.clear.confirm"), I18n.get("suggest.clear.warning"))) {
                 return;
             }
-            if (kind == SuggestionKind.PROJECT) {
-                catalog.clearProjects();
-            } else {
-                catalog.clearTaskNames();
+            try {
+                if (kind == SuggestionKind.PROJECT) {
+                    catalog.clearProjects();
+                } else {
+                    catalog.clearTaskNames();
+                }
+            } catch (StorageException e) {
+                Dialogs.error(I18n.get("common.error"),
+                        I18n.get("error.save") + "\n" + Dialogs.reason(e));
+                return;
             }
             onCatalogChanged.run();
             reloadAll(reloaders);
@@ -201,8 +214,15 @@ public final class SuggestionManagerDialog {
                 return;
             }
             String clean = value.trim();
-            boolean added = kind == SuggestionKind.PROJECT
-                    ? catalog.addProject(clean) : catalog.addTaskName(clean);
+            boolean added;
+            try {
+                added = kind == SuggestionKind.PROJECT
+                        ? catalog.addProject(clean) : catalog.addTaskName(clean);
+            } catch (StorageException e) {
+                Dialogs.error(I18n.get("common.error"),
+                        I18n.get("error.save") + "\n" + Dialogs.reason(e));
+                return;
+            }
             if (!added) {
                 Dialogs.info(I18n.get("suggest.manager.title"), I18n.get("suggest.valueExists"));
                 return;
@@ -292,7 +312,15 @@ public final class SuggestionManagerDialog {
                 return;
             }
             String clean = value.trim();
-            if (!catalog.addType(clean)) {
+            boolean added;
+            try {
+                added = catalog.addType(clean);
+            } catch (StorageException e) {
+                Dialogs.error(I18n.get("common.error"),
+                        I18n.get("error.save") + "\n" + Dialogs.reason(e));
+                return;
+            }
+            if (!added) {
                 Dialogs.info(I18n.get("suggest.manager.title"), I18n.get("suggest.typeExists"));
                 return;
             }
@@ -319,7 +347,13 @@ public final class SuggestionManagerDialog {
                 return;
             }
             for (Suggestion item : selected) {
-                catalog.removeType(item.value());
+                try {
+                    catalog.removeType(item.value());
+                } catch (StorageException e) {
+                    Dialogs.error(I18n.get("common.error"),
+                            I18n.get("error.save") + "\n" + Dialogs.reason(e));
+                    return;
+                }
             }
             onCatalogChanged.run();
             reloadAll(reloaders);
@@ -331,7 +365,13 @@ public final class SuggestionManagerDialog {
                     I18n.get("suggest.clearTypes.confirm"), I18n.get("suggest.clearTypes.warning"))) {
                 return;
             }
-            catalog.clearTypes();
+            try {
+                catalog.clearTypes();
+            } catch (StorageException e) {
+                Dialogs.error(I18n.get("common.error"),
+                        I18n.get("error.save") + "\n" + Dialogs.reason(e));
+                return;
+            }
             onCatalogChanged.run();
             reloadAll(reloaders);
         });

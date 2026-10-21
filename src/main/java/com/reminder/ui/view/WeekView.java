@@ -8,6 +8,7 @@ import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
 import com.reminder.service.TaskService;
 import com.reminder.service.WorkTimeService;
+import com.reminder.storage.StorageException;
 import com.reminder.ui.component.EntryForm;
 import com.reminder.ui.component.WeekEntryCell;
 import com.reminder.ui.component.WeekTotalCell;
@@ -252,9 +253,21 @@ public class WeekView {
         updated.setComment(result.comment());
         updated.getDayHours().putAll(selected.getDayHours());
 
+        try {
+            if (!taskService.replaceWeekEntry(selected, updated, weekStart(), weekEnd())) {
+                Dialogs.error(I18n.get("common.error"), I18n.get("error.save"));
+                return;
+            }
+        } catch (StorageException e) {
+            Dialogs.error(I18n.get("common.error"),
+                    I18n.get("error.save") + "\n" + Dialogs.reason(e));
+            return;
+        }
+
         int idx = entries.indexOf(selected);
-        entries.set(idx, updated);
-        saveEntryToService(updated, selected);
+        if (idx >= 0) {
+            entries.set(idx, updated);
+        }
         taskService.addPredefinedTask(new Task(result.project(), result.taskName(), result.type()));
 
         form.refreshSuggestions();
@@ -271,10 +284,15 @@ public class WeekView {
 
         if (Dialogs.confirm(I18n.get("confirm.delete.title"), I18n.get("confirm.delete.taskWeek"),
                 I18n.format("confirm.delete.taskWeekContent", selected.getProject(), selected.getTaskName()))) {
-            removeRecordsFor(selected);
-            entries.remove(selected);
-            updateTotals();
-            table.refresh();
+            try {
+                taskService.deleteWeekEntry(selected, weekStart(), weekEnd());
+                entries.remove(selected);
+                updateTotals();
+                table.refresh();
+            } catch (StorageException e) {
+                Dialogs.error(I18n.get("common.error"),
+                        I18n.get("error.save") + "\n" + Dialogs.reason(e));
+            }
         }
     }
 
@@ -283,10 +301,15 @@ public class WeekView {
         if (Dialogs.confirm(I18n.get("confirm.clear.title"),
                 I18n.get("confirm.clear.week"),
                 I18n.get("confirm.clear.content"))) {
-            taskService.clearEntriesForDates(weekDays);
-            entries.clear();
-            updateTotals();
-            table.refresh();
+            try {
+                taskService.clearEntriesForDates(weekDays);
+                entries.clear();
+                updateTotals();
+                table.refresh();
+            } catch (StorageException e) {
+                Dialogs.error(I18n.get("common.error"),
+                        I18n.get("error.save") + "\n" + Dialogs.reason(e));
+            }
         }
     }
 
@@ -334,8 +357,21 @@ public class WeekView {
             }
         }
 
+        WeekEntry candidate = copyEntry(entry);
+        candidate.getDayHours().put(day, newValue);
+        try {
+            if (!taskService.replaceWeekEntry(entry, candidate, weekStart(), weekEnd())) {
+                Dialogs.error(I18n.get("common.error"), I18n.get("error.save"));
+                table.refresh();
+                return;
+            }
+        } catch (StorageException e) {
+            Dialogs.error(I18n.get("common.error"),
+                    I18n.get("error.save") + "\n" + Dialogs.reason(e));
+            table.refresh();
+            return;
+        }
         entry.getDayHours().put(day, newValue);
-        saveEntryToService(entry, entry);
         updateTotals();
         highlightOvertimeDays();
         table.refresh();
@@ -381,33 +417,20 @@ public class WeekView {
         return lines.isEmpty() ? null : String.join("\n", lines);
     }
 
-    /** Сохраняет недельную задачу в записи: удаляет старые (previous) и пишет новые. */
-    private void saveEntryToService(WeekEntry entry, WeekEntry previous) {
-        removeRecordsFor(previous);
-        removeRecordsFor(entry);
-
-        for (LocalDate day : weekDays) {
-            int hours = entry.getDayHours().getOrDefault(day, 0);
-            if (hours > 0) {
-                WorkEntry workEntry = new WorkEntry(
-                        entry.getProject(), entry.getTaskName(), entry.getType(), hours);
-                workEntry.setDate(day);
-                workEntry.setComment(entry.getComment());
-                taskService.addWorkEntry(workEntry, true);
-            }
-        }
+    /** Сохраняет недельную задачу через один batch-commit сервиса. */
+    private WeekEntry copyEntry(WeekEntry source) {
+        WeekEntry copy = new WeekEntry(source.getProject(), source.getTaskName(), source.getType());
+        copy.setComment(source.getComment());
+        copy.getDayHours().putAll(source.getDayHours());
+        return copy;
     }
 
-    private void removeRecordsFor(WeekEntry weekEntry) {
-        for (LocalDate date : weekDays) {
-            List<WorkEntry> dayEntries = taskService.getEntriesForDate(date);
-            List<WorkEntry> toRemove = dayEntries.stream()
-                    .filter(e -> e.getProject().equals(weekEntry.getProject())
-                            && e.getTaskName().equals(weekEntry.getTaskName())
-                            && e.getType().equals(weekEntry.getType()))
-                    .toList();
-            toRemove.forEach(taskService::removeWorkEntry);
-        }
+    private LocalDate weekStart() {
+        return weekDays.isEmpty() ? datePicker.getValue() : weekDays.get(0);
+    }
+
+    private LocalDate weekEnd() {
+        return weekDays.isEmpty() ? datePicker.getValue() : weekDays.get(weekDays.size() - 1);
     }
 
     /** Колонка дня недели, помнит свою дату для переиспользования при навигации. */

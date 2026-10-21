@@ -23,13 +23,17 @@ public class ReminderService {
     private static final long DEDUP_SECONDS = 120;
 
     private final DataStore store;
-    private final List<Reminder> reminders;
+    private volatile List<Reminder> reminders;
     private final ScheduledExecutorService scheduler;
     private volatile boolean running = false;
     private volatile Consumer<Reminder> onReminderFire;
 
     public ReminderService() {
-        this.store = new DataStore();
+        this(new DataStore());
+    }
+
+    public ReminderService(DataStore store) {
+        this.store = store;
         this.reminders = new CopyOnWriteArrayList<>(store.loadList(REMINDERS_FILE, Reminder.class));
         this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "reminder-monitor");
@@ -73,22 +77,37 @@ public class ReminderService {
     }
 
     public void addReminder(Reminder reminder) {
-        if (reminder != null && !reminders.contains(reminder)) {
-            reminders.add(reminder);
-            persist();
+        if (reminder == null || reminders.contains(reminder)) {
+            return;
         }
+        List<Reminder> next = new ArrayList<>(reminders);
+        next.add(reminder);
+        persist(next);
+        reminders = new CopyOnWriteArrayList<>(next);
     }
 
-    public void updateReminder(Reminder reminder) {
-        if (reminders.contains(reminder)) {
-            persist();
+    /** Заменяет напоминание по id; исходный объект не изменяется до успешного сохранения. */
+    public void replaceReminder(Reminder original, Reminder updated) {
+        if (original == null || updated == null) {
+            return;
         }
+        int idx = reminders.indexOf(original);
+        if (idx < 0) {
+            return;
+        }
+        List<Reminder> next = new ArrayList<>(reminders);
+        next.set(idx, updated);
+        persist(next);
+        reminders = new CopyOnWriteArrayList<>(next);
     }
 
     public void removeReminder(Reminder reminder) {
-        if (reminders.remove(reminder)) {
-            persist();
+        List<Reminder> next = new ArrayList<>(reminders);
+        if (!next.remove(reminder)) {
+            return;
         }
+        persist(next);
+        reminders = new CopyOnWriteArrayList<>(next);
     }
 
     public void clearSnooze() {
@@ -98,8 +117,8 @@ public class ReminderService {
         }
     }
 
-    private void persist() {
-        store.saveList(REMINDERS_FILE, reminders);
+    private void persist(List<Reminder> next) {
+        store.saveList(REMINDERS_FILE, next);
     }
 
     public void stopMonitoring() {

@@ -32,6 +32,18 @@ public class Reminder implements Serializable {
         this.repeatDaily = repeatDaily;
     }
 
+    /** Копия для изменения с последующим атомарным сохранением. */
+    public Reminder copy() {
+        Reminder copy = new Reminder();
+        copy.id = id;
+        copy.time = time;
+        copy.text = text;
+        copy.active = active;
+        copy.repeatDaily = repeatDaily;
+        copy.snoozeUntil = snoozeUntil;
+        return copy;
+    }
+
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
 

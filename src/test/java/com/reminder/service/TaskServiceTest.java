@@ -1,8 +1,11 @@
 package com.reminder.service;
 
 import com.reminder.model.Task;
+import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
 import com.reminder.storage.DataStore;
+import com.reminder.storage.FailingDataStore;
+import com.reminder.storage.StorageException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -12,6 +15,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TaskServiceTest {
@@ -101,5 +105,55 @@ class TaskServiceTest {
         assertTrue(s.addWorkEntry(original, false));
         assertFalse(s.updateWorkEntry(original, entry("A", -1, d), true));
         assertFalse(s.updateWorkEntry(original, entry("A", 25, d), true));
+    }
+
+    @Test
+    void failedSaveKeepsEntriesUnchanged(@TempDir Path dir) {
+        FailingDataStore store = new FailingDataStore(dir);
+        TaskService s = new TaskService(store);
+        LocalDate d = LocalDate.of(2026, 10, 12);
+        WorkEntry first = entry("A", 3, d);
+        assertTrue(s.addWorkEntry(first, false));
+
+        store.failSaves(true);
+        assertThrows(StorageException.class, () -> s.addWorkEntry(entry("B", 2, d), false));
+        assertEquals(1, s.getAllEntries().size());
+        assertTrue(s.getAllEntries().contains(first));
+
+        assertThrows(StorageException.class,
+                () -> s.updateWorkEntry(first, entry("A", 4, d), true));
+        assertEquals(3.0, s.getAllEntries().get(0).getHours());
+
+        assertThrows(StorageException.class, () -> s.removeWorkEntry(first));
+        assertEquals(1, s.getAllEntries().size());
+
+        WeekEntry next = new WeekEntry("P", "A", "Разработка");
+        next.getDayHours().put(d, 5);
+        assertThrows(StorageException.class,
+                () -> s.replaceWeekEntry(null, next, d, d));
+        assertEquals(1, s.getAllEntries().size());
+    }
+
+    @Test
+    void replaceWeekEntryCommitsAllDaysAtOnce(@TempDir Path dir) {
+        TaskService s = service(dir);
+        LocalDate start = LocalDate.of(2026, 10, 12);
+        LocalDate end = start.plusDays(6);
+        WeekEntry week = new WeekEntry("P", "T", "Разработка");
+        week.setComment("comment");
+        week.getDayHours().put(start, 2);
+        week.getDayHours().put(start.plusDays(2), 3);
+
+        assertTrue(s.replaceWeekEntry(null, week, start, end));
+        assertEquals(2, s.getAllEntries().size());
+        assertEquals(5.0, s.getTotalHoursForDate(start)
+                + s.getTotalHoursForDate(start.plusDays(2)));
+
+        WeekEntry reloaded = new WeekEntry("P", "T", "Разработка");
+        reloaded.getDayHours().put(start, 4);
+        assertTrue(s.replaceWeekEntry(week, reloaded, start, end));
+        assertEquals(1, s.getAllEntries().size());
+        assertEquals(4.0, s.getTotalHoursForDate(start));
+        assertEquals(0.0, s.getTotalHoursForDate(start.plusDays(2)));
     }
 }

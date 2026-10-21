@@ -5,6 +5,7 @@ import com.reminder.catalog.ImportResult;
 import com.reminder.catalog.TaskCatalogService;
 import com.reminder.importing.ImportStateStore;
 import com.reminder.util.FileHashes;
+import com.reminder.util.Log;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -35,7 +36,12 @@ public class CatalogImportService {
         }
         ImportResult result = importer.importFrom(file);
         CatalogAddResult added = catalog.merge(result);
-        state.markImported(file, hash);
+        try {
+            state.markImported(file, hash);
+        } catch (RuntimeException e) {
+            Log.log("TaskImport", "catalog saved, but import state was not recorded: "
+                    + e.getMessage(), e);
+        }
         return ImportOutcome.imported(added, result.totalRows(), result.skipped());
     }
 }

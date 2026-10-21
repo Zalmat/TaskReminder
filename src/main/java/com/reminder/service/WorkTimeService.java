@@ -7,7 +7,9 @@ import com.reminder.model.HolidaysData;
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
 import com.reminder.storage.DataStore;
+import com.reminder.storage.StorageException;
 import com.reminder.util.Hours;
+import com.reminder.util.Log;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -34,7 +36,7 @@ public class WorkTimeService {
     private static final String HOLIDAYS_FILE = "holidays.json";
     private static final String HOLIDAYS_BACKUP = "holidays.json.bak";
 
-    private final List<Holiday> holidays = new ArrayList<>();
+    private List<Holiday> holidays = new ArrayList<>();
     private final DataStore store;
 
     public WorkTimeService() {
@@ -107,11 +109,13 @@ public class WorkTimeService {
             return HolidayResult.NAME_REQUIRED;
         }
         Holiday candidate = new Holiday(date, cleanName, annual, type, HolidaySource.MANUAL);
-        if (isDuplicate(candidate, holidays, null)) {
+        List<Holiday> next = new ArrayList<>(holidays);
+        if (isDuplicate(candidate, next, null)) {
             return HolidayResult.DUPLICATE;
         }
-        holidays.add(candidate);
-        persistHolidays();
+        next.add(candidate);
+        persistHolidays(next);
+        holidays = next;
         return HolidayResult.ADDED;
     }
 
@@ -119,10 +123,18 @@ public class WorkTimeService {
         if (updated == null || updated.getId() == null) {
             return HolidayResult.NOT_FOUND;
         }
-        Holiday existing = findHoliday(updated.getId());
-        if (existing == null) {
+        List<Holiday> next = new ArrayList<>(holidays);
+        int idx = -1;
+        for (int i = 0; i < next.size(); i++) {
+            if (updated.getId().equals(next.get(i).getId())) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx < 0) {
             return HolidayResult.NOT_FOUND;
         }
+        Holiday existing = next.get(idx);
         String cleanName = updated.getName() == null ? "" : updated.getName().trim();
         if (updated.getDate() == null || cleanName.isEmpty()) {
             return HolidayResult.NAME_REQUIRED;
@@ -130,14 +142,12 @@ public class WorkTimeService {
         Holiday candidate = new Holiday(updated.getDate(), cleanName, updated.isAnnual(),
                 updated.getType(), existing.getSource());
         candidate.setId(existing.getId());
-        if (isDuplicate(candidate, holidays, existing.getId())) {
+        if (isDuplicate(candidate, next, existing.getId())) {
             return HolidayResult.DUPLICATE;
         }
-        existing.setDate(updated.getDate());
-        existing.setName(cleanName);
-        existing.setAnnual(updated.isAnnual());
-        existing.setType(updated.getType());
-        persistHolidays();
+        next.set(idx, candidate);
+        persistHolidays(next);
+        holidays = next;
         return HolidayResult.UPDATED;
     }
 
@@ -145,11 +155,14 @@ public class WorkTimeService {
         if (id == null) {
             return false;
         }
-        boolean removed = holidays.removeIf(h -> id.equals(h.getId()));
-        if (removed) {
-            persistHolidays();
+        List<Holiday> next = new ArrayList<>(holidays);
+        boolean removed = next.removeIf(h -> id.equals(h.getId()));
+        if (!removed) {
+            return false;
         }
-        return removed;
+        persistHolidays(next);
+        holidays = next;
+        return true;
     }
 
     /** Предпросмотр импорта: сколько добавится и сколько совпадёт с текущими/внутри файла. */
@@ -181,6 +194,7 @@ public class WorkTimeService {
         if (candidates == null || candidates.isEmpty()) {
             return new HolidayImportResult(0, 0);
         }
+        List<Holiday> next = new ArrayList<>(holidays);
         int added = 0;
         int skipped = 0;
         for (Holiday candidate : candidates) {
@@ -189,18 +203,19 @@ public class WorkTimeService {
                 skipped++;
                 continue;
             }
-            if (isDuplicate(candidate, holidays, null)) {
+            if (isDuplicate(candidate, next, null)) {
                 skipped++;
                 continue;
             }
             Holiday holiday = new Holiday(candidate.getDate(), candidate.getName().trim(),
                     candidate.isAnnual(), candidate.getType(), HolidaySource.IMPORTED);
             holiday.setId(UUID.randomUUID().toString());
-            holidays.add(holiday);
+            next.add(holiday);
             added++;
         }
         if (added > 0) {
-            persistHolidays();
+            persistHolidays(next);
+            holidays = next;
         }
         return new HolidayImportResult(added, skipped);
     }
@@ -242,7 +257,7 @@ public class WorkTimeService {
         Path file = store.resolve(HOLIDAYS_FILE);
         if (!Files.isRegularFile(file)) {
             seedDefaultHolidays();
-            persistHolidays();
+            persistHolidaysBestEffort();
             return;
         }
         String text;
@@ -267,7 +282,7 @@ public class WorkTimeService {
                             HolidaySource.MANUAL));
                 }
             }
-            persistHolidays();
+            persistHolidaysBestEffort();
         }
     }
 
@@ -298,10 +313,18 @@ public class WorkTimeService {
         holidays.add(new Holiday(date, "", true, HolidayType.OFFICIAL, HolidaySource.DEFAULT));
     }
 
-    private void persistHolidays() {
+    private void persistHolidays(List<Holiday> next) {
         HolidaysData data = new HolidaysData();
-        data.holidays = new ArrayList<>(holidays);
+        data.holidays = new ArrayList<>(next);
         store.saveObject(HOLIDAYS_FILE, data);
+    }
+
+    private void persistHolidaysBestEffort() {
+        try {
+            persistHolidays(new ArrayList<>(holidays));
+        } catch (StorageException e) {
+            Log.log("Holidays", "cannot save seeded/legacy holidays: " + e.getMessage(), e);
+        }
     }
 
     // ==================== Итоги ====================

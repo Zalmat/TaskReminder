@@ -6,8 +6,9 @@ import com.reminder.model.Holiday;
 import com.reminder.model.HolidayType;
 import com.reminder.service.WorkTimeService;
 import com.reminder.settings.AppSettings;
-import com.reminder.ui.util.DatePickerUtils;
+import com.reminder.storage.StorageException;
 import com.reminder.ui.util.Dialogs;
+import com.reminder.ui.util.DatePickerUtils;
 import com.reminder.ui.util.TableCells;
 import com.reminder.ui.util.WrappingTableRow;
 import com.reminder.util.DateUtils;
@@ -176,8 +177,15 @@ public class HolidaysDialogController {
             alert.accept(I18n.get("common.error"), I18n.get("holidays.nameRequired"));
             return;
         }
-        WorkTimeService.HolidayResult result = workTimeService.addHoliday(
-                date, name, annualCheck.isSelected(), holidayTypeChoice.getValue());
+        WorkTimeService.HolidayResult result;
+        try {
+            result = workTimeService.addHoliday(
+                    date, name, annualCheck.isSelected(), holidayTypeChoice.getValue());
+        } catch (StorageException e) {
+            alert.accept(I18n.get("common.error"),
+                    I18n.get("error.save") + "\n" + Dialogs.reason(e));
+            return;
+        }
         switch (result) {
             case ADDED -> {
                 alert.accept(I18n.get("common.success"),
@@ -215,7 +223,14 @@ public class HolidaysDialogController {
         Holiday updated = new Holiday(date, name, annualCheck.isSelected(),
                 holidayTypeChoice.getValue(), selected.getSource());
         updated.setId(selected.getId());
-        WorkTimeService.HolidayResult result = workTimeService.updateHoliday(updated);
+        WorkTimeService.HolidayResult result;
+        try {
+            result = workTimeService.updateHoliday(updated);
+        } catch (StorageException e) {
+            alert.accept(I18n.get("common.error"),
+                    I18n.get("error.save") + "\n" + Dialogs.reason(e));
+            return;
+        }
         switch (result) {
             case UPDATED -> {
                 alert.accept(I18n.get("common.success"), I18n.get("holidays.updated"));
@@ -244,11 +259,16 @@ public class HolidaysDialogController {
                 I18n.format("holidays.deleteConfirmText", dateText(selected), selected.getName()))) {
             return;
         }
-        if (workTimeService.deleteHoliday(selected.getId())) {
-            holidayTable.getSelectionModel().clearSelection();
-            refreshList();
-            alert.accept(I18n.get("common.success"),
-                    I18n.format("holidays.deleted", dateText(selected)));
+        try {
+            if (workTimeService.deleteHoliday(selected.getId())) {
+                holidayTable.getSelectionModel().clearSelection();
+                refreshList();
+                alert.accept(I18n.get("common.success"),
+                        I18n.format("holidays.deleted", dateText(selected)));
+            }
+        } catch (StorageException e) {
+            alert.accept(I18n.get("common.error"),
+                    I18n.get("error.save") + "\n" + Dialogs.reason(e));
         }
     }
 
@@ -333,6 +353,9 @@ public class HolidaysDialogController {
         } catch (IOException e) {
             alert.accept(I18n.get("common.error"),
                     I18n.format("holidays.import.error", Dialogs.reason(e)));
+        } catch (StorageException e) {
+            alert.accept(I18n.get("common.error"),
+                    I18n.get("error.save") + "\n" + Dialogs.reason(e));
         }
     }
 

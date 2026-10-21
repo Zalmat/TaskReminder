@@ -1,6 +1,8 @@
 package com.reminder.catalog;
 
 import com.reminder.storage.DataStore;
+import com.reminder.storage.FailingDataStore;
+import com.reminder.storage.StorageException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -9,6 +11,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TaskCatalogServiceTest {
@@ -98,5 +101,21 @@ class TaskCatalogServiceTest {
         TaskCatalogService reloaded = new TaskCatalogService(store);
         assertEquals(List.of("P"), reloaded.getProjects());
         assertEquals(List.of("T"), reloaded.getTaskNames());
+
+    }
+
+    @Test
+    void failedMergeLeavesMemoryUnchanged(@TempDir Path dir) {
+        FailingDataStore store = new FailingDataStore(dir);
+        store.failSaves(true);
+        TaskCatalogService catalog = new TaskCatalogService(store);
+
+        assertThrows(StorageException.class, () -> catalog.merge(new ImportResult(
+                List.of("P"), List.of("T"), List.of("Dev"), 1, 0)));
+
+        assertTrue(catalog.getProjects().isEmpty());
+        assertTrue(catalog.getTaskNames().isEmpty());
+        assertTrue(catalog.getTypes().isEmpty());
+        assertFalse(store.exists("task_catalog.json"));
     }
 }

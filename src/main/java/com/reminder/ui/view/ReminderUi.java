@@ -3,6 +3,7 @@ package com.reminder.ui.view;
 import com.reminder.i18n.I18n;
 import com.reminder.model.Reminder;
 import com.reminder.service.ReminderService;
+import com.reminder.storage.StorageException;
 import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.AppIcons;
 import com.reminder.ui.util.NumericFields;
@@ -34,7 +35,11 @@ public class ReminderUi {
         if (reminderService.getReminders().isEmpty()) {
             Reminder reminder = new Reminder(LocalTime.of(12, 0), I18n.get("reminder.default"));
             reminder.setRepeatDaily(true);
-            reminderService.addReminder(reminder);
+            try {
+                reminderService.addReminder(reminder);
+            } catch (StorageException e) {
+                Log.log("Reminder", "cannot save default reminder: " + e.getMessage(), e);
+            }
         }
         reminderService.setOnReminderFire(this::showDialog);
     }
@@ -61,13 +66,19 @@ public class ReminderUi {
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent()) {
+            Reminder updated = reminder.copy();
             if (result.get() == snoozeButton) {
-                reminder.setSnoozeUntil(LocalDateTime.now().plusMinutes(snoozeMinutes.getValue()));
-                reminder.setActive(true);
-                reminderService.updateReminder(reminder);
-            } else if (!reminder.isRepeatDaily()) {
-                reminder.setActive(false);
-                reminderService.updateReminder(reminder);
+                updated.setSnoozeUntil(LocalDateTime.now().plusMinutes(snoozeMinutes.getValue()));
+                updated.setActive(true);
+            } else if (!updated.isRepeatDaily()) {
+                updated.setActive(false);
+            } else {
+                return;
+            }
+            try {
+                reminderService.replaceReminder(reminder, updated);
+            } catch (StorageException e) {
+                Log.log("Reminder", "cannot save reminder state: " + e.getMessage(), e);
             }
         }
     }

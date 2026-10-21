@@ -5,6 +5,7 @@ import com.reminder.model.Task;
 import com.reminder.model.WorkEntry;
 import com.reminder.service.TaskService;
 import com.reminder.service.WorkTimeService;
+import com.reminder.storage.StorageException;
 import com.reminder.ui.component.EntryForm;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.TableCells;
@@ -193,6 +194,9 @@ public class DayView {
                 update(date);
                 Dialogs.info(I18n.get("common.success"), I18n.get("success.workAdded"));
             }
+        } catch (StorageException e) {
+            Dialogs.error(I18n.get("common.error"),
+                    I18n.get("error.save") + "\n" + Dialogs.reason(e));
         } catch (Exception e) {
             Dialogs.error(I18n.get("common.error"), I18n.format("error.generic", e.getMessage()));
         }
@@ -242,13 +246,18 @@ public class DayView {
             }
         }
 
-        if (taskService.updateWorkEntry(selected, updated, allowOvertime)) {
-            taskService.addPredefinedTask(new Task(result.project(), result.taskName(), result.type()));
-            form.refreshSuggestions();
-            update(selected.getDate());
-            Dialogs.info(I18n.get("common.success"), I18n.get("success.entryUpdated"));
-        } else {
-            Dialogs.error(I18n.get("common.error"), I18n.get("error.save"));
+        try {
+            if (taskService.updateWorkEntry(selected, updated, allowOvertime)) {
+                taskService.addPredefinedTask(new Task(result.project(), result.taskName(), result.type()));
+                form.refreshSuggestions();
+                update(selected.getDate());
+                Dialogs.info(I18n.get("common.success"), I18n.get("success.entryUpdated"));
+            } else {
+                Dialogs.error(I18n.get("common.error"), I18n.get("error.save"));
+            }
+        } catch (StorageException e) {
+            Dialogs.error(I18n.get("common.error"),
+                    I18n.get("error.save") + "\n" + Dialogs.reason(e));
         }
     }
 
@@ -261,8 +270,14 @@ public class DayView {
                 I18n.format("confirm.delete.entryContent",
                         selected.getProject(), selected.getTaskName(),
                         I18n.number(selected.getHours(), 0)))) {
-            taskService.removeWorkEntry(selected);
-            update(selected.getDate());
+            try {
+                if (taskService.removeWorkEntry(selected)) {
+                    update(selected.getDate());
+                }
+            } catch (StorageException e) {
+                Dialogs.error(I18n.get("common.error"),
+                        I18n.get("error.save") + "\n" + Dialogs.reason(e));
+            }
         }
     }
 
@@ -274,8 +289,13 @@ public class DayView {
         if (Dialogs.confirm(I18n.get("confirm.clear.title"),
                 I18n.format("confirm.clear.day", DateUtils.formatDate(date)),
                 I18n.get("confirm.clear.content"))) {
-            taskService.clearEntriesForDate(date);
-            update(date);
+            try {
+                taskService.clearEntriesForDate(date);
+                update(date);
+            } catch (StorageException e) {
+                Dialogs.error(I18n.get("common.error"),
+                        I18n.get("error.save") + "\n" + Dialogs.reason(e));
+            }
         }
     }
 }

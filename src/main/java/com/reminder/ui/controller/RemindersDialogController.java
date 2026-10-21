@@ -3,6 +3,7 @@ package com.reminder.ui.controller;
 import com.reminder.i18n.I18n;
 import com.reminder.model.Reminder;
 import com.reminder.service.ReminderService;
+import com.reminder.storage.StorageException;
 import com.reminder.ui.util.AppIcons;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.NumericFields;
@@ -87,7 +88,13 @@ public class RemindersDialogController {
             return;
         }
         Reminder reminder = new Reminder(time, text.trim(), repeatCheckBox.isSelected());
-        reminderService.addReminder(reminder);
+        try {
+            reminderService.addReminder(reminder);
+        } catch (StorageException e) {
+            Dialogs.error(I18n.get("common.error"),
+                    I18n.get("error.save") + "\n" + Dialogs.reason(e));
+            return;
+        }
         refreshList();
         textArea.clear();
         repeatCheckBox.setSelected(false);
@@ -101,6 +108,7 @@ public class RemindersDialogController {
             return;
         }
 
+        Reminder candidate = selected.copy();
         Dialog<Reminder> dialog = new Dialog<>();
         dialog.setTitle(I18n.get("reminders.editTitle"));
         dialog.setHeaderText(I18n.get("reminders.editHeader"));
@@ -114,20 +122,20 @@ public class RemindersDialogController {
         grid.setVgap(10);
         grid.setPadding(new Insets(20));
 
-        Spinner<Integer> hour = new Spinner<>(0, 23, selected.getTime().getHour());
+        Spinner<Integer> hour = new Spinner<>(0, 23, candidate.getTime().getHour());
         hour.setEditable(true);
-        Spinner<Integer> minute = new Spinner<>(0, 59, selected.getTime().getMinute());
+        Spinner<Integer> minute = new Spinner<>(0, 59, candidate.getTime().getMinute());
         minute.setEditable(true);
         NumericFields.timeSpinner(hour, 23);
         NumericFields.timeSpinner(minute, 59);
         HBox timeBox = new HBox(5, hour, new Label(":"), minute);
 
-        TextArea text = new TextArea(selected.getText());
+        TextArea text = new TextArea(candidate.getText());
         text.setPrefRowCount(3);
         CheckBox repeat = new CheckBox(I18n.get("reminders.repeat"));
-        repeat.setSelected(selected.isRepeatDaily());
+        repeat.setSelected(candidate.isRepeatDaily());
         CheckBox active = new CheckBox(I18n.get("reminders.active"));
-        active.setSelected(selected.isActive());
+        active.setSelected(candidate.isActive());
 
         grid.addRow(0, new Label(I18n.get("reminders.label.time")), timeBox);
         grid.addRow(1, new Label(I18n.get("reminders.label.text")), text);
@@ -142,15 +150,21 @@ public class RemindersDialogController {
                 Dialogs.error(I18n.get("common.error"), I18n.get("reminders.enterText"));
                 return null;
             }
-            selected.setTime(LocalTime.of(hour.getValue(), minute.getValue()));
-            selected.setText(txt.trim());
-            selected.setRepeatDaily(repeat.isSelected());
-            selected.setActive(active.isSelected());
-            return selected;
+            candidate.setTime(LocalTime.of(hour.getValue(), minute.getValue()));
+            candidate.setText(txt.trim());
+            candidate.setRepeatDaily(repeat.isSelected());
+            candidate.setActive(active.isSelected());
+            return candidate;
         });
 
         dialog.showAndWait().ifPresent(r -> {
-            reminderService.updateReminder(r);
+            try {
+                reminderService.replaceReminder(selected, r);
+            } catch (StorageException e) {
+                Dialogs.error(I18n.get("common.error"),
+                        I18n.get("error.save") + "\n" + Dialogs.reason(e));
+                return;
+            }
             refreshList();
             Dialogs.info(I18n.get("common.success"), I18n.get("reminders.updated"));
         });
@@ -165,8 +179,13 @@ public class RemindersDialogController {
         if (Dialogs.confirm(I18n.get("confirm.delete.title"), I18n.get("reminders.deleteConfirm"),
                 I18n.format("reminders.deleteContent",
                         selected.getFormattedTime(), selected.getText()))) {
-            reminderService.removeReminder(selected);
-            refreshList();
+            try {
+                reminderService.removeReminder(selected);
+                refreshList();
+            } catch (StorageException e) {
+                Dialogs.error(I18n.get("common.error"),
+                        I18n.get("error.save") + "\n" + Dialogs.reason(e));
+            }
         }
     }
 
@@ -176,9 +195,15 @@ public class RemindersDialogController {
             Dialogs.warn(I18n.get("common.warning"), I18n.get("reminders.selectToggle"));
             return;
         }
-        selected.setActive(!selected.isActive());
-        reminderService.updateReminder(selected);
-        remindersTable.refresh();
-        refreshList();
+        Reminder updated = selected.copy();
+        updated.setActive(!updated.isActive());
+        try {
+            reminderService.replaceReminder(selected, updated);
+            remindersTable.refresh();
+            refreshList();
+        } catch (StorageException e) {
+            Dialogs.error(I18n.get("common.error"),
+                    I18n.get("error.save") + "\n" + Dialogs.reason(e));
+        }
     }
 }

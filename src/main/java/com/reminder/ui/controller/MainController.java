@@ -11,6 +11,7 @@ import com.reminder.service.UpdateCheckService;
 import com.reminder.service.WorkTimeService;
 import com.reminder.settings.AppSettings;
 import com.reminder.settings.WorkTypes;
+import com.reminder.storage.StorageException;
 import com.reminder.suggest.SuggestionService;
 import com.reminder.ui.suggest.SuggestionUi;
 import com.reminder.ui.UpdateCheckUi;
@@ -28,6 +29,7 @@ import com.reminder.ui.view.DayView;
 import com.reminder.ui.view.ReminderUi;
 import com.reminder.ui.view.ViewMode;
 import com.reminder.ui.view.WeekView;
+import com.reminder.util.Log;
 import javafx.fxml.FXML;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -121,7 +123,12 @@ public class MainController {
         suggestionService = new SuggestionService(taskService);
         form = new EntryForm(projectChoice, taskChoice, typeChoice, hoursField, commentArea,
                 suggestionService, this::onSuggestionDataChanged);
-        taskService.ensureDefaultTypes(WorkTypes.defaults());
+        try {
+            taskService.ensureDefaultTypes(WorkTypes.defaults());
+        } catch (StorageException e) {
+            // Типы по умолчанию — вторичный кэш; не мешаем запуску приложения.
+            Log.log("Main", "cannot save default work types: " + e.getMessage(), e);
+        }
         form.loadTypeChoices(taskService);
         suggestionUi = new SuggestionUi(indexingStatus, indexingProgress,
                 suggestionService, taskService, form);

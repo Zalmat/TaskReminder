@@ -11,6 +11,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DataStoreTest {
@@ -48,5 +49,19 @@ class DataStoreTest {
         store.saveList("x.json", List.of());
         assertFalse(Files.exists(dir.resolve("x.json.tmp")));
         assertTrue(store.exists("x.json"));
+    }
+
+    @Test
+    void failedSaveLeavesTargetAndNoTmp(@TempDir Path dir) throws Exception {
+        DataStore store = new DataStore(dir);
+        Path target = dir.resolve("x.json");
+        Files.createDirectory(target);
+
+        StorageException error = assertThrows(StorageException.class,
+                () -> store.saveList("x.json", List.of()));
+
+        assertEquals("x.json", error.getFileName());
+        assertTrue(Files.isDirectory(target));
+        assertFalse(Files.exists(dir.resolve("x.json.tmp")));
     }
 }

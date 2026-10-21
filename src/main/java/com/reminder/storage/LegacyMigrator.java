@@ -50,7 +50,13 @@ public final class LegacyMigrator {
 
         if (data instanceof java.util.List<?> list) {
             if (!list.isEmpty()) {
-                store.saveList(jsonFile, list);
+                try {
+                    store.saveList(jsonFile, list);
+                } catch (StorageException e) {
+                    System.err.println("Skipping migration of " + legacyFile
+                            + ": cannot save " + jsonFile + ": " + e.getMessage());
+                    return false;
+                }
             }
         }
 

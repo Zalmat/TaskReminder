@@ -8,6 +8,7 @@ import com.reminder.importing.ImportScheduler;
 import com.reminder.importing.ImportStateStore;
 import com.reminder.service.TaskService;
 import com.reminder.settings.AppSettings;
+import com.reminder.storage.StorageException;
 import com.reminder.suggest.SuggestionService;
 import com.reminder.ui.ImportNotifier;
 import com.reminder.ui.component.EntryForm;
@@ -169,6 +170,13 @@ public class TaskImportCoordinator {
                 }
             }
             return outcome;
+        } catch (StorageException e) {
+            Log.log("TaskImport", "failed: " + e.getMessage(), e);
+            if (force) {
+                Dialogs.error(I18n.get("common.error"),
+                        I18n.get("error.save") + "\n" + Dialogs.reason(e));
+            }
+            return null;
         } catch (Exception e) {
             Log.log("TaskImport", "failed: " + e.getMessage(), e);
             if (force) {

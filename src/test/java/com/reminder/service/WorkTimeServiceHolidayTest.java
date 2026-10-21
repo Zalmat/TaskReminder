@@ -4,6 +4,8 @@ import com.reminder.model.Holiday;
 import com.reminder.model.HolidaySource;
 import com.reminder.model.HolidayType;
 import com.reminder.storage.DataStore;
+import com.reminder.storage.FailingDataStore;
+import com.reminder.storage.StorageException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -15,6 +17,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class WorkTimeServiceHolidayTest {
@@ -39,8 +42,7 @@ class WorkTimeServiceHolidayTest {
 
     @Test
     void addRequiresNameAndRejectsCaseInsensitiveDuplicate(@TempDir Path dir) throws Exception {
-        WorkTimeService service = emptyService(dir);
-        LocalDate date = LocalDate.of(2026, 12, 31);
+        WorkTimeService service = emptyService(dir);        LocalDate date = LocalDate.of(2026, 12, 31);
 
         assertEquals(WorkTimeService.HolidayResult.NAME_REQUIRED,
                 service.addHoliday(date, "  ", false, HolidayType.OFFICIAL));
@@ -119,5 +121,18 @@ class WorkTimeServiceHolidayTest {
         assertEquals(1, result.added());
         assertEquals(2, result.skipped());
         assertEquals(1, service.getHolidayEvents(LocalDate.of(2026, 3, 9)).size());
+    }
+
+    @Test
+    void failedHolidaySaveKeepsInMemoryListUnchanged(@TempDir Path dir) throws Exception {
+        Files.writeString(dir.resolve("holidays.json"), "{\"holidays\":[]}",
+                StandardCharsets.UTF_8);
+        FailingDataStore store = new FailingDataStore(dir);
+        WorkTimeService service = new WorkTimeService(store);
+        store.failSaves(true);
+
+        assertThrows(StorageException.class, () -> service.addHoliday(
+                LocalDate.of(2026, 12, 31), "Test", false, HolidayType.OFFICIAL));
+        assertTrue(service.getHolidayEntries().isEmpty());
     }
 }
