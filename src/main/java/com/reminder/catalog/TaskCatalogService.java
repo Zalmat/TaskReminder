@@ -1,6 +1,8 @@
 package com.reminder.catalog;
 
-import com.reminder.storage.DataStore;
+import com.reminder.storage.TaskCatalogData;
+import com.reminder.storage.TaskCatalogRepository;
+import com.reminder.storage.TaskCatalogSnapshot;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -16,21 +18,15 @@ import java.util.Set;
  */
 public class TaskCatalogService {
 
-    private static final String FILE = "task_catalog.json";
-
     private enum Kind { PROJECTS, TASKS, TYPES }
 
-    private final DataStore store;
+    private final TaskCatalogRepository repository;
     private final Set<String> projects = new LinkedHashSet<>();
     private final Set<String> taskNames = new LinkedHashSet<>();
     private final Set<String> types = new LinkedHashSet<>();
 
-    public TaskCatalogService() {
-        this(new DataStore());
-    }
-
-    public TaskCatalogService(DataStore store) {
-        this.store = store;
+    public TaskCatalogService(TaskCatalogRepository repository) {
+        this.repository = repository;
         load();
     }
 
@@ -170,7 +166,8 @@ public class TaskCatalogService {
     }
 
     private void commit(TaskCatalogData candidate) {
-        store.saveObject(FILE, candidate);
+        repository.save(new TaskCatalogSnapshot(
+                candidate.projects, candidate.taskNames, candidate.types));
         projects.clear();
         projects.addAll(candidate.projects);
         taskNames.clear();
@@ -180,13 +177,13 @@ public class TaskCatalogService {
     }
 
     private void load() {
-        TaskCatalogData data = store.loadObject(FILE, TaskCatalogData.class);
+        TaskCatalogSnapshot data = repository.load();
         if (data == null) {
             return;
         }
-        addAll(projects, data.projects);
-        addAll(taskNames, data.taskNames);
-        addAll(types, data.types);
+        addAll(projects, data.projects());
+        addAll(taskNames, data.taskNames());
+        addAll(types, data.types());
     }
 
     private static String normalize(String value) {

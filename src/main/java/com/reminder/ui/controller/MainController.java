@@ -11,6 +11,7 @@ import com.reminder.service.UpdateCheckService;
 import com.reminder.service.WorkTimeService;
 import com.reminder.settings.AppSettings;
 import com.reminder.settings.WorkTypes;
+import com.reminder.storage.StorageContext;
 import com.reminder.storage.StorageException;
 import com.reminder.suggest.SuggestionService;
 import com.reminder.ui.suggest.SuggestionUi;
@@ -100,9 +101,10 @@ public class MainController {
     @FXML private Button updateButton;
     @FXML private MenuItem settingsItem;
 
-    private final TaskService taskService = new TaskService();
-    private final WorkTimeService workTimeService = new WorkTimeService();
-    private final ReminderService reminderService = new ReminderService();
+    private final StorageContext storage = StorageContext.openDefault();
+    private final TaskService taskService = new TaskService(storage.repositories());
+    private final WorkTimeService workTimeService = new WorkTimeService(storage.repositories().holidays());
+    private final ReminderService reminderService = new ReminderService(storage.repositories().reminders());
     private final ExportService exportService = new ExportService();
     private final UpdateCheckService updateCheckService = new UpdateCheckService();
     private SuggestionService suggestionService;

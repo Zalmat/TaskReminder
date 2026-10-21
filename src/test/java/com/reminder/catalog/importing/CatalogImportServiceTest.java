@@ -4,6 +4,7 @@ import com.reminder.catalog.TaskCatalogService;
 import com.reminder.importing.ImportStateStore;
 import com.reminder.storage.DataStore;
 import com.reminder.storage.FailingDataStore;
+import com.reminder.storage.JsonStorageRepositories;
 import com.reminder.storage.StorageException;
 import com.reminder.util.FileHashes;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ class CatalogImportServiceTest {
     void skipsUnchangedAndImportsChanged(@TempDir Path dir) throws IOException {
         Preferences prefs = Preferences.userRoot().node("com/reminder-test-" + UUID.randomUUID());
         try {
-            TaskCatalogService catalog = new TaskCatalogService(new DataStore(dir.resolve("data")));
+            TaskCatalogService catalog = new TaskCatalogService(JsonStorageRepositories.open(dir.resolve("data")).catalog());
             CatalogImportService service = new CatalogImportService(
                     new YamlCatalogImporter(), catalog, new ImportStateStore(prefs));
 
@@ -65,7 +66,7 @@ class CatalogImportServiceTest {
         try {
             FailingDataStore store = new FailingDataStore(dir.resolve("data"));
             store.failSaves(true);
-            TaskCatalogService catalog = new TaskCatalogService(store);
+            TaskCatalogService catalog = new TaskCatalogService(JsonStorageRepositories.open(store).catalog());
             CatalogImportService service = new CatalogImportService(
                     new YamlCatalogImporter(), catalog, new ImportStateStore(prefs));
 

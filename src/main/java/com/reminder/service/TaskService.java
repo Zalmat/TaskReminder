@@ -4,9 +4,10 @@ import com.reminder.catalog.TaskCatalogService;
 import com.reminder.model.Task;
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
-import com.reminder.storage.DataStore;
-import com.reminder.storage.LegacyMigrator;
+import com.reminder.storage.PredefinedTaskRepository;
 import com.reminder.storage.StorageException;
+import com.reminder.storage.StorageRepositories;
+import com.reminder.storage.WorkEntryRepository;
 import com.reminder.util.Hours;
 import com.reminder.util.Log;
 
@@ -22,30 +23,18 @@ import java.util.stream.Collectors;
 /** Доступ к данным о работе и предзаданных задачах (хранение в JSON/UTF-8). */
 public class TaskService {
 
-    private static final String ENTRIES_FILE = "work_entries.json";
-    private static final String TASKS_FILE = "predefined_tasks.json";
-
-    private final DataStore store;
+    private final WorkEntryRepository entryRepository;
+    private final PredefinedTaskRepository predefinedTaskRepository;
     private final TaskCatalogService catalog;
     private List<WorkEntry> entries;
     private List<Task> predefinedTasks;
 
-    public TaskService() {
-        this(new DataStore());
-    }
-
-    public TaskService(DataStore store) {
-        this.store = store;
-        this.catalog = new TaskCatalogService(store);
-        migrateLegacy();
-        this.entries = store.loadList(ENTRIES_FILE, WorkEntry.class);
-        this.predefinedTasks = store.loadList(TASKS_FILE, Task.class);
-    }
-
-    private void migrateLegacy() {
-        LegacyMigrator migrator = new LegacyMigrator(store);
-        migrator.migrate("work_entries.dat", ENTRIES_FILE);
-        migrator.migrate("predefined_tasks.dat", TASKS_FILE);
+    public TaskService(StorageRepositories repositories) {
+        this.entryRepository = repositories.workEntries();
+        this.predefinedTaskRepository = repositories.predefinedTasks();
+        this.catalog = new TaskCatalogService(repositories.catalog());
+        this.entries = entryRepository.load();
+        this.predefinedTasks = predefinedTaskRepository.load();
     }
 
     /** Добавляет запись. При allowOvertime пропускается проверка дневного лимита. */
@@ -59,7 +48,7 @@ public class TaskService {
         }
         List<WorkEntry> next = new ArrayList<>(entries);
         next.add(entry);
-        store.saveList(ENTRIES_FILE, next);
+        entryRepository.save(next);
         entries = next;
         return true;
     }
@@ -85,7 +74,7 @@ public class TaskService {
         updated.setCreatedAt(original.getCreatedAt());
         List<WorkEntry> next = new ArrayList<>(entries);
         next.set(idx, updated);
-        store.saveList(ENTRIES_FILE, next);
+        entryRepository.save(next);
         entries = next;
         return true;
     }
@@ -95,7 +84,7 @@ public class TaskService {
         if (!next.remove(entry)) {
             return false;
         }
-        store.saveList(ENTRIES_FILE, next);
+        entryRepository.save(next);
         entries = next;
         return true;
     }
@@ -163,7 +152,7 @@ public class TaskService {
         List<Task> next = new ArrayList<>(predefinedTasks);
         next.add(task);
         try {
-            store.saveList(TASKS_FILE, next);
+            predefinedTaskRepository.save(next);
             predefinedTasks = next;
         } catch (StorageException e) {
             // Это вторичный кэш для подсказок, основная запись уже сохранена.
@@ -177,7 +166,7 @@ public class TaskService {
         if (next.size() == entries.size()) {
             return;
         }
-        store.saveList(ENTRIES_FILE, next);
+        entryRepository.save(next);
         entries = next;
     }
 
@@ -188,7 +177,7 @@ public class TaskService {
         if (next.size() == entries.size()) {
             return;
         }
-        store.saveList(ENTRIES_FILE, next);
+        entryRepository.save(next);
         entries = next;
     }
 
@@ -222,7 +211,7 @@ public class TaskService {
             entry.setComment(next.getComment());
             candidate.add(entry);
         }
-        store.saveList(ENTRIES_FILE, candidate);
+        entryRepository.save(candidate);
         entries = candidate;
         return true;
     }
@@ -237,7 +226,7 @@ public class TaskService {
         if (candidate.size() == entries.size()) {
             return false;
         }
-        store.saveList(ENTRIES_FILE, candidate);
+        entryRepository.save(candidate);
         entries = candidate;
         return true;
     }

@@ -1,7 +1,5 @@
 package com.reminder.storage;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectStreamClass;
@@ -33,11 +31,12 @@ public final class LegacyMigrator {
     }
 
     public boolean migrate(String legacyFile, String jsonFile) {
-        if (store.exists(jsonFile) || !new File(legacyFile).isFile()) {
+        Path legacyPath = store.resolve(legacyFile);
+        if (store.exists(jsonFile) || !Files.isRegularFile(legacyPath)) {
             return false;
         }
         Object data;
-        try (ObjectInputStream ois = new ClassMappingStream(new FileInputStream(legacyFile))) {
+        try (ObjectInputStream ois = new ClassMappingStream(Files.newInputStream(legacyPath))) {
             data = ois.readObject();
         } catch (Exception e) {
             System.err.println("Skipping migration of " + legacyFile + ": " + e.getMessage());
@@ -62,11 +61,10 @@ public final class LegacyMigrator {
 
         // После успешного переноса помечаем старый файл, чтобы не читать его снова.
         try {
-            Path legacyPath = new File(legacyFile).toPath();
             Path backup = legacyPath.resolveSibling(legacyFile + ".legacy");
             Files.move(legacyPath, backup, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            // Не критично — JSON уже записан, старый файл просто останется как есть.
+            // JSON уже сохранён; старый .dat можно оставить для ручного удаления.
         }
         return true;
     }

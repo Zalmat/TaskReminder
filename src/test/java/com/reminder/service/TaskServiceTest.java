@@ -3,7 +3,7 @@ package com.reminder.service;
 import com.reminder.model.Task;
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
-import com.reminder.storage.DataStore;
+import com.reminder.storage.JsonStorageRepositories;
 import com.reminder.storage.FailingDataStore;
 import com.reminder.storage.StorageException;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TaskServiceTest {
 
     private TaskService service(Path dir) {
-        return new TaskService(new DataStore(dir));
+        return new TaskService(JsonStorageRepositories.open(dir));
     }
 
     private WorkEntry entry(String task, double hours, LocalDate date) {
@@ -110,7 +110,7 @@ class TaskServiceTest {
     @Test
     void failedSaveKeepsEntriesUnchanged(@TempDir Path dir) {
         FailingDataStore store = new FailingDataStore(dir);
-        TaskService s = new TaskService(store);
+        TaskService s = new TaskService(JsonStorageRepositories.open(store));
         LocalDate d = LocalDate.of(2026, 10, 12);
         WorkEntry first = entry("A", 3, d);
         assertTrue(s.addWorkEntry(first, false));

@@ -1,4 +1,4 @@
-package com.reminder.catalog;
+package com.reminder.storage;
 
 import java.util.ArrayList;
 import java.util.List;

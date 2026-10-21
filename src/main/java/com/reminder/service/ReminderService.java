@@ -1,7 +1,7 @@
 package com.reminder.service;
 
 import com.reminder.model.Reminder;
-import com.reminder.storage.DataStore;
+import com.reminder.storage.ReminderRepository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -18,23 +18,18 @@ import java.util.function.Consumer;
  */
 public class ReminderService {
 
-    private static final String REMINDERS_FILE = "reminders.json";
     private static final long POLL_SECONDS = 30;
     private static final long DEDUP_SECONDS = 120;
 
-    private final DataStore store;
+    private final ReminderRepository repository;
     private volatile List<Reminder> reminders;
     private final ScheduledExecutorService scheduler;
     private volatile boolean running = false;
     private volatile Consumer<Reminder> onReminderFire;
 
-    public ReminderService() {
-        this(new DataStore());
-    }
-
-    public ReminderService(DataStore store) {
-        this.store = store;
-        this.reminders = new CopyOnWriteArrayList<>(store.loadList(REMINDERS_FILE, Reminder.class));
+    public ReminderService(ReminderRepository repository) {
+        this.repository = repository;
+        this.reminders = new CopyOnWriteArrayList<>(repository.load());
         this.scheduler = Executors.newSingleThreadScheduledExecutor(r -> {
             Thread t = new Thread(r, "reminder-monitor");
             t.setDaemon(true);
@@ -118,7 +113,7 @@ public class ReminderService {
     }
 
     private void persist(List<Reminder> next) {
-        store.saveList(REMINDERS_FILE, next);
+        repository.save(next);
     }
 
     public void stopMonitoring() {

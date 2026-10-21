@@ -2,7 +2,7 @@ package com.reminder.service;
 
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
-import com.reminder.storage.DataStore;
+import com.reminder.storage.JsonStorageRepositories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class WorkTimeServiceTest {
 
     private WorkTimeService service(Path dir) {
-        return new WorkTimeService(new DataStore(dir));
+        return new WorkTimeService(JsonStorageRepositories.open(dir).holidays());
     }
 
     private WorkEntry entry(String project, String task, String type, double hours, LocalDate date) {

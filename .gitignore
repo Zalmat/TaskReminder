@@ -26,6 +26,8 @@ updater/autoupdater.exe
 *.last-good.tmp
 *.restore.tmp
 *.corrupt-*
+storage.meta.json
+/backups/
 
 ### IntelliJ IDEA ###
 .idea/modules.xml

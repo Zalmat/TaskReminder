@@ -2,6 +2,7 @@ package com.reminder.service;
 
 import com.reminder.model.Reminder;
 import com.reminder.storage.FailingDataStore;
+import com.reminder.storage.JsonStorageRepositories;
 import com.reminder.storage.StorageException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -19,7 +20,7 @@ class ReminderServiceTest {
     void failedAddKeepsListEmpty(@TempDir Path dir) {
         FailingDataStore store = new FailingDataStore(dir);
         store.failSaves(true);
-        ReminderService service = new ReminderService(store);
+        ReminderService service = new ReminderService(JsonStorageRepositories.open(store).reminders());
 
         assertThrows(StorageException.class,
                 () -> service.addReminder(new Reminder(LocalTime.of(10, 0), "test")));
@@ -29,7 +30,7 @@ class ReminderServiceTest {
     @Test
     void failedReplaceKeepsOriginal(@TempDir Path dir) {
         FailingDataStore store = new FailingDataStore(dir);
-        ReminderService service = new ReminderService(store);
+        ReminderService service = new ReminderService(JsonStorageRepositories.open(store).reminders());
         Reminder original = new Reminder(LocalTime.of(10, 0), "old");
         service.addReminder(original);
 

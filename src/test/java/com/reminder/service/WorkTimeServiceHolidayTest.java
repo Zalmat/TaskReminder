@@ -6,6 +6,8 @@ import com.reminder.model.HolidayType;
 import com.reminder.model.HolidaysData;
 import com.reminder.storage.DataStore;
 import com.reminder.storage.FailingDataStore;
+import com.reminder.storage.JsonStorageRepositories;
+import com.reminder.storage.StorageContext;
 import com.reminder.storage.StorageException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -26,12 +28,12 @@ class WorkTimeServiceHolidayTest {
     private WorkTimeService emptyService(Path dir) throws Exception {
         Files.writeString(dir.resolve("holidays.json"), "{\"holidays\":[]}",
                 StandardCharsets.UTF_8);
-        return new WorkTimeService(new DataStore(dir));
+        return new WorkTimeService(JsonStorageRepositories.open(dir).holidays());
     }
 
     @Test
     void seedsDefaultAnnualHolidaysOnFreshProfile(@TempDir Path dir) {
-        WorkTimeService service = new WorkTimeService(new DataStore(dir));
+        WorkTimeService service = new WorkTimeService(JsonStorageRepositories.open(dir).holidays());
         List<Holiday> entries = service.getHolidayEntries();
         assertEquals(8, entries.size());
         assertTrue(entries.stream().allMatch(Holiday::isAnnual));
@@ -43,7 +45,8 @@ class WorkTimeServiceHolidayTest {
 
     @Test
     void addRequiresNameAndRejectsCaseInsensitiveDuplicate(@TempDir Path dir) throws Exception {
-        WorkTimeService service = emptyService(dir);        LocalDate date = LocalDate.of(2026, 12, 31);
+        WorkTimeService service = emptyService(dir);
+        LocalDate date = LocalDate.of(2026, 12, 31);
 
         assertEquals(WorkTimeService.HolidayResult.NAME_REQUIRED,
                 service.addHoliday(date, "  ", false, HolidayType.OFFICIAL));
@@ -90,7 +93,8 @@ class WorkTimeServiceHolidayTest {
         Path file = dir.resolve("holidays.json");
         Files.writeString(file, "[\"01.01.2026\", \"09.05.2026\"]", StandardCharsets.UTF_8);
 
-        WorkTimeService service = new WorkTimeService(new DataStore(dir));
+        WorkTimeService service = new WorkTimeService(
+                StorageContext.open(dir).repositories().holidays());
         List<Holiday> entries = service.getHolidayEntries();
         assertEquals(2, entries.size());
         assertTrue(entries.stream().noneMatch(Holiday::isAnnual));
@@ -99,7 +103,8 @@ class WorkTimeServiceHolidayTest {
 
         String rewritten = Files.readString(file, StandardCharsets.UTF_8);
         assertTrue(rewritten.trim().startsWith("{"));
-        assertEquals(2, new WorkTimeService(new DataStore(dir)).getHolidayEntries().size());
+        assertEquals(2, new WorkTimeService(
+                StorageContext.open(dir).repositories().holidays()).getHolidayEntries().size());
     }
 
     @Test
@@ -129,7 +134,7 @@ class WorkTimeServiceHolidayTest {
         Files.writeString(dir.resolve("holidays.json"), "{\"holidays\":[]}",
                 StandardCharsets.UTF_8);
         FailingDataStore store = new FailingDataStore(dir);
-        WorkTimeService service = new WorkTimeService(store);
+        WorkTimeService service = new WorkTimeService(JsonStorageRepositories.open(store).holidays());
         store.failSaves(true);
 
         assertThrows(StorageException.class, () -> service.addHoliday(
@@ -143,7 +148,7 @@ class WorkTimeServiceHolidayTest {
         Files.writeString(file, "{broken", StandardCharsets.UTF_8);
 
         assertThrows(StorageException.class,
-                () -> new WorkTimeService(new DataStore(dir)));
+                () -> new WorkTimeService(JsonStorageRepositories.open(dir).holidays()));
         assertEquals("{broken", Files.readString(file, StandardCharsets.UTF_8));
     }
 
@@ -160,7 +165,7 @@ class WorkTimeServiceHolidayTest {
         store.saveObject("holidays.json", second);
 
         Files.writeString(dir.resolve("holidays.json"), "{broken", StandardCharsets.UTF_8);
-        WorkTimeService service = new WorkTimeService(new DataStore(dir));
+        WorkTimeService service = new WorkTimeService(JsonStorageRepositories.open(dir).holidays());
 
         assertEquals(1, service.getHolidayEntries().size());
         assertEquals("Old", service.getHolidayEntries().get(0).getName());

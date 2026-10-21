@@ -3,19 +3,13 @@ package com.reminder.service;
 import com.reminder.model.Holiday;
 import com.reminder.model.HolidaySource;
 import com.reminder.model.HolidayType;
-import com.reminder.model.HolidaysData;
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
-import com.reminder.storage.DataStore;
+import com.reminder.storage.HolidayRepository;
 import com.reminder.storage.StorageException;
 import com.reminder.util.Hours;
 import com.reminder.util.Log;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -33,18 +27,11 @@ public class WorkTimeService {
     public static final double MAX_DAILY_HOURS = 8.0;
     public static final double MAX_WEEKLY_HOURS = 48.0;
 
-    private static final String HOLIDAYS_FILE = "holidays.json";
-    private static final String HOLIDAYS_BACKUP = "holidays.json.bak";
-
     private List<Holiday> holidays = new ArrayList<>();
-    private final DataStore store;
+    private final HolidayRepository repository;
 
-    public WorkTimeService() {
-        this(new DataStore());
-    }
-
-    public WorkTimeService(DataStore store) {
-        this.store = store;
+    public WorkTimeService(HolidayRepository repository) {
+        this.repository = repository;
         loadHolidays();
     }
 
@@ -254,50 +241,12 @@ public class WorkTimeService {
     }
 
     private void loadHolidays() {
-        Path file = store.resolve(HOLIDAYS_FILE);
-        if (!Files.isRegularFile(file)) {
+        if (!repository.exists()) {
             seedDefaultHolidays();
             persistHolidaysBestEffort();
             return;
         }
-        String text;
-        try {
-            text = Files.readString(file, StandardCharsets.UTF_8).trim();
-        } catch (IOException e) {
-            throw new StorageException(HOLIDAYS_FILE,
-                    "Не удалось прочитать " + HOLIDAYS_FILE, e);
-        }
-        if (text.startsWith("[")) {
-            try {
-                List<LocalDate> dates = store.loadList(HOLIDAYS_FILE, LocalDate.class);
-                backupLegacyFile(file);
-                for (LocalDate date : dates) {
-                    if (date != null) {
-                        holidays.add(new Holiday(date, "", false, HolidayType.OFFICIAL,
-                                HolidaySource.MANUAL));
-                    }
-                }
-                persistHolidaysBestEffort();
-                return;
-            } catch (StorageException ignored) {
-                // Повреждённый массив мог быть заменён объектом в .last-good.
-            }
-        }
-        HolidaysData data = store.loadObject(HOLIDAYS_FILE, HolidaysData.class);
-        if (data != null && data.holidays != null) {
-            data.holidays.stream().filter(h -> h != null).forEach(holidays::add);
-        }
-    }
-
-    private void backupLegacyFile(Path file) {
-        try {
-            Path backup = file.resolveSibling(HOLIDAYS_BACKUP);
-            if (!Files.exists(backup)) {
-                Files.copy(file, backup, StandardCopyOption.REPLACE_EXISTING);
-            }
-        } catch (IOException ignored) {
-            // бэкап не критичен для работы
-        }
+        holidays.addAll(repository.load());
     }
 
     private void seedDefaultHolidays() {
@@ -317,9 +266,7 @@ public class WorkTimeService {
     }
 
     private void persistHolidays(List<Holiday> next) {
-        HolidaysData data = new HolidaysData();
-        data.holidays = new ArrayList<>(next);
-        store.saveObject(HOLIDAYS_FILE, data);
+        repository.save(next);
     }
 
     private void persistHolidaysBestEffort() {

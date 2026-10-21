@@ -3,7 +3,7 @@ package com.reminder.suggest;
 import com.reminder.catalog.ImportResult;
 import com.reminder.catalog.TaskCatalogService;
 import com.reminder.model.WorkEntry;
-import com.reminder.storage.DataStore;
+import com.reminder.storage.JsonStorageRepositories;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -19,7 +19,7 @@ class SuggestionIndexBuilderTest {
 
     @Test
     void catalogSnapshotUsesCatalogSource(@TempDir java.nio.file.Path dir) {
-        TaskCatalogService catalog = new TaskCatalogService(new DataStore(dir));
+        TaskCatalogService catalog = new TaskCatalogService(JsonStorageRepositories.open(dir).catalog());
         catalog.merge(new ImportResult(List.of("P"), List.of("T"), List.of("Dev"), 1, 0));
 
         SuggestionIndex index = SuggestionIndexBuilder.catalog(catalog);
