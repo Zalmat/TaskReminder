@@ -1,11 +1,6 @@
 package com.reminder.ui.controller;
 
 import com.reminder.i18n.I18n;
-import com.reminder.catalog.importing.CatalogImportService;
-import com.reminder.catalog.importing.ImportOutcome;
-import com.reminder.catalog.importing.YamlCatalogImporter;
-import com.reminder.importing.ImportScheduler;
-import com.reminder.importing.ImportStateStore;
 import com.reminder.model.UpdateInfo;
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
@@ -17,30 +12,26 @@ import com.reminder.service.WorkTimeService;
 import com.reminder.settings.AppSettings;
 import com.reminder.settings.WorkTypes;
 import com.reminder.suggest.SuggestionService;
-import com.reminder.ui.ImportNotifier;
-import com.reminder.ui.SuggestionIndexingCoordinator;
+import com.reminder.ui.suggest.SuggestionUi;
 import com.reminder.ui.UpdateCheckUi;
 import com.reminder.ui.component.ClockUi;
 import com.reminder.ui.component.EasterEgg;
 import com.reminder.ui.component.EntryForm;
-import com.reminder.ui.dialog.SuggestionManagerDialog;
-import com.reminder.ui.theme.ThemeManager;
-import com.reminder.ui.util.AppIcons;
+import com.reminder.ui.dialog.ExportDialog;
+import com.reminder.ui.dialog.HolidaysDialog;
+import com.reminder.ui.dialog.RemindersDialog;
+import com.reminder.ui.dialog.SettingsDialog;
+import com.reminder.ui.importing.TaskImportCoordinator;
 import com.reminder.ui.util.DatePickerUtils;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.view.DayView;
 import com.reminder.ui.view.ReminderUi;
+import com.reminder.ui.view.ViewMode;
 import com.reminder.ui.view.WeekView;
-import com.reminder.util.Log;
-import com.reminder.util.FileValidation;
-import com.reminder.util.YamlTemplate;
 import javafx.fxml.FXML;
-import javafx.fxml.FXMLLoader;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.DatePicker;
-import javafx.scene.control.Dialog;
-import javafx.scene.control.DialogPane;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.ProgressBar;
@@ -51,23 +42,11 @@ import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
 import javafx.scene.layout.VBox;
-import javafx.stage.FileChooser;
 import javafx.stage.Stage;
-import javafx.stage.Window;
-import javafx.animation.Animation;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
-import javafx.util.Duration;
 
 import java.awt.Desktop;
-import java.io.File;
-import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.util.function.BiConsumer;
 
 /** Контроллер главного окна. Собирает слой UI поверх сервисов бизнес-логики. */
@@ -124,13 +103,9 @@ public class MainController {
     private final ReminderService reminderService = new ReminderService();
     private final ExportService exportService = new ExportService();
     private final UpdateCheckService updateCheckService = new UpdateCheckService();
-    private final ImportStateStore importState = new ImportStateStore();
-    private final ImportScheduler importScheduler = new ImportScheduler();
     private SuggestionService suggestionService;
-    private SuggestionIndexingCoordinator suggestionIndexing;
-    private Timeline indexingPoller;
-    private CatalogImportService catalogImportService;
-    private ImportNotifier importNotifier;
+    private SuggestionUi suggestionUi;
+    private TaskImportCoordinator taskImport;
     private BiConsumer<String, String> trayNotifier = (caption, text) -> { };
     private UpdateCheckUi updateCheckUi;
     private Runnable exitAction = () -> { };
@@ -139,7 +114,7 @@ public class MainController {
     private final ReminderUi reminderUi = new ReminderUi(reminderService);
     private WeekView weekView;
     private DayView dayView;
-    private boolean isWeekView = false;
+    private ViewMode viewMode = ViewMode.DAY;
 
     @FXML
     private void initialize() {
@@ -148,6 +123,8 @@ public class MainController {
                 suggestionService, this::onSuggestionDataChanged);
         taskService.ensureDefaultTypes(WorkTypes.defaults());
         form.loadTypeChoices(taskService);
+        suggestionUi = new SuggestionUi(indexingStatus, indexingProgress,
+                suggestionService, taskService, form);
 
         configureDatePicker();
 
@@ -180,7 +157,7 @@ public class MainController {
         datePicker.setValue(LocalDate.now());
         datePicker.valueProperty().addListener((obs, oldVal, newVal) -> {
             if (newVal != null) {
-                if (isWeekView) {
+                if (viewMode == ViewMode.WEEK) {
                     weekView.update(newVal);
                 } else {
                     dayView.update(newVal);
@@ -191,14 +168,14 @@ public class MainController {
 
     private void wireButtons() {
         prevButton.setOnAction(e -> {
-            if (isWeekView) {
+            if (viewMode == ViewMode.WEEK) {
                 datePicker.setValue(datePicker.getValue().minusWeeks(1));
             } else {
                 datePicker.setValue(datePicker.getValue().minusDays(1));
             }
         });
         nextButton.setOnAction(e -> {
-            if (isWeekView) {
+            if (viewMode == ViewMode.WEEK) {
                 datePicker.setValue(datePicker.getValue().plusWeeks(1));
             } else {
                 datePicker.setValue(datePicker.getValue().plusDays(1));
@@ -207,16 +184,18 @@ public class MainController {
         todayButton.setOnAction(e -> datePicker.setValue(LocalDate.now()));
 
         addButton.setOnAction(e -> {
-            if (isWeekView) {
+            if (viewMode == ViewMode.WEEK) {
                 weekView.add();
             } else {
                 dayView.add();
             }
         });
-        loadYamlButton.setOnAction(e -> loadTasksFromYaml());
-        templateButton.setOnAction(e -> downloadYamlTemplate());
+        loadYamlButton.setOnAction(e -> taskImport.importFromChooser(
+                datePicker.getScene().getWindow()));
+        templateButton.setOnAction(e -> taskImport.downloadTemplate(
+                datePicker.getScene().getWindow()));
         clearButton.setOnAction(e -> {
-            if (isWeekView) {
+            if (viewMode == ViewMode.WEEK) {
                 weekView.clear();
             } else {
                 dayView.clear();
@@ -244,171 +223,59 @@ public class MainController {
     // ==================== РЕЖИМЫ ПРОСМОТРА ====================
 
     private void showDayView() {
-        isWeekView = false;
-        dayPanel.setVisible(true);
-        weekPanel.setVisible(false);
-        hoursContainer.setVisible(true);
-        dayView.update(datePicker.getValue());
+        switchMode(ViewMode.DAY);
     }
 
     private void showWeekView() {
-        isWeekView = true;
-        dayPanel.setVisible(false);
-        weekPanel.setVisible(true);
-        hoursContainer.setVisible(false);
-        weekView.update(datePicker.getValue());
+        switchMode(ViewMode.WEEK);
+    }
+
+    private void switchMode(ViewMode mode) {
+        viewMode = mode;
+        boolean week = mode == ViewMode.WEEK;
+        dayPanel.setVisible(!week);
+        weekPanel.setVisible(week);
+        hoursContainer.setVisible(!week);
+        if (week) {
+            weekView.update(datePicker.getValue());
+        } else {
+            dayView.update(datePicker.getValue());
+        }
     }
 
     // ==================== ДИАЛОГИ ====================
 
     private void openRemindersDialog() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/reminders-dialog.fxml"));
-            loader.setResources(I18n.bundle());
-            DialogPane pane = loader.load();
-            RemindersDialogController ctrl = loader.getController();
-            ctrl.init(reminderService);
-            ThemeManager.applyTo(pane);
-
-            Dialog<Void> dialog = new Dialog<>();
-            dialog.setTitle(I18n.get("dialog.reminders.title"));
-            dialog.setDialogPane(pane);
-            AppIcons.applyTo(dialog);
-            dialog.showAndWait();
-        } catch (IOException e) {
-            Dialogs.error(I18n.get("common.error"),
-                    I18n.format("dialog.reminders.error", Dialogs.reason(e)));
-        }
+        RemindersDialog.show(reminderService);
     }
 
     private void openExportDialog() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/export-dialog.fxml"));
-            loader.setResources(I18n.bundle());
-            DialogPane pane = loader.load();
-            ExportDialogController ctrl = loader.getController();
-            ctrl.init(taskService, exportService, datePicker.getValue(), isWeekView, datePicker.getScene().getWindow(), Dialogs::accept);
-            ThemeManager.applyTo(pane);
-
-            Dialog<Void> dialog = new Dialog<>();
-            dialog.setTitle(I18n.get("dialog.export.title"));
-            dialog.setDialogPane(pane);
-            AppIcons.applyTo(dialog);
-            dialog.showAndWait();
-        } catch (IOException e) {
-            Dialogs.error(I18n.get("common.error"),
-                    I18n.format("dialog.export.error", Dialogs.reason(e)));
-        }
+        ExportDialog.show(taskService, exportService, datePicker.getValue(),
+                viewMode == ViewMode.WEEK, datePicker.getScene().getWindow(), Dialogs::accept);
     }
 
     private void openHolidaysDialog() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/holidays-dialog.fxml"));
-            loader.setResources(I18n.bundle());
-            DialogPane pane = loader.load();
-            HolidaysDialogController ctrl = loader.getController();
-            ctrl.init(workTimeService, Dialogs::accept);
-            ThemeManager.applyTo(pane);
-
-            Dialog<Void> dialog = new Dialog<>();
-            dialog.setTitle(I18n.get("dialog.holidays.title"));
-            dialog.setDialogPane(pane);
-            AppIcons.applyTo(dialog);
-            dialog.showAndWait();
-
-            if (isWeekView) {
+        HolidaysDialog.show(workTimeService, () -> {
+            if (viewMode == ViewMode.WEEK) {
                 weekView.update(datePicker.getValue());
             }
-        } catch (IOException e) {
-            Dialogs.error(I18n.get("common.error"),
-                    I18n.format("dialog.holidays.error", Dialogs.reason(e)));
-        }
+        });
     }
 
     /** Показ диалога напоминания и звук вынесены в {@link ReminderUi}. */
 
     private void openSettingsDialog() {
-        try {
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/fxml/settings-dialog.fxml"));
-            loader.setResources(I18n.bundle());
-            DialogPane pane = loader.load();
-            SettingsDialogController ctrl = loader.getController();
-            ctrl.init(datePicker.getScene(), form.typeItems(), this::importFromSettings,
-                    this::openSuggestionManager, this::suggestionsSettingsChanged);
-
-            Dialog<Void> dialog = new Dialog<>();
-            dialog.setTitle(I18n.get("dialog.settings.title"));
-            dialog.setDialogPane(pane);
-            AppIcons.applyTo(dialog);
-            dialog.showAndWait();
-
-            if (updateCheckUi != null) {
-                updateCheckUi.applySchedule(AppSettings.updateCheckEnabled(),
-                        AppSettings.updateCheckHour(), AppSettings.updateCheckMinute());
-            }
-            applyImportSchedule();
-        } catch (IOException e) {
-            Dialogs.error(I18n.get("common.error"),
-                    I18n.format("dialog.settings.error", Dialogs.reason(e)));
-        }
+        SettingsDialog.show(datePicker.getScene(), form.typeItems(), taskImport::importFromSettings,
+                suggestionUi::openManager, suggestionUi::settingsChanged, () -> {
+                    if (updateCheckUi != null) {
+                        updateCheckUi.applySchedule(AppSettings.updateCheckEnabled(),
+                                AppSettings.updateCheckHour(), AppSettings.updateCheckMinute());
+                    }
+                    taskImport.applySchedule();
+                });
     }
 
     // ==================== ПРОЧЕЕ ====================
-
-    private void loadTasksFromYaml() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle(I18n.get("yaml.chooseTitle"));
-        fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter(I18n.get("yaml.filter"), "*.yaml", "*.yml"));
-
-        File file = fileChooser.showOpenDialog(datePicker.getScene().getWindow());
-        if (file == null) return;
-
-        if (!FileValidation.isReadableYaml(file.toPath())) {
-            Dialogs.error(I18n.get("common.error"), I18n.get("yaml.invalidFile"));
-            return;
-        }
-
-        ImportOutcome outcome = runImport(file.toPath(), true, false);
-        if (outcome != null) {
-            showImportResult(outcome);
-        }
-    }
-
-    private void showImportResult(ImportOutcome outcome) {
-        if (outcome.hasNew()) {
-            Dialogs.info(I18n.get("common.success"), I18n.format("tasks.import.result",
-                    outcome.added().projects(), outcome.added().taskNames(), outcome.added().types()));
-        } else {
-            Dialogs.info(I18n.get("common.success"), I18n.get("tasks.import.nothingNew"));
-        }
-    }
-
-    /** Импорт из окна настроек (кнопки «Создать пример…»/«Выбрать…», ответ «Да»). */
-    private void importFromSettings(Path file) {
-        ImportOutcome outcome = runImport(file, true, false);
-        if (outcome != null) {
-            showImportResult(outcome);
-        }
-    }
-
-    private void downloadYamlTemplate() {
-        FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle(I18n.get("yaml.saveTitle"));
-        fileChooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter(I18n.get("yaml.filter"), "*.yaml", "*.yml"));
-        fileChooser.setInitialFileName("tasks-template.yaml");
-
-        File file = fileChooser.showSaveDialog(datePicker.getScene().getWindow());
-        if (file == null) return;
-
-        try {
-            Files.writeString(file.toPath(), YamlTemplate.content(), StandardCharsets.UTF_8);
-            Dialogs.info(I18n.get("common.success"), I18n.format("yaml.saved", file.getName()));
-        } catch (Exception e) {
-            Dialogs.error(I18n.get("common.error"), I18n.format("yaml.saveError", e.getMessage()));
-        }
-    }
 
     // ==================== ОБНОВЛЕНИЯ ====================
 
@@ -435,87 +302,9 @@ public class MainController {
     // ==================== ИМПОРТ КАТЕГОРИЙ ====================
 
     private void setupTaskImport() {
-        catalogImportService = new CatalogImportService(
-                new YamlCatalogImporter(), taskService.getCatalog(), importState);
-        importNotifier = new ImportNotifier(importBell,
+        taskImport = new TaskImportCoordinator(taskService, suggestionService, form, importBell,
                 (caption, text) -> trayNotifier.accept(caption, text));
-        applyImportSchedule();
-        javafx.application.Platform.runLater(this::runStartupImportIfEnabled);
-    }
-
-    private void runStartupImportIfEnabled() {
-        if (!AppSettings.taskImportOnStartup()) {
-            return;
-        }
-        Path file = configuredImportFile();
-        if (file != null) {
-            runImport(file, false, true);
-        }
-    }
-
-    private void applyImportSchedule() {
-        boolean enabled = AppSettings.taskImportScheduleEnabled() && configuredImportFile() != null;
-        importScheduler.applySchedule(enabled, AppSettings.taskImportHour(),
-                AppSettings.taskImportMinute(), this::scheduledImport);
-    }
-
-    private void scheduledImport() {
-        javafx.application.Platform.runLater(() -> {
-            Path file = configuredImportFile();
-            if (file != null) {
-                runImport(file, false, true);
-            }
-        });
-    }
-
-    private Path configuredImportFile() {
-        String path = AppSettings.taskImportFile();
-        if (path == null || path.isBlank()) {
-            return null;
-        }
-        Path file;
-        try {
-            file = Path.of(path);
-        } catch (RuntimeException e) {
-            Log.log("TaskImport", "invalid configured path: " + path, e);
-            return null;
-        }
-        if (!FileValidation.isReadableYaml(file)) {
-            Log.log("TaskImport", "configured file is not a readable YAML: " + path);
-            return null;
-        }
-        return file;
-    }
-
-    /** Импортирует файл; возвращает итог или {@code null} при ошибке. */
-    private ImportOutcome runImport(Path file, boolean force, boolean notify) {
-        try {
-            ImportOutcome outcome = catalogImportService.importFile(file, force);
-            if (outcome.unchangedFile()) {
-                Log.log("TaskImport", "unchanged: " + file);
-                return outcome;
-            }
-            Log.log("TaskImport", "imported " + file + ": projects+" + outcome.added().projects()
-                    + ", tasks+" + outcome.added().taskNames() + ", types+" + outcome.added().types()
-                    + " (rows=" + outcome.totalRows() + ", skipped=" + outcome.skipped() + ")");
-            if (outcome.hasNew()) {
-                suggestionService.reloadCatalog();
-                form.refreshSuggestionsOnly();
-                form.refreshTypeChoices(taskService);
-                if (notify) {
-                    importNotifier.notifyImported(LocalDateTime.now(), outcome,
-                            AppSettings.taskImportTrayNotify());
-                }
-            }
-            return outcome;
-        } catch (Exception e) {
-            Log.log("TaskImport", "failed: " + e.getMessage(), e);
-            if (force) {
-                Dialogs.error(I18n.get("common.error"),
-                        I18n.format("tasks.import.error", Dialogs.reason(e)));
-            }
-            return null;
-        }
+        taskImport.start();
     }
 
     /** Задаётся приложением: показ сообщения в трее. */
@@ -537,92 +326,28 @@ public class MainController {
         if (updateCheckUi != null) {
             updateCheckUi.shutdown();
         }
-        importScheduler.shutdown();
-        if (suggestionIndexing != null) {
-            suggestionIndexing.shutdown();
+        if (taskImport != null) {
+            taskImport.shutdown();
+        }
+        if (suggestionUi != null) {
+            suggestionUi.shutdown();
         }
         if (suggestionService != null) {
             suggestionService.shutdown();
-        }
-        if (indexingPoller != null) {
-            indexingPoller.stop();
-            indexingPoller = null;
         }
     }
 
     /** Вызывается приложением после установки сцены: подключает фоновую индексацию. */
     public void attachStage(Stage stage) {
-        if (stage == null || suggestionService == null || suggestionIndexing != null) {
-            return;
-        }
-        suggestionIndexing = new SuggestionIndexingCoordinator(stage, suggestionService);
-        suggestionIndexing.start();
-        startIndexingStatusPolling();
-    }
-
-    private void startIndexingStatusPolling() {
-        if (indexingPoller != null) {
-            return;
-        }
-        indexingPoller = new Timeline(new KeyFrame(Duration.millis(200), event -> updateIndexingStatus()));
-        indexingPoller.setCycleCount(Animation.INDEFINITE);
-        indexingPoller.play();
-    }
-
-    private void updateIndexingStatus() {
-        if (indexingStatus == null || suggestionService == null) {
-            return;
-        }
-        if (!suggestionService.isIndexing()) {
-            indexingStatus.setVisible(false);
-            indexingStatus.setManaged(false);
-            indexingProgress.setVisible(false);
-            indexingProgress.setManaged(false);
-            return;
-        }
-        long elapsed = System.currentTimeMillis() - suggestionService.indexingStartedAtMillis();
-        if (elapsed < 400) {
-            indexingStatus.setVisible(false);
-            indexingStatus.setManaged(false);
-            return;
-        }
-        indexingStatus.setVisible(true);
-        indexingStatus.setManaged(true);
-        boolean showProgress = elapsed >= 2000;
-        indexingProgress.setVisible(showProgress);
-        indexingProgress.setManaged(showProgress);
-        if (showProgress) {
-            indexingProgress.setProgress(suggestionService.progress());
+        if (suggestionUi != null) {
+            suggestionUi.attachStage(stage);
         }
     }
 
     private void onSuggestionDataChanged() {
-        if (suggestionIndexing != null) {
-            suggestionIndexing.onDataChanged();
+        if (suggestionUi != null) {
+            suggestionUi.onDataChanged();
         }
-    }
-
-    private void openSuggestionManager(Window owner) {
-        SuggestionManagerDialog.show(owner, taskService, suggestionService,
-                this::catalogChanged,
-                () -> {
-                    if (suggestionIndexing != null) {
-                        suggestionIndexing.refreshNow();
-                    }
-                });
-    }
-
-    private void catalogChanged() {
-        suggestionService.reloadCatalog();
-        form.refreshSuggestionsOnly();
-        form.refreshTypeChoices(taskService);
-    }
-
-    private void suggestionsSettingsChanged() {
-        if (suggestionIndexing != null) {
-            suggestionIndexing.onSettingsChanged();
-        }
-        form.refreshSuggestionsOnly();
     }
 
     @FXML
