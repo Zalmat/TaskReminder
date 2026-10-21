@@ -16,7 +16,6 @@ public final class TableCells {
 
     private static final double HORIZONTAL_INSETS = 12;
     private static final double TOOLTIP_MAX_WIDTH = 480;
-    private static final int MAX_LINES = 3;
     private static final String ELLIPSIS = "…";
 
     private TableCells() {
@@ -24,6 +23,12 @@ public final class TableCells {
 
     /** Ячейка с визуальным переносом текста (до трёх строк) и подсказкой с полным значением. */
     public static <S> TableCell<S, String> wrapping() {
+        return wrapping(3);
+    }
+
+    /** Ячейка с переносом до {@code maxLines} строк и подсказкой с полным значением. */
+    public static <S> TableCell<S, String> wrapping(int maxLines) {
+        int lineLimit = Math.max(1, maxLines);
         return new TableCell<>() {
             private final Label label = new Label();
             private final Tooltip tooltip = Tooltips.create("");
@@ -91,7 +96,7 @@ public final class TableCells {
                 List<String> lines = new ArrayList<>();
                 int index = 0;
                 int length = text.length();
-                while (index < length && lines.size() < MAX_LINES) {
+                while (index < length && lines.size() < lineLimit) {
                     int end = index;
                     int lastSpace = -1;
                     while (end < length) {

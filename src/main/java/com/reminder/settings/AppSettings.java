@@ -182,6 +182,15 @@ public final class AppSettings {
         PREFS.put("indexOnlyWhenInactive", Boolean.toString(value));
     }
 
+    /** Путь к YAML-файлу календаря праздников (пусто = не задан). */
+    public static String holidayCalendarFile() {
+        return PREFS.get("holidayCalendarFile", "");
+    }
+
+    public static void setHolidayCalendarFile(String path) {
+        PREFS.put("holidayCalendarFile", path == null ? "" : path);
+    }
+
     /** Указанная папка, если она задана и существует. */
     public static Optional<Path> validExportDirectory() {
         String directory = exportDirectory();

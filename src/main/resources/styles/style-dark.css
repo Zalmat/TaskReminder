@@ -109,13 +109,7 @@
     -fx-effect: dropshadow(gaussian, #101010, 1, 0, 1, -1);
 }
 
-.holiday-column {
-    -fx-background-color: #2f2f2f;
-}
 
-.holiday-header {
-    -fx-text-fill: #888888;
-}
 
 .text-input {
     -fx-prompt-text-fill: #8a8a8a;

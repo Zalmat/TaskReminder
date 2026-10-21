@@ -1,21 +1,29 @@
 package com.reminder.service;
 
+import com.reminder.model.Holiday;
+import com.reminder.model.HolidaySource;
+import com.reminder.model.HolidayType;
+import com.reminder.model.HolidaysData;
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
 import com.reminder.storage.DataStore;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.UUID;
 
 /**
  * Бизнес-логика учёта рабочего времени: лимиты, итоги и агрегация недели.
- * Слой не зависит от UI. Праздники сохраняются в holidays.json.
+ * Праздники и события хранятся в holidays.json.
  */
 public class WorkTimeService {
 
@@ -23,8 +31,9 @@ public class WorkTimeService {
     public static final double MAX_WEEKLY_HOURS = 48.0;
 
     private static final String HOLIDAYS_FILE = "holidays.json";
+    private static final String HOLIDAYS_BACKUP = "holidays.json.bak";
 
-    private final Set<LocalDate> holidays = new TreeSet<>();
+    private final List<Holiday> holidays = new ArrayList<>();
     private final DataStore store;
 
     public WorkTimeService() {
@@ -38,55 +47,260 @@ public class WorkTimeService {
 
     // ==================== Праздники ====================
 
-    public Set<LocalDate> getHolidays() {
-        return new TreeSet<>(holidays);
+    public enum HolidayResult {
+        ADDED,
+        UPDATED,
+        NAME_REQUIRED,
+        DUPLICATE,
+        NOT_FOUND
+    }
+
+    public record HolidayPreview(int added, int skipped) {
+    }
+
+    public record HolidayImportResult(int added, int skipped) {
+    }
+
+    public List<Holiday> getHolidayEntries() {
+        List<Holiday> result = new ArrayList<>(holidays);
+        result.sort(Comparator
+                .comparing(Holiday::getDate, Comparator.nullsLast(Comparator.naturalOrder()))
+                .thenComparing(h -> h.getName() == null ? "" : h.getName(),
+                        String.CASE_INSENSITIVE_ORDER));
+        return result;
+    }
+
+    /** Все события конкретного дня: ежегодные по месяцу/дню, разовые по точной дате. */
+    public List<Holiday> getHolidayEvents(LocalDate date) {
+        if (date == null) {
+            return List.of();
+        }
+        List<Holiday> result = holidays.stream()
+                .filter(holiday -> holiday.getDate() != null)
+                .filter(holiday -> holiday.isAnnual()
+                        ? holiday.getDate().getMonth() == date.getMonth()
+                        && holiday.getDate().getDayOfMonth() == date.getDayOfMonth()
+                        : holiday.getDate().equals(date))
+                .sorted(Comparator
+                        .comparingInt((Holiday h) -> h.getType().ordinal())
+                        .thenComparing(h -> h.getName() == null ? "" : h.getName(),
+                                String.CASE_INSENSITIVE_ORDER))
+                .toList();
+        return new ArrayList<>(result);
     }
 
     public boolean isHoliday(LocalDate date) {
-        return holidays.contains(date);
+        return !getHolidayEvents(date).isEmpty();
     }
 
-    public boolean addHoliday(LocalDate date) {
-        if (date != null && holidays.add(date)) {
+    public Holiday findHoliday(String id) {
+        if (id == null) {
+            return null;
+        }
+        return holidays.stream().filter(h -> id.equals(h.getId())).findFirst().orElse(null);
+    }
+
+    public HolidayResult addHoliday(LocalDate date, String name, boolean annual, HolidayType type) {
+        String cleanName = name == null ? "" : name.trim();
+        if (date == null || cleanName.isEmpty()) {
+            return HolidayResult.NAME_REQUIRED;
+        }
+        Holiday candidate = new Holiday(date, cleanName, annual, type, HolidaySource.MANUAL);
+        if (isDuplicate(candidate, holidays, null)) {
+            return HolidayResult.DUPLICATE;
+        }
+        holidays.add(candidate);
+        persistHolidays();
+        return HolidayResult.ADDED;
+    }
+
+    public HolidayResult updateHoliday(Holiday updated) {
+        if (updated == null || updated.getId() == null) {
+            return HolidayResult.NOT_FOUND;
+        }
+        Holiday existing = findHoliday(updated.getId());
+        if (existing == null) {
+            return HolidayResult.NOT_FOUND;
+        }
+        String cleanName = updated.getName() == null ? "" : updated.getName().trim();
+        if (updated.getDate() == null || cleanName.isEmpty()) {
+            return HolidayResult.NAME_REQUIRED;
+        }
+        Holiday candidate = new Holiday(updated.getDate(), cleanName, updated.isAnnual(),
+                updated.getType(), existing.getSource());
+        candidate.setId(existing.getId());
+        if (isDuplicate(candidate, holidays, existing.getId())) {
+            return HolidayResult.DUPLICATE;
+        }
+        existing.setDate(updated.getDate());
+        existing.setName(cleanName);
+        existing.setAnnual(updated.isAnnual());
+        existing.setType(updated.getType());
+        persistHolidays();
+        return HolidayResult.UPDATED;
+    }
+
+    public boolean deleteHoliday(String id) {
+        if (id == null) {
+            return false;
+        }
+        boolean removed = holidays.removeIf(h -> id.equals(h.getId()));
+        if (removed) {
             persistHolidays();
-            return true;
+        }
+        return removed;
+    }
+
+    /** Предпросмотр импорта: сколько добавится и сколько совпадёт с текущими/внутри файла. */
+    public HolidayPreview previewImport(List<Holiday> candidates) {
+        if (candidates == null || candidates.isEmpty()) {
+            return new HolidayPreview(0, 0);
+        }
+        List<Holiday> accepted = new ArrayList<>(holidays);
+        int added = 0;
+        int skipped = 0;
+        for (Holiday candidate : candidates) {
+            if (candidate == null || candidate.getDate() == null
+                    || candidate.getName() == null || candidate.getName().isBlank()) {
+                skipped++;
+                continue;
+            }
+            if (isDuplicate(candidate, accepted, null)) {
+                skipped++;
+            } else {
+                accepted.add(candidate);
+                added++;
+            }
+        }
+        return new HolidayPreview(added, skipped);
+    }
+
+    /** Добавляет праздники из файла; дубликаты пропускаются. */
+    public HolidayImportResult importHolidays(List<Holiday> candidates) {
+        if (candidates == null || candidates.isEmpty()) {
+            return new HolidayImportResult(0, 0);
+        }
+        int added = 0;
+        int skipped = 0;
+        for (Holiday candidate : candidates) {
+            if (candidate == null || candidate.getDate() == null
+                    || candidate.getName() == null || candidate.getName().isBlank()) {
+                skipped++;
+                continue;
+            }
+            if (isDuplicate(candidate, holidays, null)) {
+                skipped++;
+                continue;
+            }
+            Holiday holiday = new Holiday(candidate.getDate(), candidate.getName().trim(),
+                    candidate.isAnnual(), candidate.getType(), HolidaySource.IMPORTED);
+            holiday.setId(UUID.randomUUID().toString());
+            holidays.add(holiday);
+            added++;
+        }
+        if (added > 0) {
+            persistHolidays();
+        }
+        return new HolidayImportResult(added, skipped);
+    }
+
+    private boolean isDuplicate(Holiday candidate, List<Holiday> existing, String excludeId) {
+        String name = candidate.getName() == null ? "" : candidate.getName().trim();
+        if (name.isEmpty() || candidate.getDate() == null) {
+            return false;
+        }
+        for (Holiday holiday : existing) {
+            if (holiday == null || holiday.getDate() == null) {
+                continue;
+            }
+            if (excludeId != null && excludeId.equals(holiday.getId())) {
+                continue;
+            }
+            String existingName = holiday.getName() == null ? "" : holiday.getName().trim();
+            if (!name.equalsIgnoreCase(existingName)) {
+                continue;
+            }
+            boolean sameMonthDay = holiday.getDate().getMonth() == candidate.getDate().getMonth()
+                    && holiday.getDate().getDayOfMonth() == candidate.getDate().getDayOfMonth();
+            if (holiday.isAnnual() && candidate.isAnnual()) {
+                if (sameMonthDay) {
+                    return true;
+                }
+            } else if (!holiday.isAnnual() && !candidate.isAnnual()) {
+                if (holiday.getDate().equals(candidate.getDate())) {
+                    return true;
+                }
+            } else if (sameMonthDay) {
+                return true;
+            }
         }
         return false;
     }
 
-    public boolean removeHoliday(LocalDate date) {
-        if (date != null && holidays.remove(date)) {
-            persistHolidays();
-            return true;
-        }
-        return false;
-    }
-
-    /** Загружает сохранённые праздники; при отсутствии данных заполняет стандартные. */
     private void loadHolidays() {
-        List<LocalDate> saved = store.loadList(HOLIDAYS_FILE, LocalDate.class);
-        if (saved.isEmpty()) {
+        Path file = store.resolve(HOLIDAYS_FILE);
+        if (!Files.isRegularFile(file)) {
             seedDefaultHolidays();
             persistHolidays();
-        } else {
-            holidays.addAll(saved);
+            return;
+        }
+        String text;
+        try {
+            text = Files.readString(file, StandardCharsets.UTF_8).trim();
+        } catch (IOException e) {
+            return;
+        }
+        if (text.startsWith("{")) {
+            HolidaysData data = store.loadObject(HOLIDAYS_FILE, HolidaysData.class);
+            if (data != null && data.holidays != null) {
+                data.holidays.stream().filter(h -> h != null).forEach(holidays::add);
+            }
+            return;
+        }
+        if (text.startsWith("[")) {
+            backupLegacyFile(file);
+            List<LocalDate> dates = store.loadList(HOLIDAYS_FILE, LocalDate.class);
+            for (LocalDate date : dates) {
+                if (date != null) {
+                    holidays.add(new Holiday(date, "", false, HolidayType.OFFICIAL,
+                            HolidaySource.MANUAL));
+                }
+            }
+            persistHolidays();
+        }
+    }
+
+    private void backupLegacyFile(Path file) {
+        try {
+            Path backup = file.resolveSibling(HOLIDAYS_BACKUP);
+            if (!Files.exists(backup)) {
+                Files.copy(file, backup, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException ignored) {
+            // бэкап не критичен для работы
         }
     }
 
     private void seedDefaultHolidays() {
         int year = LocalDate.now().getYear();
-        holidays.add(LocalDate.of(year, 1, 1));
-        holidays.add(LocalDate.of(year, 1, 7));
-        holidays.add(LocalDate.of(year, 2, 23));
-        holidays.add(LocalDate.of(year, 3, 8));
-        holidays.add(LocalDate.of(year, 5, 1));
-        holidays.add(LocalDate.of(year, 5, 9));
-        holidays.add(LocalDate.of(year, 6, 12));
-        holidays.add(LocalDate.of(year, 11, 4));
+        addSeed(LocalDate.of(year, 1, 1));
+        addSeed(LocalDate.of(year, 1, 7));
+        addSeed(LocalDate.of(year, 2, 23));
+        addSeed(LocalDate.of(year, 3, 8));
+        addSeed(LocalDate.of(year, 5, 1));
+        addSeed(LocalDate.of(year, 5, 9));
+        addSeed(LocalDate.of(year, 6, 12));
+        addSeed(LocalDate.of(year, 11, 4));
+    }
+
+    private void addSeed(LocalDate date) {
+        holidays.add(new Holiday(date, "", true, HolidayType.OFFICIAL, HolidaySource.DEFAULT));
     }
 
     private void persistHolidays() {
-        store.saveList(HOLIDAYS_FILE, new ArrayList<>(holidays));
+        HolidaysData data = new HolidaysData();
+        data.holidays = new ArrayList<>(holidays);
+        store.saveObject(HOLIDAYS_FILE, data);
     }
 
     // ==================== Итоги ====================

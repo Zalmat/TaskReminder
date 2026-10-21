@@ -1,6 +1,8 @@
 package com.reminder.ui.view;
 
 import com.reminder.i18n.I18n;
+import com.reminder.model.Holiday;
+import com.reminder.model.HolidayType;
 import com.reminder.model.Task;
 import com.reminder.model.WeekEntry;
 import com.reminder.model.WorkEntry;
@@ -13,6 +15,14 @@ import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.TableCells;
 import com.reminder.ui.util.Tooltips;
 import com.reminder.ui.util.WrappingTableRow;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
 import com.reminder.util.DateUtils;
 import com.reminder.util.RussianDays;
 import javafx.beans.property.ReadOnlyObjectWrapper;
@@ -94,6 +104,12 @@ public class WeekView {
         totalColumn.setCellValueFactory(cd -> new ReadOnlyObjectWrapper<>(cd.getValue().getTotal()));
         totalColumn.setCellFactory(c -> new WeekTotalCell());
 
+        applyStaticHeader(projectColumn);
+        applyStaticHeader(taskColumn);
+        applyStaticHeader(typeColumn);
+        applyStaticHeader(commentColumn);
+        applyStaticHeader(totalColumn);
+
         ContextMenu menu = new ContextMenu();
         MenuItem editItem = new MenuItem(I18n.get("entry.editTask"));
         editItem.setOnAction(e -> edit());
@@ -103,6 +119,27 @@ public class WeekView {
         table.setContextMenu(menu);
 
         createDayColumns();
+    }
+
+    /** Выравнивает заголовки обычных колонок с подписями дней (точки занимают верх). */
+    private static void applyStaticHeader(TableColumn<?, ?> column) {
+        String text = column.getText();
+        if (text == null || text.isBlank()) {
+            return;
+        }
+        column.setText(null);
+        Region spacer = new Region();
+        spacer.setMinHeight(14);
+        spacer.setPrefHeight(14);
+        spacer.setMaxHeight(14);
+        Label label = new Label(text);
+        VBox box = new VBox(spacer, label);
+        box.setAlignment(Pos.TOP_CENTER);
+        box.setMinHeight(44);
+        box.setPrefHeight(44);
+        box.setMaxHeight(44);
+        column.setGraphic(box);
+        column.setStyle("-fx-alignment: CENTER;");
     }
 
     private void createDayColumns() {
@@ -136,7 +173,6 @@ public class WeekView {
             LocalDate day = weekDays.get(i);
             col.setDay(day);
             col.setHeaderText(RussianDays.shortName(day.getDayOfWeek().getValue()) + " " + DateUtils.formatShort(day));
-            col.setEditable(!workTimeService.isHoliday(day));
         }
 
         List<WorkEntry> rangeEntries = taskService.getEntriesForDateRange(startOfWeek, endOfWeek);
@@ -312,30 +348,32 @@ public class WeekView {
         totalLabel.setText(text);
     }
 
-    /** Подсвечивает красным заголовок дня, если сумма часов за день превышает лимит. */
+    /** Красный заголовок при переработке + точки событий и общий тултип. */
     private void highlightOvertimeDays() {
         for (WeekDayColumn col : dayColumns) {
             LocalDate day = col.date();
             int dayTotal = entries.stream()
                     .mapToInt(we -> we.getDayHours().getOrDefault(day, 0))
                     .sum();
-            if (dayTotal > WorkTimeService.MAX_DAILY_HOURS) {
-                col.setStyle("-fx-alignment: CENTER;");
-                col.setHeaderStyle("-fx-font-weight: bold; -fx-text-fill: red;");
-                col.setHoliday(false);
-                col.setOvertimeTooltip(true);
-            } else if (workTimeService.isHoliday(day)) {
-                col.setStyle("-fx-alignment: CENTER;");
-                col.setHeaderStyle("");
-                col.setHoliday(true);
-                col.setOvertimeTooltip(false);
-            } else {
-                col.setStyle("-fx-alignment: CENTER;");
-                col.setHeaderStyle("");
-                col.setHoliday(false);
-                col.setOvertimeTooltip(false);
-            }
+            boolean overtime = dayTotal > WorkTimeService.MAX_DAILY_HOURS;
+            List<Holiday> events = workTimeService.getHolidayEvents(day);
+            col.setEvents(events);
+            col.setHeaderStyle(overtime ? "-fx-font-weight: bold; -fx-text-fill: red;" : "");
+            col.setTooltipText(tooltipText(events, overtime));
         }
+    }
+
+    private String tooltipText(List<Holiday> events, boolean overtime) {
+        List<String> lines = new java.util.ArrayList<>();
+        for (Holiday event : events) {
+            String type = I18n.get(event.getType().labelKey());
+            String name = event.getName() == null ? "" : event.getName().trim();
+            lines.add(name.isEmpty() ? type : type + ": " + name);
+        }
+        if (overtime) {
+            lines.add(I18n.get("week.overtimeTooltip"));
+        }
+        return lines.isEmpty() ? null : String.join("\n", lines);
     }
 
     /** Сохраняет недельную задачу в записи: удаляет старые (previous) и пишет новые. */
@@ -369,13 +407,29 @@ public class WeekView {
 
     /** Колонка дня недели, помнит свою дату для переиспользования при навигации. */
     private static final class WeekDayColumn extends TableColumn<WeekEntry, Integer> {
+        private static final double DOT_ROW_HEIGHT = 10;
+        private static final double HEADER_HEIGHT = 44;
+
         private LocalDate date;
         private Tooltip dayTooltip;
         private final Label headerLabel = new Label();
+        private final HBox dots = new HBox(2);
+        private final StackPane headerBox = new StackPane(headerLabel, dots);
 
         WeekDayColumn(LocalDate date) {
             this.date = date;
-            setGraphic(headerLabel);
+            dots.setAlignment(Pos.CENTER);
+            dots.setMinHeight(DOT_ROW_HEIGHT);
+            dots.setPrefHeight(DOT_ROW_HEIGHT);
+            dots.setMaxHeight(DOT_ROW_HEIGHT);
+            StackPane.setAlignment(headerLabel, Pos.CENTER);
+            StackPane.setAlignment(dots, Pos.TOP_CENTER);
+            StackPane.setMargin(dots, new Insets(2, 0, 0, 0));
+            headerBox.setMinHeight(HEADER_HEIGHT);
+            headerBox.setPrefHeight(HEADER_HEIGHT);
+            headerBox.setMaxHeight(HEADER_HEIGHT);
+            setGraphic(headerBox);
+            setStyle("-fx-alignment: CENTER;");
         }
 
         LocalDate date() {
@@ -394,27 +448,50 @@ public class WeekView {
             headerLabel.setStyle(css);
         }
 
-        /** Помечает день как праздничный (фон/цвет — из темы). */
-        void setHoliday(boolean holiday) {
-            getStyleClass().remove("holiday-column");
-            headerLabel.getStyleClass().remove("holiday-header");
-            if (holiday) {
-                getStyleClass().add("holiday-column");
-                headerLabel.getStyleClass().add("holiday-header");
+        /** Точки типов событий над датой: до трёх, дальше +N. */
+        void setEvents(List<Holiday> events) {
+            dots.getChildren().clear();
+            int shown = Math.min(3, events.size());
+            for (int i = 0; i < shown; i++) {
+                Circle dot = new Circle(3, colorFor(events.get(i).getType()));
+                dot.setStroke(Color.TRANSPARENT);
+                dots.getChildren().add(dot);
+            }
+            if (events.size() > 3) {
+                Label more = new Label("+" + (events.size() - 3));
+                more.setStyle("-fx-font-size: 9px; -fx-padding: 0;");
+                more.setMinHeight(DOT_ROW_HEIGHT);
+                more.setPrefHeight(DOT_ROW_HEIGHT);
+                more.setMaxHeight(DOT_ROW_HEIGHT);
+                dots.getChildren().add(more);
             }
         }
 
-        /** Показывает/скрывает тултип о превышении лимита на заголовке дня. */
-        void setOvertimeTooltip(boolean show) {
-            if (show && dayTooltip == null) {
-                dayTooltip = Tooltips.create(I18n.get("week.overtimeTooltip"));
-                Tooltip.install(headerLabel, dayTooltip);
-            } else if (!show) {
+        void setTooltipText(String text) {
+            if (text == null || text.isBlank()) {
                 if (dayTooltip != null) {
-                    Tooltip.uninstall(headerLabel, dayTooltip);
+                    Tooltip.uninstall(headerBox, dayTooltip);
                     dayTooltip = null;
                 }
+                return;
             }
+            if (dayTooltip == null) {
+                dayTooltip = Tooltips.create(text);
+                dayTooltip.setWrapText(true);
+                dayTooltip.setMaxWidth(480);
+                Tooltip.install(headerBox, dayTooltip);
+            } else {
+                dayTooltip.setText(text);
+            }
+        }
+
+        private static Color colorFor(HolidayType type) {
+            return switch (type) {
+                case OFFICIAL -> Color.web("#4CAF50");
+                case CORPORATE -> Color.web("#2196F3");
+                case PERSONAL -> Color.web("#9C27B0");
+                default -> Color.web("#9E9E9E");
+            };
         }
     }
 }

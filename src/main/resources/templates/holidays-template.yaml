@@ -1,0 +1,14 @@
+# holidays-template.yaml
+# date: ISO (YYYY-MM-DD)
+# annual: true — каждый год, false — только эта дата
+# type: official | corporate | personal | other
+
+holidays:
+  - date: "2026-01-01"
+    name: "Новый год"
+    annual: true
+    type: "official"
+  - date: "2026-03-09"
+    name: "Перенос выходного"
+    annual: false
+    type: "official"

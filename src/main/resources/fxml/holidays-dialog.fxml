@@ -7,27 +7,59 @@
 <DialogPane fx:id="dialogPane"
             fx:controller="com.reminder.ui.controller.HolidaysDialogController"
             xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-            prefWidth="420" prefHeight="380"
+            prefWidth="780" prefHeight="620"
             headerText="%holidays.header">
     <content>
-        <VBox spacing="10">
+        <VBox spacing="8">
             <padding>
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
 
             <Label fx:id="countLabel"/>
-            <ListView fx:id="holidayList" VBox.vgrow="ALWAYS"/>
+
+            <TableView fx:id="holidayTable" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="dateColumn" text="%holidays.column.date" prefWidth="110"/>
+                    <TableColumn fx:id="nameColumn" text="%holidays.column.name" prefWidth="280"/>
+                    <TableColumn fx:id="annualColumn" text="%holidays.column.annual" prefWidth="90"/>
+                    <TableColumn fx:id="typeColumn" text="%holidays.column.type" prefWidth="130"/>
+                </columns>
+            </TableView>
 
             <Separator/>
 
-            <Label text="%holidays.addLabel"/>
-            <HBox spacing="10" alignment="CENTER_LEFT">
+            <Label text="%holidays.formTitle" style="-fx-font-weight: bold;"/>
+            <HBox spacing="8" alignment="CENTER_LEFT">
                 <DatePicker fx:id="holidayPicker"/>
-                <Button fx:id="addHolidayButton" text="%holidays.add"
-                        style="-fx-background-color: #4CAF50; -fx-text-fill: white;"/>
+                <TextField fx:id="holidayNameField" promptText="%holidays.namePrompt"
+                           maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                <CheckBox fx:id="annualCheck" text="%holidays.annual" selected="true"/>
+                <ComboBox fx:id="holidayTypeChoice" prefWidth="150"/>
             </HBox>
-            <Button fx:id="deleteHolidayButton" text="%holidays.deleteSelected" maxWidth="Infinity"
-                    style="-fx-background-color: #f44336; -fx-text-fill: white;"/>
+            <HBox spacing="8">
+                <Button fx:id="addHolidayButton" text="%holidays.add"/>
+                <Button fx:id="editHolidayButton" text="%holidays.edit"/>
+                <Button fx:id="deleteHolidayButton" text="%holidays.deleteSelected"/>
+            </HBox>
+
+            <TitledPane text="%holidays.import.title" expanded="false">
+                <VBox spacing="6">
+                    <padding>
+                        <Insets top="6" right="6" bottom="6" left="6"/>
+                    </padding>
+                    <Label text="%holidays.import.path" style="-fx-font-weight: bold;"/>
+                    <HBox spacing="6">
+                        <TextField fx:id="calendarPathField" editable="false"
+                                   maxWidth="Infinity" HBox.hgrow="ALWAYS"/>
+                        <Button fx:id="chooseCalendarButton" text="%holidays.import.choose"/>
+                    </HBox>
+                    <HBox spacing="6">
+                        <Button fx:id="createTemplateButton" text="%holidays.import.template"/>
+                        <Button fx:id="loadCalendarButton" text="%holidays.import.load"/>
+                    </HBox>
+                    <Label text="%holidays.import.hint" wrapText="true" styleClass="hint"/>
+                </VBox>
+            </TitledPane>
         </VBox>
     </content>
 </DialogPane>
