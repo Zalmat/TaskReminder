@@ -101,6 +101,9 @@ public class DataStore {
         save(fileName, safe, type);
     }
 
+    private static final String BACKUP_SUFFIX = ".last-good";
+    private static final String CORRUPT_SUFFIX = ".corrupt-";
+
     @SuppressWarnings("unchecked")
     private <T> T load(String fileName, Type type) {
         Path file = resolve(fileName);
@@ -108,27 +111,134 @@ public class DataStore {
             return null;
         }
         try {
-            String json = Files.readString(file, StandardCharsets.UTF_8);
-            if (json.isBlank()) {
-                return null;
-            }
-            return (T) gson.fromJson(json, type);
+            return readJson(file, type);
         } catch (IOException | RuntimeException e) {
-            System.err.println("Cannot read " + fileName + ": " + e.getMessage());
-            return null;
+            return recover(fileName, file, type, e);
+        }
+    }
+
+    private <T> T recover(String fileName, Path target, Type type, Exception cause) {
+        Path backup = resolve(fileName + BACKUP_SUFFIX);
+        T recovered = null;
+        if (Files.isRegularFile(backup)) {
+            try {
+                recovered = readJson(backup, type);
+            } catch (IOException | RuntimeException backupError) {
+                System.err.println("Cannot read backup " + backup.getFileName()
+                        + ": " + backupError.getMessage());
+            }
+        }
+        if (recovered == null) {
+            throw new StorageException(fileName,
+                    "Файл повреждён, резервная копия не найдена: " + fileName, cause);
+        }
+        try {
+            Path corrupt = quarantine(target, fileName);
+            restore(backup, target);
+            System.err.println("Recovered " + fileName + " from " + backup.getFileName()
+                    + "; damaged file moved to " + corrupt.getFileName());
+        } catch (IOException e) {
+            throw new StorageException(fileName,
+                    "Файл повреждён; не удалось восстановить из " + backup.getFileName(), e);
+        }
+        return recovered;
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T> T readJson(Path file, Type type) throws IOException {
+        String json = Files.readString(file, StandardCharsets.UTF_8);
+        if (json.isBlank()) {
+            throw new IOException("Файл пуст");
+        }
+        Object parsed = gson.fromJson(json, type);
+        if (parsed == null) {
+            throw new IOException("JSON содержит null");
+        }
+        return (T) parsed;
+    }
+
+    private Path quarantine(Path target, String fileName) throws IOException {
+        String base = fileName + CORRUPT_SUFFIX
+                + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss-SSS"));
+        Path corrupt = resolve(base);
+        for (int i = 2; Files.exists(corrupt); i++) {
+            corrupt = resolve(base + "-" + i);
+        }
+        try {
+            Files.move(target, corrupt, StandardCopyOption.ATOMIC_MOVE);
+        } catch (AtomicMoveNotSupportedException e) {
+            Files.move(target, corrupt);
+        }
+        return corrupt;
+    }
+
+    private void restore(Path backup, Path target) throws IOException {
+        Path tmp = target.resolveSibling(target.getFileName() + ".restore.tmp");
+        try {
+            Files.copy(backup, tmp, StandardCopyOption.REPLACE_EXISTING);
+            force(tmp);
+            try {
+                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            deleteQuietly(tmp);
+        }
+    }
+
+    private void copyAtomic(Path source, Path target) throws IOException {
+        Path tmp = target.resolveSibling(target.getFileName() + ".tmp");
+        try {
+            Files.copy(source, tmp, StandardCopyOption.REPLACE_EXISTING);
+            force(tmp);
+            try {
+                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING,
+                        StandardCopyOption.ATOMIC_MOVE);
+            } catch (AtomicMoveNotSupportedException e) {
+                Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING);
+            }
+        } finally {
+            deleteQuietly(tmp);
+        }
+    }
+
+    private static void force(Path file) throws IOException {
+        try (FileChannel channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
+            channel.force(true);
         }
     }
 
     private void save(String fileName, Object value, Type type) {
         Path target = resolve(fileName);
         Path tmp = resolve(fileName + ".tmp");
+        Path backup = resolve(fileName + BACKUP_SUFFIX);
         try {
             Files.createDirectories(directory);
             String json = gson.toJson(value, type);
             Files.writeString(tmp, json, StandardCharsets.UTF_8);
-            try (FileChannel channel = FileChannel.open(tmp, StandardOpenOption.WRITE)) {
-                channel.force(true);
+            force(tmp);
+
+            if (Files.isRegularFile(target)) {
+                boolean validTarget = true;
+                try {
+                    readJson(target, type);
+                } catch (IOException | RuntimeException invalidTarget) {
+                    validTarget = false;
+                    System.err.println("Existing " + fileName + " is not valid; backup not updated: "
+                            + invalidTarget.getMessage());
+                }
+                if (validTarget) {
+                    try {
+                        copyAtomic(target, backup);
+                    } catch (IOException backupError) {
+                        System.err.println("Cannot update backup " + backup.getFileName()
+                                + ": " + backupError.getMessage());
+                    }
+                }
             }
+
             try {
                 Files.move(tmp, target, StandardCopyOption.REPLACE_EXISTING,
                         StandardCopyOption.ATOMIC_MOVE);

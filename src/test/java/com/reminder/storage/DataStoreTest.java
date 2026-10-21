@@ -4,6 +4,7 @@ import com.reminder.model.WorkEntry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -63,5 +64,52 @@ class DataStoreTest {
         assertEquals("x.json", error.getFileName());
         assertTrue(Files.isDirectory(target));
         assertFalse(Files.exists(dir.resolve("x.json.tmp")));
+    }
+
+    @Test
+    void savesPreviousValidVersionAsLastGood(@TempDir Path dir) {
+        DataStore store = new DataStore(dir);
+
+        store.saveList("x.json", List.of("a"));
+        store.saveList("x.json", List.of("b"));
+
+        assertEquals(List.of("b"), store.loadList("x.json", String.class));
+        assertEquals(List.of("a"), store.loadList("x.json.last-good", String.class));
+    }
+
+    @Test
+    void corruptFileIsRestoredFromLastGood(@TempDir Path dir) throws Exception {
+        DataStore store = new DataStore(dir);
+        store.saveList("x.json", List.of("a"));
+        store.saveList("x.json", List.of("b"));
+        Files.writeString(dir.resolve("x.json"), "{broken", StandardCharsets.UTF_8);
+
+        assertEquals(List.of("a"), store.loadList("x.json", String.class));
+        assertEquals(List.of("a"), store.loadList("x.json", String.class));
+        assertTrue(Files.exists(dir.resolve("x.json.last-good")));
+        try (var files = Files.list(dir)) {
+            assertTrue(files.anyMatch(path -> path.getFileName().toString()
+                    .startsWith("x.json.corrupt-")));
+        }
+        assertFalse(Files.exists(dir.resolve("x.json.tmp")));
+    }
+
+    @Test
+    void corruptFileWithoutLastGoodFailsClosed(@TempDir Path dir) throws Exception {
+        DataStore store = new DataStore(dir);
+        Path target = dir.resolve("x.json");
+        Files.writeString(target, "{broken", StandardCharsets.UTF_8);
+
+        assertThrows(StorageException.class, () -> store.loadList("x.json", String.class));
+        assertEquals("{broken", Files.readString(target, StandardCharsets.UTF_8));
+        assertFalse(Files.exists(dir.resolve("x.json.last-good")));
+    }
+
+    @Test
+    void blankFileIsNotTreatedAsEmptyData(@TempDir Path dir) throws Exception {
+        DataStore store = new DataStore(dir);
+        Files.writeString(dir.resolve("x.json"), "  \n", StandardCharsets.UTF_8);
+
+        assertThrows(StorageException.class, () -> store.loadList("x.json", String.class));
     }
 }

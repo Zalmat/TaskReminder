@@ -264,25 +264,28 @@ public class WorkTimeService {
         try {
             text = Files.readString(file, StandardCharsets.UTF_8).trim();
         } catch (IOException e) {
-            return;
-        }
-        if (text.startsWith("{")) {
-            HolidaysData data = store.loadObject(HOLIDAYS_FILE, HolidaysData.class);
-            if (data != null && data.holidays != null) {
-                data.holidays.stream().filter(h -> h != null).forEach(holidays::add);
-            }
-            return;
+            throw new StorageException(HOLIDAYS_FILE,
+                    "Не удалось прочитать " + HOLIDAYS_FILE, e);
         }
         if (text.startsWith("[")) {
-            backupLegacyFile(file);
-            List<LocalDate> dates = store.loadList(HOLIDAYS_FILE, LocalDate.class);
-            for (LocalDate date : dates) {
-                if (date != null) {
-                    holidays.add(new Holiday(date, "", false, HolidayType.OFFICIAL,
-                            HolidaySource.MANUAL));
+            try {
+                List<LocalDate> dates = store.loadList(HOLIDAYS_FILE, LocalDate.class);
+                backupLegacyFile(file);
+                for (LocalDate date : dates) {
+                    if (date != null) {
+                        holidays.add(new Holiday(date, "", false, HolidayType.OFFICIAL,
+                                HolidaySource.MANUAL));
+                    }
                 }
+                persistHolidaysBestEffort();
+                return;
+            } catch (StorageException ignored) {
+                // Повреждённый массив мог быть заменён объектом в .last-good.
             }
-            persistHolidaysBestEffort();
+        }
+        HolidaysData data = store.loadObject(HOLIDAYS_FILE, HolidaysData.class);
+        if (data != null && data.holidays != null) {
+            data.holidays.stream().filter(h -> h != null).forEach(holidays::add);
         }
     }
 

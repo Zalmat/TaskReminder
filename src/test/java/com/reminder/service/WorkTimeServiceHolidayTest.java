@@ -3,6 +3,7 @@ package com.reminder.service;
 import com.reminder.model.Holiday;
 import com.reminder.model.HolidaySource;
 import com.reminder.model.HolidayType;
+import com.reminder.model.HolidaysData;
 import com.reminder.storage.DataStore;
 import com.reminder.storage.FailingDataStore;
 import com.reminder.storage.StorageException;
@@ -134,5 +135,38 @@ class WorkTimeServiceHolidayTest {
         assertThrows(StorageException.class, () -> service.addHoliday(
                 LocalDate.of(2026, 12, 31), "Test", false, HolidayType.OFFICIAL));
         assertTrue(service.getHolidayEntries().isEmpty());
+    }
+
+    @Test
+    void corruptHolidayFileFailsInsteadOfStartingEmpty(@TempDir Path dir) throws Exception {
+        Path file = dir.resolve("holidays.json");
+        Files.writeString(file, "{broken", StandardCharsets.UTF_8);
+
+        assertThrows(StorageException.class,
+                () -> new WorkTimeService(new DataStore(dir)));
+        assertEquals("{broken", Files.readString(file, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void corruptHolidayFileRecoversFromLastGood(@TempDir Path dir) throws Exception {
+        DataStore store = new DataStore(dir);
+        HolidaysData first = new HolidaysData();
+        first.holidays = List.of(new Holiday(LocalDate.of(2026, 1, 1), "Old", true,
+                HolidayType.OFFICIAL, HolidaySource.MANUAL));
+        HolidaysData second = new HolidaysData();
+        second.holidays = List.of(new Holiday(LocalDate.of(2026, 3, 8), "New", true,
+                HolidayType.OFFICIAL, HolidaySource.MANUAL));
+        store.saveObject("holidays.json", first);
+        store.saveObject("holidays.json", second);
+
+        Files.writeString(dir.resolve("holidays.json"), "{broken", StandardCharsets.UTF_8);
+        WorkTimeService service = new WorkTimeService(new DataStore(dir));
+
+        assertEquals(1, service.getHolidayEntries().size());
+        assertEquals("Old", service.getHolidayEntries().get(0).getName());
+        try (var files = Files.list(dir)) {
+            assertTrue(files.anyMatch(path -> path.getFileName().toString()
+                    .startsWith("holidays.json.corrupt-")));
+        }
     }
 }

@@ -22,6 +22,10 @@ updater/autoupdater.exe
 *.dat
 *.dat.legacy
 *.json.tmp
+*.last-good
+*.last-good.tmp
+*.restore.tmp
+*.corrupt-*
 
 ### IntelliJ IDEA ###
 .idea/modules.xml
