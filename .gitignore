@@ -27,6 +27,8 @@ updater/autoupdater.exe
 *.restore.tmp
 *.corrupt-*
 storage.meta.json
+taskreminder.db
+taskreminder.db-*
 /backups/
 
 ### IntelliJ IDEA ###

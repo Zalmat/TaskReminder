@@ -344,6 +344,7 @@ public class MainController {
         if (suggestionService != null) {
             suggestionService.shutdown();
         }
+        storage.close();
     }
 
     /** Вызывается приложением после установки сцены: подключает фоновую индексацию. */

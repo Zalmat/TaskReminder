@@ -20,11 +20,14 @@ class StorageMigrationsTest {
 
     @Test
     void emptyDirectoryCreatesMetaWithoutBackup(@TempDir Path dir) {
-        StorageContext.open(dir);
+        try (StorageContext ignored = StorageContext.open(dir)) {
+            // База создаётся при первом открытии.
+        }
 
         StorageMeta meta = new DataStore(dir).loadObject(
                 StorageMigrations.META_FILE, StorageMeta.class);
         assertEquals(StorageMigrations.CURRENT_VERSION, meta.schemaVersion);
+        assertTrue(Files.isRegularFile(dir.resolve(SqliteDatabase.FILE)));
         assertFalse(Files.exists(dir.resolve("backups")));
     }
 
@@ -35,9 +38,9 @@ class StorageMigrationsTest {
         entry.setDate(LocalDate.of(2026, 10, 21));
         store.saveList("work_entries.json", List.of(entry));
 
-        StorageContext context = StorageContext.open(dir);
-
-        assertEquals(1, context.repositories().workEntries().load().size());
+        try (StorageContext context = StorageContext.open(dir)) {
+            assertEquals(1, context.repositories().workEntries().load().size());
+        }
         assertTrue(Files.isRegularFile(dir.resolve(StorageMigrations.META_FILE)));
         Path backup = onlyBackup(dir);
         assertTrue(Files.isRegularFile(backup.resolve("work_entries.json")));
@@ -46,9 +49,32 @@ class StorageMigrationsTest {
     }
 
     @Test
+    void v1JsonIsMigratedToSqlite(@TempDir Path dir) throws Exception {
+        DataStore store = new DataStore(dir);
+        WorkEntry entry = new WorkEntry("P", "T", "Dev", 2);
+        entry.setDate(LocalDate.of(2026, 10, 21));
+        store.saveList("work_entries.json", List.of(entry));
+        store.saveObject(StorageMigrations.META_FILE, new StorageMeta(1, "x"));
+
+        try (StorageContext context = StorageContext.open(dir)) {
+            assertEquals(1, context.repositories().workEntries().load().size());
+        }
+
+        assertTrue(Files.isRegularFile(dir.resolve(SqliteDatabase.FILE)));
+        assertTrue(Files.isRegularFile(dir.resolve("work_entries.json")));
+        assertEquals(StorageMigrations.CURRENT_VERSION,
+                new DataStore(dir).loadObject(StorageMigrations.META_FILE, StorageMeta.class).schemaVersion);
+        assertTrue(Files.isRegularFile(onlyBackup(dir).resolve("work_entries.json")));
+    }
+
+    @Test
     void currentMetaDoesNotCreateAnotherBackup(@TempDir Path dir) {
-        StorageContext.open(dir);
-        StorageContext.open(dir);
+        try (StorageContext ignored = StorageContext.open(dir)) {
+            // Первый запуск создаёт схему.
+        }
+        try (StorageContext ignored = StorageContext.open(dir)) {
+            // Повторный запуск не должен мигрировать.
+        }
 
         assertFalse(Files.exists(dir.resolve("backups")));
     }
@@ -80,9 +106,9 @@ class StorageMigrationsTest {
         Files.writeString(holidays, "[\"01.01.2026\", \"09.05.2026\"]",
                 StandardCharsets.UTF_8);
 
-        StorageContext context = StorageContext.open(dir);
-
-        assertEquals(2, context.repositories().holidays().load().size());
+        try (StorageContext context = StorageContext.open(dir)) {
+            assertEquals(2, context.repositories().holidays().load().size());
+        }
         assertTrue(Files.readString(holidays, StandardCharsets.UTF_8).trim().startsWith("{"));
         assertTrue(Files.isRegularFile(dir.resolve("holidays.json.bak")));
         assertTrue(Files.isRegularFile(dir.resolve(StorageMigrations.META_FILE)));
@@ -98,9 +124,9 @@ class StorageMigrationsTest {
             out.writeObject(List.of(entry));
         }
 
-        StorageContext context = StorageContext.open(dir);
-
-        assertEquals(1, context.repositories().workEntries().load().size());
+        try (StorageContext context = StorageContext.open(dir)) {
+            assertEquals(1, context.repositories().workEntries().load().size());
+        }
         assertTrue(Files.isRegularFile(dir.resolve("work_entries.json")));
         assertTrue(Files.isRegularFile(dir.resolve("work_entries.dat.legacy")));
         assertTrue(Files.isRegularFile(dir.resolve(StorageMigrations.META_FILE)));
@@ -117,6 +143,28 @@ class StorageMigrationsTest {
         assertEquals("[broken", Files.readString(holidays, StandardCharsets.UTF_8));
         assertFalse(Files.exists(dir.resolve(StorageMigrations.META_FILE)));
         assertTrue(Files.isRegularFile(onlyBackup(dir).resolve("holidays.json")));
+    }
+
+    @Test
+    void corruptSqliteFailsClosed(@TempDir Path dir) throws Exception {
+        try (StorageContext ignored = StorageContext.open(dir)) {
+            // Создаём валидную базу и meta v2.
+        }
+        Path database = dir.resolve(SqliteDatabase.FILE);
+        Files.writeString(database, "not a database", StandardCharsets.UTF_8);
+
+        assertThrows(StorageException.class, () -> StorageContext.open(dir));
+        assertEquals("not a database", Files.readString(database, StandardCharsets.UTF_8));
+    }
+
+    @Test
+    void missingSqliteFailsClosed(@TempDir Path dir) throws Exception {
+        try (StorageContext ignored = StorageContext.open(dir)) {
+            // Создаём валидную базу и meta v2.
+        }
+        Files.delete(dir.resolve(SqliteDatabase.FILE));
+
+        assertThrows(StorageException.class, () -> StorageContext.open(dir));
     }
 
     @Test

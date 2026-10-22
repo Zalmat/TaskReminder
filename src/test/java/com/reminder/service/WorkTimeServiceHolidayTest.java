@@ -93,18 +93,21 @@ class WorkTimeServiceHolidayTest {
         Path file = dir.resolve("holidays.json");
         Files.writeString(file, "[\"01.01.2026\", \"09.05.2026\"]", StandardCharsets.UTF_8);
 
-        WorkTimeService service = new WorkTimeService(
-                StorageContext.open(dir).repositories().holidays());
-        List<Holiday> entries = service.getHolidayEntries();
-        assertEquals(2, entries.size());
-        assertTrue(entries.stream().noneMatch(Holiday::isAnnual));
-        assertTrue(entries.stream().allMatch(h -> h.getName().isEmpty()));
+        try (StorageContext context = StorageContext.open(dir)) {
+            WorkTimeService service = new WorkTimeService(context.repositories().holidays());
+            List<Holiday> entries = service.getHolidayEntries();
+            assertEquals(2, entries.size());
+            assertTrue(entries.stream().noneMatch(Holiday::isAnnual));
+            assertTrue(entries.stream().allMatch(h -> h.getName().isEmpty()));
+        }
         assertTrue(Files.isRegularFile(dir.resolve("holidays.json.bak")));
 
         String rewritten = Files.readString(file, StandardCharsets.UTF_8);
         assertTrue(rewritten.trim().startsWith("{"));
-        assertEquals(2, new WorkTimeService(
-                StorageContext.open(dir).repositories().holidays()).getHolidayEntries().size());
+        try (StorageContext context = StorageContext.open(dir)) {
+            assertEquals(2, new WorkTimeService(
+                    context.repositories().holidays()).getHolidayEntries().size());
+        }
     }
 
     @Test

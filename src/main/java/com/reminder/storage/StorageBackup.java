@@ -112,6 +112,9 @@ final class StorageBackup {
     private static boolean isDataFile(Path path) {
         String name = path.getFileName().toString();
         return CORE_FILES.contains(name)
+                || name.equals(SqliteDatabase.FILE)
+                || name.startsWith(SqliteDatabase.FILE + "-")
+                || name.equals(SqliteDatabase.FILE + ".new")
                 || name.endsWith(".last-good")
                 || name.endsWith(".dat")
                 || name.endsWith(".dat.legacy")

@@ -32,6 +32,9 @@ dependencies {
     // JSON
     implementation 'com.google.code.gson:gson:2.10.1'
 
+    // SQLite
+    implementation 'org.xerial:sqlite-jdbc:3.46.1.3'
+
     // Логирование
     implementation 'org.slf4j:slf4j-simple:2.0.7'
 
