@@ -1,5 +1,6 @@
 package com.reminder.storage;
 
+import com.reminder.holiday.DefaultHolidays;
 import com.reminder.model.Holiday;
 import com.reminder.model.HolidaySource;
 import com.reminder.model.HolidayType;
@@ -181,10 +182,14 @@ public final class StorageMigrations {
         HolidaysData data = new HolidaysData();
         data.holidays = new ArrayList<>();
         for (LocalDate date : dates) {
-            if (date != null) {
-                data.holidays.add(new Holiday(date, "", false, HolidayType.OFFICIAL,
-                        HolidaySource.MANUAL));
+            if (date == null) {
+                continue;
             }
+            Holiday holiday = DefaultHolidays.find(date)
+                    .map(entry -> DefaultHolidays.create(date, entry))
+                    .orElseGet(() -> new Holiday(date, "", false, HolidayType.OFFICIAL,
+                            HolidaySource.MANUAL));
+            data.holidays.add(holiday);
         }
         store.saveObject("holidays.json", data);
     }

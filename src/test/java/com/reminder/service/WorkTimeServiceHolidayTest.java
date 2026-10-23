@@ -36,11 +36,65 @@ class WorkTimeServiceHolidayTest {
         WorkTimeService service = new WorkTimeService(JsonStorageRepositories.open(dir).holidays());
         List<Holiday> entries = service.getHolidayEntries();
         assertEquals(8, entries.size());
+        assertEquals(List.of(
+                "Новый год",
+                "Рождество Христово",
+                "День защитника Отечества",
+                "Международный женский день",
+                "Праздник Весны и Труда",
+                "День Победы",
+                "День России",
+                "День народного единства"),
+                entries.stream().map(Holiday::getName).toList());
         assertTrue(entries.stream().allMatch(Holiday::isAnnual));
-        assertTrue(entries.stream().allMatch(h -> h.getName().isEmpty()));
         assertTrue(entries.stream().allMatch(h -> h.getType() == HolidayType.OFFICIAL));
         assertTrue(entries.stream().allMatch(h -> h.getSource() == HolidaySource.DEFAULT));
         assertTrue(service.isHoliday(LocalDate.of(2035, 1, 1)));
+    }
+
+    @Test
+    void normalizesBlankDefaultHolidaysAndRemovesDuplicates(@TempDir Path dir) {
+        DataStore store = new DataStore(dir);
+        HolidaysData data = new HolidaysData();
+        data.holidays = List.of(
+                new Holiday(LocalDate.of(2026, 1, 1), "", false,
+                        HolidayType.OFFICIAL, HolidaySource.MANUAL),
+                new Holiday(LocalDate.of(2026, 1, 1), "Новый год", true,
+                        HolidayType.OFFICIAL, HolidaySource.IMPORTED),
+                new Holiday(LocalDate.of(2026, 5, 9), "", false,
+                        HolidayType.OFFICIAL, HolidaySource.MANUAL),
+                new Holiday(LocalDate.of(2026, 12, 31), "Корпоратив", false,
+                        HolidayType.CORPORATE, HolidaySource.MANUAL));
+        store.saveObject("holidays.json", data);
+
+        WorkTimeService service = new WorkTimeService(JsonStorageRepositories.open(dir).holidays());
+        List<Holiday> entries = service.getHolidayEntries();
+        assertEquals(3, entries.size());
+
+        Holiday newYear = entries.stream()
+                .filter(h -> h.getDate().equals(LocalDate.of(2026, 1, 1)))
+                .findFirst().orElseThrow();
+        assertEquals("Новый год", newYear.getName());
+        assertTrue(newYear.isAnnual());
+        assertEquals(HolidaySource.DEFAULT, newYear.getSource());
+
+        Holiday victory = entries.stream()
+                .filter(h -> h.getDate().equals(LocalDate.of(2026, 5, 9)))
+                .findFirst().orElseThrow();
+        assertEquals("День Победы", victory.getName());
+        assertTrue(victory.isAnnual());
+
+        Holiday corporate = entries.stream()
+                .filter(h -> h.getDate().equals(LocalDate.of(2026, 12, 31)))
+                .findFirst().orElseThrow();
+        assertEquals("Корпоратив", corporate.getName());
+        assertFalse(corporate.isAnnual());
+
+        WorkTimeService reloaded = new WorkTimeService(JsonStorageRepositories.open(dir).holidays());
+        assertEquals(3, reloaded.getHolidayEntries().size());
+        assertEquals("День Победы", reloaded.getHolidayEntries().stream()
+                .filter(h -> h.getDate().equals(LocalDate.of(2026, 5, 9)))
+                .findFirst().orElseThrow().getName());
     }
 
     @Test
@@ -89,7 +143,7 @@ class WorkTimeServiceHolidayTest {
     }
 
     @Test
-    void migratesOldDateListAsOneOffWithBackup(@TempDir Path dir) throws Exception {
+    void migratesOldDateListAsDefaultHolidaysWithBackup(@TempDir Path dir) throws Exception {
         Path file = dir.resolve("holidays.json");
         Files.writeString(file, "[\"01.01.2026\", \"09.05.2026\"]", StandardCharsets.UTF_8);
 
@@ -97,8 +151,10 @@ class WorkTimeServiceHolidayTest {
             WorkTimeService service = new WorkTimeService(context.repositories().holidays());
             List<Holiday> entries = service.getHolidayEntries();
             assertEquals(2, entries.size());
-            assertTrue(entries.stream().noneMatch(Holiday::isAnnual));
-            assertTrue(entries.stream().allMatch(h -> h.getName().isEmpty()));
+            assertEquals(List.of("Новый год", "День Победы"),
+                    entries.stream().map(Holiday::getName).toList());
+            assertTrue(entries.stream().allMatch(Holiday::isAnnual));
+            assertTrue(entries.stream().allMatch(h -> h.getSource() == HolidaySource.DEFAULT));
         }
         assertTrue(Files.isRegularFile(dir.resolve("holidays.json.bak")));
 

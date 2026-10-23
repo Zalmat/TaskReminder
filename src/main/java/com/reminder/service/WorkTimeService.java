@@ -1,5 +1,6 @@
 package com.reminder.service;
 
+import com.reminder.holiday.DefaultHolidays;
 import com.reminder.model.Holiday;
 import com.reminder.model.HolidaySource;
 import com.reminder.model.HolidayType;
@@ -11,10 +12,12 @@ import com.reminder.util.Hours;
 import com.reminder.util.Log;
 
 import java.time.LocalDate;
+import java.time.MonthDay;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -247,22 +250,54 @@ public class WorkTimeService {
             return;
         }
         holidays.addAll(repository.load());
+        if (normalizeDefaultHolidays()) {
+            persistHolidaysBestEffort();
+        }
     }
 
     private void seedDefaultHolidays() {
         int year = LocalDate.now().getYear();
-        addSeed(LocalDate.of(year, 1, 1));
-        addSeed(LocalDate.of(year, 1, 7));
-        addSeed(LocalDate.of(year, 2, 23));
-        addSeed(LocalDate.of(year, 3, 8));
-        addSeed(LocalDate.of(year, 5, 1));
-        addSeed(LocalDate.of(year, 5, 9));
-        addSeed(LocalDate.of(year, 6, 12));
-        addSeed(LocalDate.of(year, 11, 4));
+        for (DefaultHolidays.Entry entry : DefaultHolidays.all()) {
+            holidays.add(DefaultHolidays.create(entry.day().atYear(year), entry));
+        }
     }
 
-    private void addSeed(LocalDate date) {
-        holidays.add(new Holiday(date, "", true, HolidayType.OFFICIAL, HolidaySource.DEFAULT));
+    private boolean normalizeDefaultHolidays() {
+        Map<String, Holiday> seen = new LinkedHashMap<>();
+        List<Holiday> result = new ArrayList<>(holidays.size());
+        boolean changed = false;
+        for (Holiday holiday : holidays) {
+            if (holiday == null) {
+                changed = true;
+                continue;
+            }
+            if (holiday.getDate() == null) {
+                result.add(holiday);
+                continue;
+            }
+            String name = holiday.getName() == null ? "" : holiday.getName().trim();
+            DefaultHolidays.Entry entry = DefaultHolidays.find(holiday.getDate()).orElse(null);
+            if (entry != null && name.isEmpty()) {
+                holiday.setName(entry.name());
+                holiday.setAnnual(true);
+                holiday.setType(HolidayType.OFFICIAL);
+                holiday.setSource(HolidaySource.DEFAULT);
+                name = entry.name();
+                changed = true;
+            }
+            if (holiday.isAnnual() && !name.isEmpty()) {
+                String key = name.toLowerCase(Locale.ROOT) + "|" + MonthDay.from(holiday.getDate());
+                if (seen.putIfAbsent(key, holiday) != null) {
+                    changed = true;
+                    continue;
+                }
+            }
+            result.add(holiday);
+        }
+        if (changed) {
+            holidays = result;
+        }
+        return changed;
     }
 
     private void persistHolidays(List<Holiday> next) {

@@ -1,5 +1,7 @@
 package com.reminder.storage;
 
+import com.reminder.model.Holiday;
+import com.reminder.model.HolidaySource;
 import com.reminder.model.WorkEntry;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -107,7 +109,12 @@ class StorageMigrationsTest {
                 StandardCharsets.UTF_8);
 
         try (StorageContext context = StorageContext.open(dir)) {
-            assertEquals(2, context.repositories().holidays().load().size());
+            List<Holiday> loaded = context.repositories().holidays().load();
+            assertEquals(2, loaded.size());
+            assertEquals(List.of("Новый год", "День Победы"),
+                    loaded.stream().map(Holiday::getName).toList());
+            assertTrue(loaded.stream().allMatch(Holiday::isAnnual));
+            assertTrue(loaded.stream().allMatch(h -> h.getSource() == HolidaySource.DEFAULT));
         }
         assertTrue(Files.readString(holidays, StandardCharsets.UTF_8).trim().startsWith("{"));
         assertTrue(Files.isRegularFile(dir.resolve("holidays.json.bak")));

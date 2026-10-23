@@ -1,5 +1,6 @@
 package com.reminder.storage;
 
+import com.reminder.holiday.DefaultHolidays;
 import com.reminder.model.Holiday;
 import com.reminder.model.HolidaySource;
 import com.reminder.model.HolidayType;
@@ -46,10 +47,14 @@ public final class JsonHolidayRepository implements HolidayRepository {
             List<LocalDate> dates = store.loadList(FILE, LocalDate.class);
             List<Holiday> result = new ArrayList<>();
             for (LocalDate date : dates) {
-                if (date != null) {
-                    result.add(new Holiday(date, "", false, HolidayType.OFFICIAL,
-                            HolidaySource.MANUAL));
+                if (date == null) {
+                    continue;
                 }
+                Holiday holiday = DefaultHolidays.find(date)
+                        .map(entry -> DefaultHolidays.create(date, entry))
+                        .orElseGet(() -> new Holiday(date, "", false, HolidayType.OFFICIAL,
+                                HolidaySource.MANUAL));
+                result.add(holiday);
             }
             return result;
         }
