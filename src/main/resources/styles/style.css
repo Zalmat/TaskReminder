@@ -30,3 +30,18 @@
 .separator {
     -fx-padding: 5px 0;
 }
+
+.bottom-bar {
+    -fx-min-height: 48px;
+    -fx-pref-height: 48px;
+}
+
+.side-scroll {
+    -fx-background-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.side-scroll > .viewport {
+    -fx-background-color: transparent;
+}

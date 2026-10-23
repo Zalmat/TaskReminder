@@ -37,50 +37,55 @@
     </top>
 
     <left>
-        <VBox spacing="10" prefWidth="320" styleClass="side-panel">
-            <padding>
-                <Insets top="10" right="10" bottom="10" left="10"/>
-            </padding> <!-- Внутри шутка
-            <Label text="%main.title" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
-                -->
-            <Label
-                   text="%main.addWork"
-                   onMouseClicked="#handleLabelClick"
-                   style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
-            <!-- Конец шутки -->
-            <Label text="%main.label.project"/>
-            <ComboBox fx:id="projectChoice" editable="true" visibleRowCount="15" promptText="%main.prompt.project" maxWidth="Infinity"/>
+        <ScrollPane fitToWidth="true" fitToHeight="false"
+                    prefWidth="320" minWidth="320" styleClass="side-scroll">
+            <content>
+                <VBox spacing="10" prefWidth="320" styleClass="side-panel">
+                    <padding>
+                        <Insets top="10" right="10" bottom="10" left="10"/>
+                    </padding> <!-- Внутри шутка
+                    <Label text="%main.title" style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+                        -->
+                    <Label
+                           text="%main.addWork"
+                           onMouseClicked="#handleLabelClick"
+                           style="-fx-font-size: 16px; -fx-font-weight: bold;"/>
+                    <!-- Конец шутки -->
+                    <Label text="%main.label.project"/>
+                    <ComboBox fx:id="projectChoice" editable="true" visibleRowCount="15" promptText="%main.prompt.project" maxWidth="Infinity"/>
 
-            <Label text="%main.label.task"/>
-            <ComboBox fx:id="taskChoice" editable="true" visibleRowCount="15" promptText="%main.prompt.task" maxWidth="Infinity"/>
+                    <Label text="%main.label.task"/>
+                    <ComboBox fx:id="taskChoice" editable="true" visibleRowCount="15" promptText="%main.prompt.task" maxWidth="Infinity"/>
 
-            <Label text="%main.label.type"/>
-            <ComboBox fx:id="typeChoice" visibleRowCount="15" promptText="%main.prompt.type" maxWidth="Infinity"/>
+                    <Label text="%main.label.type"/>
+                    <ComboBox fx:id="typeChoice" visibleRowCount="15" promptText="%main.prompt.type" maxWidth="Infinity"/>
 
-            <VBox fx:id="indexingStatus" spacing="4" visible="false" managed="false">
-                <HBox spacing="8" alignment="CENTER_LEFT">
-                    <ProgressIndicator fx:id="indexingSpinner" prefWidth="18" prefHeight="18"/>
-                    <Label fx:id="indexingLabel" text="%main.indexing" wrapText="true" styleClass="hint"/>
-                </HBox>
-                <ProgressBar fx:id="indexingProgress" maxWidth="Infinity" visible="false" managed="false"/>
-            </VBox>
+                    <VBox fx:id="indexingStatus" spacing="4" visible="false" managed="false">
+                        <HBox spacing="8" alignment="CENTER_LEFT">
+                            <ProgressIndicator fx:id="indexingSpinner" prefWidth="18" prefHeight="18"/>
+                            <Label fx:id="indexingLabel" text="%main.indexing" wrapText="true" styleClass="hint"/>
+                        </HBox>
+                        <ProgressBar fx:id="indexingProgress" maxWidth="Infinity" visible="false" managed="false"/>
+                    </VBox>
 
-            <VBox fx:id="hoursContainer" spacing="5">
-                <Label text="%main.label.hours"/>
-                <TextField fx:id="hoursField" promptText="%main.prompt.hours"/>
-            </VBox>
+                    <VBox fx:id="hoursContainer" spacing="5">
+                        <Label text="%main.label.hours"/>
+                        <TextField fx:id="hoursField" promptText="%main.prompt.hours"/>
+                    </VBox>
 
-            <Label text="%main.label.comment"/>
-            <TextArea fx:id="commentArea" prefRowCount="3" wrapText="true" promptText="%main.prompt.comment"/>
+                    <Label text="%main.label.comment"/>
+                    <TextArea fx:id="commentArea" prefRowCount="3" wrapText="true" promptText="%main.prompt.comment"/>
 
-            <Button fx:id="addButton" text="%main.add" maxWidth="Infinity" styleClass="primary"/>
+                    <Button fx:id="addButton" text="%main.add" maxWidth="Infinity" styleClass="primary"/>
 
-            <Separator/>
+                    <Separator/>
 
-            <Button fx:id="loadYamlButton" text="%main.loadYaml" maxWidth="Infinity"/>
-            <Button fx:id="templateButton" text="%main.downloadTemplate" maxWidth="Infinity"/>
-            <Button fx:id="clearButton" text="%main.clearTable" maxWidth="Infinity" styleClass="danger"/>
-        </VBox>
+                    <Button fx:id="loadYamlButton" text="%main.loadYaml" maxWidth="Infinity"/>
+                    <Button fx:id="templateButton" text="%main.downloadTemplate" maxWidth="Infinity"/>
+                    <Button fx:id="clearButton" text="%main.clearTable" maxWidth="Infinity" styleClass="danger"/>
+                </VBox>
+            </content>
+        </ScrollPane>
     </left>
 
     <center>
@@ -126,7 +131,9 @@
     </center>
 
     <bottom>
-        <HBox spacing="10" alignment="CENTER_RIGHT" style="-fx-padding: 10 0 0 0;">
+        <HBox spacing="10" alignment="CENTER_RIGHT" styleClass="bottom-bar"
+              minHeight="48.0" prefHeight="48.0"
+              style="-fx-padding: 10 0 0 0;">
             <MenuButton text="☰">
                 <items>
                     <MenuItem fx:id="settingsItem" text="%main.settings"/>
