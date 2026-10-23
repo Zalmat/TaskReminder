@@ -364,6 +364,8 @@ strings:
   settings.language.restartUnavailable: "Рестартирането е налично само в компилираната версия. Моля, рестартирайте приложението ръчно."
   settings.language.damaged: "Повреден"
   settings.language.incomplete: "Непълен ({0}/{1})"
+  settings.language.source.builtin: "Вграден"
+  settings.language.source.file: "Файл: {0}"
   settings.export.decimal: "Десетичен разделител за CSV:"
   settings.export.folder: "Папка за отчети:"
   settings.export.choose: "Избор…"

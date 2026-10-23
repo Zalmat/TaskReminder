@@ -15,6 +15,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -34,6 +35,11 @@ public final class LanguageManager {
     private static final String README_FILE = "README.txt";
 
     private static final String BASE_CODE = "ru";
+
+    /** Технические подсказки источника языка не обязательны для сторонних пакетов. */
+    private static final Set<String> OPTIONAL_KEYS = Set.of(
+            "settings.language.source.builtin",
+            "settings.language.source.file");
 
     private final Path directory;
 
@@ -57,7 +63,8 @@ public final class LanguageManager {
             }
         }
         for (RawLanguage lang : readDirectory()) {
-            raw.put(lang.code, lang);
+            RawLanguage builtIn = raw.get(lang.code);
+            raw.put(lang.code, builtIn == null ? lang : merge(builtIn, lang));
         }
 
         Map<String, String> base = raw.containsKey(BASE_CODE)
@@ -170,19 +177,38 @@ public final class LanguageManager {
         return RawLanguage.ok(code, name, strings, source);
     }
 
+    private static RawLanguage merge(RawLanguage builtIn, RawLanguage external) {
+        if (external.status == LanguageStatus.DAMAGED) {
+            return external;
+        }
+        Map<String, String> strings = new LinkedHashMap<>(builtIn.strings);
+        strings.putAll(external.strings);
+        String name = external.name;
+        if (name == null || name.isBlank() || name.equals(external.code)) {
+            name = builtIn.name;
+        }
+        return RawLanguage.ok(external.code, name, strings, external.source);
+    }
+
     private static Language toLanguage(RawLanguage raw, Map<String, String> base) {
         if (raw.status == LanguageStatus.DAMAGED) {
             return new Language(raw.code, raw.name, Map.of(), LanguageStatus.DAMAGED,
                     raw.source, raw.detail, 0, base.size());
         }
         int present = 0;
+        int total = 0;
         for (String key : base.keySet()) {
+            if (OPTIONAL_KEYS.contains(key)) {
+                continue;
+            }
+            total++;
             if (raw.strings.containsKey(key)) {
                 present++;
             }
         }
-        LanguageStatus status = (present == base.size()) ? LanguageStatus.OK : LanguageStatus.INCOMPLETE;
-        return new Language(raw.code, raw.name, raw.strings, status, raw.source, "", present, base.size());
+        LanguageStatus status = (present == total) ? LanguageStatus.OK : LanguageStatus.INCOMPLETE;
+        return new Language(raw.code, raw.name, raw.strings, status,
+                raw.source, "", present, total);
     }
 
     private static int order(String code) {

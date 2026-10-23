@@ -26,6 +26,11 @@ strings:
 - Если файл повреждён (ошибка YAML) — он не применяется и помечается как «Повреждён».
 - Если часть ключей отсутствует — язык помечается как «Неполный (N/M)»
   и берёт недостающие строки из английского/русского.
+- Ключи `settings.language.source.builtin` и `settings.language.source.file`
+  необязательны: они используются только в подсказке к языку.
+- Если внешний файл имеет код встроенного языка, его строки переопределяют
+  встроенные, а отсутствующие ключи берутся из встроенного пакета.
+- Локаль для форматирования чисел/дат определяется по `_language`.
 
 Имя файла должно заканчиваться на _lang.yaml (можно _lang.yml).
 
@@ -59,6 +64,11 @@ Rules
 - If the file is broken (YAML error), it is not applied and is marked as "Damaged".
 - If some keys are missing, the language is marked as "Incomplete (N/M)"
   and falls back to English/Russian for the missing strings.
+- `settings.language.source.builtin` and `settings.language.source.file`
+  are optional; they are used only in the language tooltip.
+- If an external file uses the code of a built-in language, its strings override
+  the built-in ones and missing keys are filled from the built-in package.
+- Number/date formatting locale is derived from `_language`.
 
 The file name must end with _lang.yaml (or _lang.yml).
 

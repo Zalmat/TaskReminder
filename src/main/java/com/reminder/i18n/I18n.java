@@ -137,7 +137,7 @@ public final class I18n {
         return all;
     }
 
-    private static Locale localeFor(String code) {
+    static Locale localeFor(String code) {
         if ("en".equals(code)) {
             // en-GB: неделя начинается с понедельника, как и в остальных языках проекта.
             return Locale.forLanguageTag("en-GB");
@@ -148,7 +148,16 @@ public final class I18n {
         if ("bg".equals(code)) {
             return Locale.forLanguageTag("bg-BG");
         }
-        return Locale.forLanguageTag("ru-RU");
+        if (code == null || code.isBlank() || "ru".equals(code)) {
+            return Locale.forLanguageTag("ru-RU");
+        }
+        try {
+            Locale custom = Locale.forLanguageTag(code);
+            return custom.getLanguage().isBlank()
+                    ? Locale.forLanguageTag("ru-RU") : custom;
+        } catch (RuntimeException e) {
+            return Locale.forLanguageTag("ru-RU");
+        }
     }
 
     /** Адаптер {@link ResourceBundle} для применения строк в FXML. */

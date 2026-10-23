@@ -216,7 +216,7 @@ public class SettingsDialogController {
             }
             if (newValue != null && newValue.status() == LanguageStatus.DAMAGED) {
                 adjusting = true;
-                languageWarningLabel.setText(newValue.detail() + " — " + newValue.source());
+                languageWarningLabel.setText(newValue.detail() + "\n" + sourceLabel(newValue));
                 languageWarningLabel.setVisible(true);
                 languageWarningLabel.setManaged(true);
                 languageChoice.setValue(oldValue != null ? oldValue : previousLanguage);
@@ -438,6 +438,13 @@ public class SettingsDialogController {
         return language.displayName() + suffix;
     }
 
+    private String sourceLabel(Language language) {
+        if ("built-in".equals(language.source())) {
+            return I18n.get("settings.language.source.builtin");
+        }
+        return I18n.format("settings.language.source.file", language.source());
+    }
+
     private String decimalLabel(DecimalSeparator separator) {
         return switch (separator) {
             case SYSTEM -> I18n.get("settings.decimal.system");
@@ -459,7 +466,7 @@ public class SettingsDialogController {
                 }
                 setText(languageLabel(item));
                 setStyle(item.status() == LanguageStatus.DAMAGED ? "-fx-text-fill: #999999;" : "");
-                setTooltip(Tooltips.create(item.source()));
+                setTooltip(Tooltips.create(languageLabel(item) + " — " + sourceLabel(item)));
             }
         };
     }
