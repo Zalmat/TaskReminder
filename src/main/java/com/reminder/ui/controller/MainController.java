@@ -113,6 +113,7 @@ public class MainController {
     private BiConsumer<String, String> trayNotifier = (caption, text) -> { };
     private UpdateCheckUi updateCheckUi;
     private Runnable exitAction = () -> { };
+    private Runnable restartAction = () -> { };
     private final EasterEgg easterEgg = new EasterEgg();
     private EntryForm form;
     private final ReminderUi reminderUi = new ReminderUi(reminderService);
@@ -303,7 +304,7 @@ public class MainController {
                                 AppSettings.updateCheckHour(), AppSettings.updateCheckMinute());
                     }
                     taskImport.applySchedule();
-                });
+                }, restartAction);
     }
 
     // ==================== ПРОЧЕЕ ====================
@@ -350,6 +351,13 @@ public class MainController {
     public void setExitAction(Runnable exitAction) {
         if (exitAction != null) {
             this.exitAction = exitAction;
+        }
+    }
+
+    /** Устанавливает действие перезапуска приложения (выполняется из диалога настроек). */
+    public void setRestartAction(Runnable restartAction) {
+        if (restartAction != null) {
+            this.restartAction = restartAction;
         }
     }
 

@@ -17,11 +17,11 @@ public final class SettingsDialog {
 
     public static void show(Scene mainScene, List<String> workTypes, Consumer<Path> importNow,
                             Consumer<Window> openManager, Runnable onSuggestionsChanged,
-                            Runnable onClosed) {
+                            Runnable onClosed, Runnable onRestart) {
         DialogSupport.show("/fxml/settings-dialog.fxml", I18n.get("dialog.settings.title"),
                 SettingsDialogController.class,
                 controller -> controller.init(mainScene, workTypes, importNow, openManager,
-                        onSuggestionsChanged),
+                        onSuggestionsChanged, onRestart),
                 onClosed, "dialog.settings.error");
     }
 }

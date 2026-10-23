@@ -3,8 +3,10 @@ package com.reminder;
 import com.reminder.app.DevMode;
 import com.reminder.app.LogConfig;
 import com.reminder.app.SingleInstanceLock;
+import com.reminder.app.AppRestart;
 import com.reminder.autostart.AutoStartService;
 import com.reminder.i18n.I18n;
+import com.reminder.settings.AppSettings;
 import com.reminder.ui.TrayService;
 import com.reminder.ui.controller.MainController;
 import com.reminder.ui.theme.ThemeManager;
@@ -19,6 +21,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.time.Duration;
+
 public class App extends Application {
 
     private MainController mainController;
@@ -26,7 +30,11 @@ public class App extends Application {
 
     @Override
     public void start(Stage primaryStage) {
-        if (!SingleInstanceLock.acquire()) {
+        boolean restarting = getParameters().getRaw().contains("--restart");
+        boolean acquired = restarting
+                ? SingleInstanceLock.acquire(Duration.ofSeconds(3))
+                : SingleInstanceLock.acquire();
+        if (!acquired) {
             if (!getParameters().getRaw().contains("--minimized")) {
                 Dialogs.info(I18n.get("app.startup.title"), I18n.get("app.startup.alreadyRunning"));
             }
@@ -39,6 +47,7 @@ public class App extends Application {
             Parent root = loader.load();
             mainController = loader.getController();
             mainController.setExitAction(this::performQuit);
+            mainController.setRestartAction(this::restartApplication);
             mainController.setTrayNotifier((caption, text) -> {
                 if (tray != null) {
                     tray.showMessage(caption, text);
@@ -120,16 +129,46 @@ public class App extends Application {
         }
     }
 
+    /** Перезапуск приложения с сохранением настроек и корректным освобождением ресурсов. */
+    private void restartApplication() {
+        if (!AppRestart.isAvailable()) {
+            Dialogs.warn(I18n.get("dialog.settings.title"), I18n.get("settings.language.restartUnavailable"));
+            return;
+        }
+        if (mainController != null && mainController.hasDraftEntries()
+                && !mainController.confirmExitWithDrafts()) {
+            return;
+        }
+        shutdownForExit();
+        boolean started = AppRestart.start();
+        if (!started) {
+            Log.log("App", "restart failed: cannot start new instance");
+            Dialogs.error(I18n.get("common.error"), I18n.get("settings.language.restartUnavailable"));
+        }
+        exitProcess();
+    }
+
     /** Корректное завершение без подтверждения (используется в т.ч. при автообновлении). */
     private void performQuit() {
+        shutdownForExit();
+        exitProcess();
+    }
+
+    private void shutdownForExit() {
+        AppSettings.flush();
         if (mainController != null) {
             mainController.shutdown();
         }
         if (tray != null) {
             tray.remove();
+            tray = null;
         }
         SingleInstanceLock.release();
+    }
+
+    private void exitProcess() {
         Platform.exit();
+        System.exit(0);
     }
 
     @SuppressWarnings("unused")

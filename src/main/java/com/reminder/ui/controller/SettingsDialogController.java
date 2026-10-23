@@ -109,14 +109,17 @@ public class SettingsDialogController {
 
     private Scene mainScene;
     private Language previousLanguage;
+    private Runnable restartAction;
     private boolean adjusting;
 
     public void init(Scene mainScene, List<String> workTypes, Consumer<Path> importNow,
-                     Consumer<Window> openManager, Runnable onSuggestionsChanged) {
+                     Consumer<Window> openManager, Runnable onSuggestionsChanged,
+                     Runnable restartAction) {
         this.mainScene = mainScene;
         this.importNow = importNow != null ? importNow : path -> { };
         this.openManager = openManager != null ? openManager : window -> { };
         this.onSuggestionsChanged = onSuggestionsChanged != null ? onSuggestionsChanged : () -> { };
+        this.restartAction = restartAction;
 
         sectionList.getItems().setAll(
                 I18n.get("settings.section.appearance"),
@@ -486,12 +489,12 @@ public class SettingsDialogController {
     }
 
     private void restartNow() {
-        apply();
-        if (AppRestart.restart()) {
-            Platform.exit();
-        } else {
+        if (restartAction == null) {
             Dialogs.warn(I18n.get("dialog.settings.title"), I18n.get("settings.language.restartUnavailable"));
+            return;
         }
+        apply();
+        restartAction.run();
     }
 
     private void showSection(int index) {

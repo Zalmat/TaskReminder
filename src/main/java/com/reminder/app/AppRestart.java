@@ -18,17 +18,21 @@ public final class AppRestart {
     }
 
     /**
-     * Запускает новый экземпляр приложения и освобождает блокировку текущего,
-     * чтобы новый экземпляр мог её захватить. Возвращает true, если запуск начался.
+     * Запускает новый экземпляр приложения. Блокировка single-instance должна быть
+     * освобождена вызывающей стороной до вызова этого метода.
      */
-    public static boolean restart() {
+    public static boolean start() {
         Optional<Path> launcher = LauncherPath.resolve();
         if (launcher.isEmpty()) {
             return false;
         }
-        SingleInstanceLock.release();
+        ProcessBuilder builder = new ProcessBuilder(launcher.get().toString(), "--restart");
+        Path directory = launcher.get().getParent();
+        if (directory != null) {
+            builder.directory(directory.toFile());
+        }
         try {
-            new ProcessBuilder(launcher.get().toString()).start();
+            builder.start();
             return true;
         } catch (IOException e) {
             return false;

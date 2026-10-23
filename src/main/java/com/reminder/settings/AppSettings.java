@@ -2,12 +2,14 @@ package com.reminder.settings;
 
 import com.reminder.i18n.I18n;
 import com.reminder.service.ExportFormat;
+import com.reminder.util.Log;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Optional;
 import java.util.Set;
+import java.util.prefs.BackingStoreException;
 import java.util.prefs.Preferences;
 import java.util.stream.Collectors;
 
@@ -45,6 +47,15 @@ public final class AppSettings {
     public static void setLanguage(String code) {
         if (code != null && !code.isBlank()) {
             PREFS.put("language", code);
+        }
+    }
+
+    /** Принудительно сохраняет настройки перед перезапуском или завершением. */
+    public static void flush() {
+        try {
+            PREFS.flush();
+        } catch (BackingStoreException e) {
+            Log.log("Settings", "preferences flush failed: " + e.getMessage(), e);
         }
     }
 
