@@ -92,8 +92,10 @@ public class HolidaysDialogController {
         nameColumn.setCellFactory(column -> TableCells.wrapping(2));
         annualColumn.setCellValueFactory(cd -> new ReadOnlyStringWrapper(
                 I18n.get(cd.getValue().isAnnual() ? "dialog.yes" : "dialog.no")));
+        annualColumn.setCellFactory(column -> TableCells.centered());
         typeColumn.setCellValueFactory(cd -> new ReadOnlyStringWrapper(
                 I18n.get(cd.getValue().getType().labelKey())));
+        typeColumn.setCellFactory(column -> TableCells.centered());
 
         holidayTypeChoice.getItems().setAll(HolidayType.values());
         holidayTypeChoice.setConverter(new StringConverter<>() {

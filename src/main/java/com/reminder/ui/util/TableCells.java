@@ -22,6 +22,21 @@ public final class TableCells {
     private TableCells() {
     }
 
+    /** Ячейка с текстом, выровненным по центру. */
+    public static <S> TableCell<S, String> centered() {
+        return new TableCell<>() {
+            {
+                setAlignment(Pos.CENTER);
+            }
+
+            @Override
+            protected void updateItem(String item, boolean empty) {
+                super.updateItem(item, empty);
+                setText(empty ? null : item);
+            }
+        };
+    }
+
     /** Ячейка с визуальным переносом текста (до трёх строк) и подсказкой с полным значением. */
     public static <S> TableCell<S, String> wrapping() {
         return wrapping(3);
