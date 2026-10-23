@@ -9,6 +9,7 @@ import com.reminder.storage.StorageException;
 import com.reminder.ui.component.EntryForm;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.TableCells;
+import com.reminder.ui.util.TablePlaceholders;
 import com.reminder.ui.util.WrappingTableRow;
 import com.reminder.util.DateUtils;
 import com.reminder.util.Hours;
@@ -77,6 +78,7 @@ public class DayView {
     public void configure() {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setItems(entries);
+        TablePlaceholders.apply(table);
         table.setFixedCellSize(-1);
         table.setRowFactory(tv -> new WrappingTableRow<>());
         table.widthProperty().addListener((obs, oldWidth, newWidth) -> table.refresh());

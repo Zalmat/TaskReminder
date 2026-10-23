@@ -7,6 +7,7 @@ import com.reminder.storage.StorageException;
 import com.reminder.ui.util.AppIcons;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.NumericFields;
+import com.reminder.ui.util.TablePlaceholders;
 import javafx.beans.property.ReadOnlyBooleanWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
@@ -64,6 +65,7 @@ public class RemindersDialogController {
         repeatColumn.setCellValueFactory(cd -> new ReadOnlyBooleanWrapper(cd.getValue().isRepeatDaily()));
 
         remindersTable.setItems(reminders);
+        TablePlaceholders.apply(remindersTable);
 
         addButton.setOnAction(e -> addReminder());
         editButton.setOnAction(e -> editReminder());

@@ -366,6 +366,7 @@ strings:
   settings.language.incomplete: "Incomplete ({0}/{1})"
   settings.language.source.builtin: "Built-in"
   settings.language.source.file: "File: {0}"
+  table.empty: "No data"
   settings.export.decimal: "Decimal separator for CSV:"
   settings.export.folder: "Reports folder:"
   settings.export.choose: "Choose…"

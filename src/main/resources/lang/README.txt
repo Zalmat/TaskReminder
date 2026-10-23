@@ -28,6 +28,8 @@ strings:
   и берёт недостающие строки из английского/русского.
 - Ключи `settings.language.source.builtin` и `settings.language.source.file`
   необязательны: они используются только в подсказке к языку.
+- `table.empty` задаёт текст пустых таблиц и должен быть переведён
+  в пользовательском пакете.
 - Если внешний файл имеет код встроенного языка, его строки переопределяют
   встроенные, а отсутствующие ключи берутся из встроенного пакета.
 - Локаль для форматирования чисел/дат определяется по `_language`.
@@ -66,6 +68,8 @@ Rules
   and falls back to English/Russian for the missing strings.
 - `settings.language.source.builtin` and `settings.language.source.file`
   are optional; they are used only in the language tooltip.
+- `table.empty` is the text shown in empty tables and should be translated
+  in a custom language pack.
 - If an external file uses the code of a built-in language, its strings override
   the built-in ones and missing keys are filled from the built-in package.
 - Number/date formatting locale is derived from `_language`.

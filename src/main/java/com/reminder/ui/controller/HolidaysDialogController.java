@@ -10,6 +10,7 @@ import com.reminder.storage.StorageException;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.DatePickerUtils;
 import com.reminder.ui.util.TableCells;
+import com.reminder.ui.util.TablePlaceholders;
 import com.reminder.ui.util.WrappingTableRow;
 import com.reminder.util.DateUtils;
 import com.reminder.util.FileValidation;
@@ -81,6 +82,7 @@ public class HolidaysDialogController {
 
         holidayTable.setItems(holidayItems);
         holidayTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        TablePlaceholders.apply(holidayTable);
         holidayTable.setFixedCellSize(-1);
         holidayTable.setRowFactory(tv -> new WrappingTableRow<>());
         holidayTable.widthProperty().addListener((obs, oldWidth, newWidth) -> holidayTable.refresh());

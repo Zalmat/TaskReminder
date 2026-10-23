@@ -13,6 +13,7 @@ import com.reminder.ui.theme.ThemeManager;
 import com.reminder.ui.util.AppIcons;
 import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.TableCells;
+import com.reminder.ui.util.TablePlaceholders;
 import com.reminder.ui.util.WrappingTableRow;
 import com.reminder.util.DateUtils;
 import javafx.animation.Animation;
@@ -113,6 +114,7 @@ public final class SuggestionManagerDialog {
         FilteredList<Suggestion> filtered = new FilteredList<>(data, item -> true);
         String[] pinned = {null};
         TableView<Suggestion> table = new TableView<>(filtered);
+        TablePlaceholders.apply(table);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setFixedCellSize(-1);
         table.setRowFactory(tv -> new WrappingTableRow<>());
@@ -273,6 +275,7 @@ public final class SuggestionManagerDialog {
         ObservableList<Suggestion> data = FXCollections.observableArrayList();
         FilteredList<Suggestion> filtered = new FilteredList<>(data, item -> true);
         TableView<Suggestion> table = new TableView<>(filtered);
+        TablePlaceholders.apply(table);
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setFixedCellSize(-1);
         table.setRowFactory(tv -> new WrappingTableRow<>());

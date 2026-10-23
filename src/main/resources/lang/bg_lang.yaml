@@ -366,6 +366,7 @@ strings:
   settings.language.incomplete: "Непълен ({0}/{1})"
   settings.language.source.builtin: "Вграден"
   settings.language.source.file: "Файл: {0}"
+  table.empty: "Няма данни"
   settings.export.decimal: "Десетичен разделител за CSV:"
   settings.export.folder: "Папка за отчети:"
   settings.export.choose: "Избор…"
