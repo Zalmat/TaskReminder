@@ -119,6 +119,7 @@ public class MainController {
     private WeekView weekView;
     private DayView dayView;
     private ViewMode viewMode = ViewMode.DAY;
+    private boolean adjustingDate;
 
     @FXML
     private void initialize() {
@@ -165,12 +166,23 @@ public class MainController {
         DatePickerUtils.applyTo(datePicker);
         datePicker.setValue(LocalDate.now());
         datePicker.valueProperty().addListener((obs, oldVal, newVal) -> {
-            if (newVal != null) {
-                if (viewMode == ViewMode.WEEK) {
-                    weekView.update(newVal);
-                } else {
-                    dayView.update(newVal);
+            if (adjustingDate || newVal == null) {
+                return;
+            }
+            if (viewMode == ViewMode.WEEK && !newVal.equals(oldVal)
+                    && !weekView.confirmLeaveDrafts()) {
+                adjustingDate = true;
+                try {
+                    datePicker.setValue(oldVal);
+                } finally {
+                    adjustingDate = false;
                 }
+                return;
+            }
+            if (viewMode == ViewMode.WEEK) {
+                weekView.update(newVal);
+            } else {
+                dayView.update(newVal);
             }
         });
     }
@@ -240,13 +252,23 @@ public class MainController {
     }
 
     private void switchMode(ViewMode mode) {
+        if (mode == ViewMode.DAY && viewMode == ViewMode.WEEK
+                && !weekView.confirmLeaveDrafts()) {
+            if (!weekRadio.isSelected()) {
+                weekRadio.setSelected(true);
+            }
+            return;
+        }
+        boolean wasWeek = viewMode == ViewMode.WEEK;
         viewMode = mode;
         boolean week = mode == ViewMode.WEEK;
         dayPanel.setVisible(!week);
         weekPanel.setVisible(week);
         hoursContainer.setVisible(!week);
         if (week) {
-            weekView.update(datePicker.getValue());
+            if (!wasWeek) {
+                weekView.update(datePicker.getValue());
+            }
         } else {
             dayView.update(datePicker.getValue());
         }
@@ -291,6 +313,7 @@ public class MainController {
     private void setupUpdateCheck() {
         updateCheckUi = new UpdateCheckUi(updateCheckService);
         updateCheckUi.setExitAction(() -> exitAction.run());
+        updateCheckUi.setExitGuard(this::confirmExitWithDrafts);
         updateCheckUi.setUpdateIndicator(this::applyUpdateIndicator);
         updateButton.setOnAction(e -> updateCheckUi.manualCheck());
         if (AppSettings.updateCheckEnabled()) {
@@ -328,6 +351,15 @@ public class MainController {
         if (exitAction != null) {
             this.exitAction = exitAction;
         }
+    }
+
+    /** true — можно завершать приложение; черновики недели подтверждены. */
+    public boolean confirmExitWithDrafts() {
+        return weekView == null || weekView.confirmLeaveDrafts(true);
+    }
+
+    public boolean hasDraftEntries() {
+        return weekView != null && weekView.hasDraftEntries();
     }
 
     public void shutdown() {

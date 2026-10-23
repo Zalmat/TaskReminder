@@ -108,6 +108,12 @@ public class App extends Application {
     }
 
     private void quit() {
+        if (mainController != null && mainController.hasDraftEntries()) {
+            if (mainController.confirmExitWithDrafts()) {
+                performQuit();
+            }
+            return;
+        }
         if (Dialogs.confirm(I18n.get("app.quit.title"),
                 I18n.get("app.quit.header"), I18n.get("app.quit.content"))) {
             performQuit();

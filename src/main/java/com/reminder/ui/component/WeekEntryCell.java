@@ -4,6 +4,7 @@ import com.reminder.i18n.I18n;
 import com.reminder.model.WeekEntry;
 import com.reminder.ui.util.NumericFields;
 import com.reminder.util.Hours;
+import javafx.geometry.Pos;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TextField;
 import javafx.scene.input.KeyCode;
@@ -22,6 +23,7 @@ public class WeekEntryCell extends TableCell<WeekEntry, Integer> {
 
     public WeekEntryCell(Consumer<String> onInvalid) {
         this.onInvalid = onInvalid == null ? message -> { } : onInvalid;
+        setAlignment(Pos.CENTER);
     }
 
     @Override
@@ -30,10 +32,24 @@ public class WeekEntryCell extends TableCell<WeekEntry, Integer> {
         if (textField == null) {
             createTextField();
         }
+        fitEditorToCell();
         setText(null);
         setGraphic(textField);
         textField.selectAll();
         textField.requestFocus();
+    }
+
+    private void fitEditorToCell() {
+        double verticalPadding = getPadding() == null
+                ? 0 : getPadding().getTop() + getPadding().getBottom();
+        double available = getHeight() - verticalPadding;
+        if (available <= 0) {
+            available = 24;
+        }
+        double height = Math.max(18, available);
+        textField.setMinHeight(height);
+        textField.setPrefHeight(height);
+        textField.setMaxHeight(height);
     }
 
     @Override

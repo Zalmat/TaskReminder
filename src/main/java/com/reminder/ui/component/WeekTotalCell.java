@@ -1,10 +1,15 @@
 package com.reminder.ui.component;
 
 import com.reminder.model.WeekEntry;
+import javafx.geometry.Pos;
 import javafx.scene.control.TableCell;
 
-/** Ячейка итогов по задаче за неделю с подсветкой превышения лимита. */
+/** Ячейка итоговой суммы по задаче в недельной таблице. */
 public class WeekTotalCell extends TableCell<WeekEntry, Integer> {
+
+    public WeekTotalCell() {
+        setAlignment(Pos.CENTER);
+    }
 
     @Override
     public void updateItem(Integer item, boolean empty) {

@@ -128,6 +128,13 @@ strings:
   week.exists: "⚠️ Diese Aufgabe existiert in dieser Woche bereits"
   week.overtimeTooltip: "Achtung. Arbeitsstunden überschritten"
   week.hoursInvalid: "Stunden müssen zwischen 0 und 24 liegen."
+  week.draft.title: "Nicht gespeicherte Aufgabe"
+  week.draft.header: "Aufgabe ohne Stunden"
+  week.draft.content: "Die Woche enthält eine Aufgabe ohne Stunden. Wenn Sie die Woche verlassen, wird sie nicht gespeichert."
+  week.draft.stay: "Woche weiter bearbeiten"
+  week.draft.leave: "Verlassen"
+  week.draft.exitContent: "Die Woche enthält eine Aufgabe ohne Stunden. Wenn Sie die App beenden, wird sie nicht gespeichert."
+  week.draft.exitAnyway: "Trotzdem beenden"
 
   confirm.delete.title: "Löschen bestätigen"
   confirm.delete.entry: "🗑️ Eintrag löschen?"

@@ -33,6 +33,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.function.BooleanSupplier;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -59,6 +60,7 @@ public class UpdateCheckUi {
     private final UpdateCheckService service;
     private final UpdateDownloader downloader = new UpdateDownloader();
     private Runnable exitAction = () -> { };
+    private BooleanSupplier exitGuard = () -> true;
     private Consumer<UpdateInfo> updateIndicator;
     private UpdateInfo pendingUpdate;
     private ScheduledExecutorService scheduler;
@@ -77,6 +79,13 @@ public class UpdateCheckUi {
     public void setExitAction(Runnable exitAction) {
         if (exitAction != null) {
             this.exitAction = exitAction;
+        }
+    }
+
+    /** Проверка перед выходом (например, несохранённые черновики недели). */
+    public void setExitGuard(BooleanSupplier exitGuard) {
+        if (exitGuard != null) {
+            this.exitGuard = exitGuard;
         }
     }
 
@@ -318,6 +327,9 @@ public class UpdateCheckUi {
                 Log.log("Update", "downloaded: " + archive, scenario);
                 Platform.runLater(() -> {
                     progress.close();
+                    if (!exitGuard.getAsBoolean()) {
+                        return;
+                    }
                     try {
                         AppAutoUpdater.start(archive);
                         exitAction.run();

@@ -128,6 +128,13 @@ strings:
   week.exists: "⚠️ This task already exists in this week"
   week.overtimeTooltip: "Warning. Work hours exceeded"
   week.hoursInvalid: "Hours must be between 0 and 24."
+  week.draft.title: "Unsaved task"
+  week.draft.header: "Task without hours"
+  week.draft.content: "The week contains a task without hours. If you leave the week, it will not be saved."
+  week.draft.stay: "Continue editing the week"
+  week.draft.leave: "Leave"
+  week.draft.exitContent: "The week contains a task without hours. If you exit the app, it will not be saved."
+  week.draft.exitAnyway: "Exit anyway"
 
   confirm.delete.title: "Delete confirmation"
   confirm.delete.entry: "🗑️ Delete entry?"

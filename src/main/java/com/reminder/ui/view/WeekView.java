@@ -16,7 +16,6 @@ import com.reminder.ui.util.Dialogs;
 import com.reminder.ui.util.TableCells;
 import com.reminder.ui.util.TablePlaceholders;
 import com.reminder.ui.util.Tooltips;
-import com.reminder.ui.util.WrappingTableRow;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.layout.HBox;
@@ -28,17 +27,23 @@ import javafx.scene.shape.Circle;
 import com.reminder.util.DateUtils;
 import com.reminder.util.Hours;
 import com.reminder.util.RussianDays;
+import javafx.animation.Animation;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.beans.property.ReadOnlyObjectWrapper;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.css.PseudoClass;
 import javafx.scene.control.ContextMenu;
 import javafx.scene.control.DatePicker;
 import javafx.scene.control.Label;
 import javafx.scene.control.MenuItem;
 import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.control.Tooltip;
+import javafx.util.Duration;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -46,6 +51,9 @@ import java.util.List;
 
 /** Недельный режим: таблица задач, правка часов по дням, подсветка переработок. */
 public class WeekView {
+
+    private static final PseudoClass DRAFT = PseudoClass.getPseudoClass("draft");
+    private static final PseudoClass DRAFT_BLINK = PseudoClass.getPseudoClass("draft-blink");
 
     private final TableView<WeekEntry> table;
     private final TableColumn<WeekEntry, String> projectColumn;
@@ -63,6 +71,8 @@ public class WeekView {
     private final List<LocalDate> weekDays = new ArrayList<>();
     private final List<WeekDayColumn> dayColumns = new ArrayList<>();
     private boolean editInProgress = false;
+    private boolean draftBlinkOn;
+    private Timeline draftBlink;
 
     public WeekView(TableView<WeekEntry> table,
                     TableColumn<WeekEntry, String> projectColumn,
@@ -93,8 +103,22 @@ public class WeekView {
         table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setItems(entries);
         TablePlaceholders.apply(table);
-        table.setFixedCellSize(-1);
-        table.setRowFactory(tv -> new WrappingTableRow<>());
+        table.setFixedCellSize(50);
+        table.getStyleClass().add("week-table");
+        draftBlink = new Timeline(new KeyFrame(Duration.millis(700), event -> {
+            draftBlinkOn = !draftBlinkOn;
+            table.refresh();
+        }));
+        draftBlink.setCycleCount(Animation.INDEFINITE);
+        table.setRowFactory(tv -> new TableRow<>() {
+            @Override
+            protected void updateItem(WeekEntry item, boolean empty) {
+                super.updateItem(item, empty);
+                boolean draft = !empty && item != null && item.getTotal() == 0;
+                pseudoClassStateChanged(DRAFT, draft);
+                pseudoClassStateChanged(DRAFT_BLINK, draft && draftBlinkOn);
+            }
+        });
         table.widthProperty().addListener((obs, oldWidth, newWidth) -> table.refresh());
 
         projectColumn.setCellValueFactory(cd -> new ReadOnlyStringWrapper(cd.getValue().getProject()));
@@ -236,6 +260,61 @@ public class WeekView {
         } catch (Exception e) {
             Dialogs.error(I18n.get("common.error"), I18n.format("error.generic", e.getMessage()));
         }
+    }
+
+    /** Есть ли в текущей неделе строки без часов. */
+    public boolean hasDraftEntries() {
+        return entries.stream().anyMatch(entry -> entry.getTotal() == 0);
+    }
+
+    /** true — можно покинуть неделю; при подтверждении черновики удаляются. */
+    public boolean confirmLeaveDrafts() {
+        return confirmLeaveDrafts(false);
+    }
+
+    /** exiting=true — диалог закрытия приложения/установки обновления. */
+    public boolean confirmLeaveDrafts(boolean exiting) {
+        if (!hasDraftEntries()) {
+            return true;
+        }
+        startDraftBlink();
+        try {
+            boolean leave = Dialogs.confirmLeaveDraft(
+                    I18n.get("week.draft.title"),
+                    I18n.get("week.draft.header"),
+                    I18n.get(exiting ? "week.draft.exitContent" : "week.draft.content"),
+                    I18n.get("week.draft.stay"),
+                    I18n.get(exiting ? "week.draft.exitAnyway" : "week.draft.leave"));
+            if (leave) {
+                discardDrafts();
+            }
+            return leave;
+        } finally {
+            stopDraftBlink();
+        }
+    }
+
+    private void startDraftBlink() {
+        if (draftBlink == null) {
+            return;
+        }
+        draftBlinkOn = true;
+        draftBlink.playFromStart();
+        table.refresh();
+    }
+
+    private void stopDraftBlink() {
+        if (draftBlink != null) {
+            draftBlink.stop();
+        }
+        draftBlinkOn = false;
+        table.refresh();
+    }
+
+    public void discardDrafts() {
+        entries.removeIf(entry -> entry.getTotal() == 0);
+        updateTotals();
+        table.refresh();
     }
 
     /** Редактирует выбранную недельную задачу. */

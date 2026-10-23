@@ -108,3 +108,21 @@
 .text-input {
     -fx-prompt-text-fill: #999999;
 }
+
+.week-table .table-row-cell:draft {
+    -fx-background-color: rgba(255, 152, 0, 0.14);
+}
+
+.week-table .table-row-cell:draft .table-cell {
+    -fx-background-color: rgba(255, 152, 0, 0.14);
+    -fx-effect: innershadow(gaussian, #ff9800, 3, 0.25, 0, 0);
+}
+
+.week-table .table-row-cell:draft-blink {
+    -fx-background-color: rgba(255, 152, 0, 0.28);
+}
+
+.week-table .table-row-cell:draft-blink .table-cell {
+    -fx-background-color: rgba(255, 152, 0, 0.28);
+    -fx-effect: innershadow(gaussian, #ffb300, 4, 0.35, 0, 0);
+}

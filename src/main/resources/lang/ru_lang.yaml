@@ -128,6 +128,13 @@ strings:
   week.exists: "⚠️ Такая задача уже существует в этой неделе"
   week.overtimeTooltip: "Осторожно. Превышено количество рабочих часов"
   week.hoursInvalid: "Часы должны быть от 0 до 24."
+  week.draft.title: "Несохранённая задача"
+  week.draft.header: "Есть задача без часов"
+  week.draft.content: "В неделе есть задача без часов. Если покинуть неделю, она не сохранится."
+  week.draft.stay: "Продолжить редактирование недели"
+  week.draft.leave: "Перейти"
+  week.draft.exitContent: "В неделе есть задача без часов. Если выйти из приложения, она не сохранится."
+  week.draft.exitAnyway: "Всё равно выйти"
 
   confirm.delete.title: "Подтверждение удаления"
   confirm.delete.entry: "🗑️ Удалить запись?"

@@ -23,6 +23,11 @@
     -fx-padding: 8px 4px;
 }
 
+.week-table .table-cell {
+    -fx-padding: 2px 4px;
+    -fx-alignment: CENTER_LEFT;
+}
+
 .text-area {
     -fx-padding: 4px;
 }

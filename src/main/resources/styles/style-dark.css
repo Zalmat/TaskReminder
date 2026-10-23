@@ -115,6 +115,24 @@
     -fx-prompt-text-fill: #8a8a8a;
 }
 
+.week-table .table-row-cell:draft {
+    -fx-background-color: rgba(255, 152, 0, 0.16);
+}
+
+.week-table .table-row-cell:draft .table-cell {
+    -fx-background-color: rgba(255, 152, 0, 0.16);
+    -fx-effect: innershadow(gaussian, #ffb74d, 3, 0.25, 0, 0);
+}
+
+.week-table .table-row-cell:draft-blink {
+    -fx-background-color: rgba(255, 183, 77, 0.30);
+}
+
+.week-table .table-row-cell:draft-blink .table-cell {
+    -fx-background-color: rgba(255, 183, 77, 0.30);
+    -fx-effect: innershadow(gaussian, #ffcc80, 4, 0.35, 0, 0);
+}
+
 .combo-box > .list-cell {
     -fx-text-fill: #e0e0e0;
 }

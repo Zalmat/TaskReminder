@@ -50,6 +50,21 @@ public final class Dialogs {
         return alert.showAndWait().orElse(noButton) == yesButton;
     }
 
+    /** Подтверждение выхода из недели с несохранённым черновиком. */
+    public static boolean confirmLeaveDraft(String title, String header, String content,
+                                            String stayLabel, String leaveLabel) {
+        Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+        ButtonType stayButton = new ButtonType(stayLabel, ButtonBar.ButtonData.CANCEL_CLOSE);
+        ButtonType leaveButton = new ButtonType(leaveLabel, ButtonBar.ButtonData.OK_DONE);
+        alert.getButtonTypes().setAll(stayButton, leaveButton);
+        ThemeManager.applyTo(alert.getDialogPane());
+        AppIcons.applyTo(alert);
+        return alert.showAndWait().orElse(stayButton) == leaveButton;
+    }
+
     /**
      * Маршрутизирует по заголовку: «Ошибка»→error, «Внимание»→warn, иначе→info.
      * Сравнение идёт с локализованными заголовками, поэтому не зависит от языка.
