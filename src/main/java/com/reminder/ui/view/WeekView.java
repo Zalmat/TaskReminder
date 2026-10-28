@@ -27,6 +27,7 @@ import javafx.scene.shape.Circle;
 import com.reminder.util.DateUtils;
 import com.reminder.util.Hours;
 import com.reminder.util.RussianDays;
+import javafx.application.Platform;
 import javafx.animation.Animation;
 import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
@@ -54,6 +55,7 @@ public class WeekView {
 
     private static final PseudoClass DRAFT = PseudoClass.getPseudoClass("draft");
     private static final PseudoClass DRAFT_BLINK = PseudoClass.getPseudoClass("draft-blink");
+    private static final double RESERVED_SCROLLBAR_WIDTH = 24;
 
     private final TableView<WeekEntry> table;
     private final TableColumn<WeekEntry, String> projectColumn;
@@ -73,6 +75,7 @@ public class WeekView {
     private boolean editInProgress = false;
     private boolean draftBlinkOn;
     private Timeline draftBlink;
+    private boolean resizingColumns;
 
     public WeekView(TableView<WeekEntry> table,
                     TableColumn<WeekEntry, String> projectColumn,
@@ -100,7 +103,6 @@ public class WeekView {
 
     /** Настраивает таблицу, колонки, контекстное меню и колонки дней. */
     public void configure() {
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         table.setItems(entries);
         TablePlaceholders.apply(table);
         table.setFixedCellSize(50);
@@ -119,8 +121,6 @@ public class WeekView {
                 pseudoClassStateChanged(DRAFT_BLINK, draft && draftBlinkOn);
             }
         });
-        table.widthProperty().addListener((obs, oldWidth, newWidth) -> table.refresh());
-
         projectColumn.setCellValueFactory(cd -> new ReadOnlyStringWrapper(cd.getValue().getProject()));
         projectColumn.setCellFactory(c -> TableCells.wrapping());
         taskColumn.setCellValueFactory(cd -> new ReadOnlyStringWrapper(cd.getValue().getTaskName()));
@@ -147,6 +147,32 @@ public class WeekView {
         table.setContextMenu(menu);
 
         createDayColumns();
+        table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
+        table.widthProperty().addListener((obs, oldWidth, newWidth) -> resizeColumns());
+        Platform.runLater(this::resizeColumns);
+    }
+
+    private void resizeColumns() {
+        if (resizingColumns) {
+            return;
+        }
+        int columnCount = table.getColumns().size();
+        double available = table.getWidth() - RESERVED_SCROLLBAR_WIDTH;
+        if (columnCount == 0 || available <= 0) {
+            return;
+        }
+        double width = available / columnCount;
+        resizingColumns = true;
+        try {
+            for (TableColumn<WeekEntry, ?> column : table.getColumns()) {
+                double delta = width - column.getWidth();
+                if (Math.abs(delta) > 0.01) {
+                    table.resizeColumn(column, delta);
+                }
+            }
+        } finally {
+            resizingColumns = false;
+        }
     }
 
     /** Выравнивает заголовки обычных колонок с подписями дней (точки занимают верх). */
