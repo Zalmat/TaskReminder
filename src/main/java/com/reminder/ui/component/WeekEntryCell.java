@@ -16,6 +16,8 @@ import java.util.function.Consumer;
 public class WeekEntryCell extends TableCell<WeekEntry, Integer> {
     private TextField textField;
     private final Consumer<String> onInvalid;
+    private boolean handlingCommit;
+    private boolean invalidValue;
 
     public WeekEntryCell() {
         this(message -> { });
@@ -29,6 +31,7 @@ public class WeekEntryCell extends TableCell<WeekEntry, Integer> {
     @Override
     public void startEdit() {
         super.startEdit();
+        invalidValue = false;
         if (textField == null) {
             createTextField();
         }
@@ -91,19 +94,29 @@ public class WeekEntryCell extends TableCell<WeekEntry, Integer> {
             }
         });
         textField.focusedProperty().addListener((obs, wasFocused, isNowFocused) -> {
-            if (!isNowFocused && isEditing()) {
+            if (!isNowFocused && !handlingCommit && !invalidValue && isEditing()) {
                 commitOrWarn(textField.getText());
             }
         });
     }
 
     private void commitOrWarn(String text) {
-        OptionalInt value = Hours.parseWeekCell(text);
-        if (value.isPresent()) {
-            commitEdit(value.getAsInt());
-        } else {
-            onInvalid.accept(I18n.get("week.hoursInvalid"));
-            cancelEdit();
+        if (handlingCommit) {
+            return;
+        }
+        handlingCommit = true;
+        try {
+            OptionalInt value = Hours.parseWeekCell(text);
+            if (value.isPresent()) {
+                invalidValue = false;
+                commitEdit(value.getAsInt());
+            } else {
+                invalidValue = true;
+                cancelEdit();
+                onInvalid.accept(I18n.get("week.hoursInvalid"));
+            }
+        } finally {
+            handlingCommit = false;
         }
     }
 }
