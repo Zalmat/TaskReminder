@@ -63,6 +63,7 @@ strings:
   column.hours: "Hours"
   column.comment: "Comment"
   column.total: "Total"
+  week.footer.total: "Total hours per day:"
   column.active: "Active"
   column.daily: "Daily"
 

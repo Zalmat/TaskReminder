@@ -17,9 +17,15 @@ import com.reminder.ui.util.TableCells;
 import com.reminder.ui.util.TablePlaceholders;
 import com.reminder.ui.util.Tooltips;
 import javafx.geometry.Insets;
+import javafx.geometry.HPos;
 import javafx.geometry.Pos;
+import javafx.geometry.VPos;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.RowConstraints;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -49,13 +55,13 @@ import javafx.util.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /** Недельный режим: таблица задач, правка часов по дням, подсветка переработок. */
 public class WeekView {
 
     private static final PseudoClass DRAFT = PseudoClass.getPseudoClass("draft");
     private static final PseudoClass DRAFT_BLINK = PseudoClass.getPseudoClass("draft-blink");
-    private static final double RESERVED_SCROLLBAR_WIDTH = 24;
 
     private final TableView<WeekEntry> table;
     private final TableColumn<WeekEntry, String> projectColumn;
@@ -64,6 +70,7 @@ public class WeekView {
     private final TableColumn<WeekEntry, String> commentColumn;
     private final TableColumn<WeekEntry, Integer> totalColumn;
     private final Label totalLabel;
+    private final GridPane footer;
     private final EntryForm form;
     private final TaskService taskService;
     private final WorkTimeService workTimeService;
@@ -72,6 +79,7 @@ public class WeekView {
     private final ObservableList<WeekEntry> entries = FXCollections.observableArrayList();
     private final List<LocalDate> weekDays = new ArrayList<>();
     private final List<WeekDayColumn> dayColumns = new ArrayList<>();
+    private final List<Label> footerDayLabels = new ArrayList<>();
     private boolean editInProgress = false;
     private boolean draftBlinkOn;
     private Timeline draftBlink;
@@ -84,6 +92,7 @@ public class WeekView {
                     TableColumn<WeekEntry, String> commentColumn,
                     TableColumn<WeekEntry, Integer> totalColumn,
                     Label totalLabel,
+                    GridPane footer,
                     EntryForm form,
                     TaskService taskService,
                     WorkTimeService workTimeService,
@@ -95,6 +104,7 @@ public class WeekView {
         this.commentColumn = commentColumn;
         this.totalColumn = totalColumn;
         this.totalLabel = totalLabel;
+        this.footer = footer;
         this.form = form;
         this.taskService = taskService;
         this.workTimeService = workTimeService;
@@ -104,6 +114,7 @@ public class WeekView {
     /** Настраивает таблицу, колонки, контекстное меню и колонки дней. */
     public void configure() {
         table.setItems(entries);
+        table.setTableMenuButtonVisible(false);
         TablePlaceholders.apply(table);
         table.setFixedCellSize(50);
         table.getStyleClass().add("week-table");
@@ -147,9 +158,76 @@ public class WeekView {
         table.setContextMenu(menu);
 
         createDayColumns();
+        configureFooter();
         table.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
         table.widthProperty().addListener((obs, oldWidth, newWidth) -> resizeColumns());
         Platform.runLater(this::resizeColumns);
+    }
+
+    private void configureFooter() {
+        footer.getChildren().clear();
+        footer.getColumnConstraints().clear();
+        footer.getRowConstraints().clear();
+        footer.setMaxWidth(Double.MAX_VALUE);
+
+        for (TableColumn<WeekEntry, ?> column : table.getColumns()) {
+            ColumnConstraints constraints = new ColumnConstraints();
+            constraints.setHgrow(Priority.NEVER);
+            constraints.prefWidthProperty().bind(column.widthProperty());
+            footer.getColumnConstraints().add(constraints);
+        }
+        RowConstraints row = new RowConstraints();
+        row.setVgrow(Priority.ALWAYS);
+        footer.getRowConstraints().add(row);
+
+        Label totalCaption = new Label(I18n.get("week.footer.total"));
+        totalCaption.getStyleClass().add("week-footer-label");
+        totalCaption.setAlignment(Pos.CENTER_LEFT);
+        totalCaption.setMaxWidth(Double.MAX_VALUE);
+        GridPane.setColumnSpan(totalCaption, 3);
+        GridPane.setHalignment(totalCaption, HPos.LEFT);
+        GridPane.setValignment(totalCaption, VPos.CENTER);
+        footer.add(totalCaption, 0, 0);
+
+        for (int i = 0; i < 7; i++) {
+            Label label = new Label(formatHours(0));
+            label.getStyleClass().addAll("week-footer-value", "muted");
+            label.setAlignment(Pos.CENTER);
+            label.setMaxWidth(Double.MAX_VALUE);
+            GridPane.setHalignment(label, HPos.CENTER);
+            GridPane.setValignment(label, VPos.CENTER);
+            footer.add(label, 3 + i, 0);
+            footerDayLabels.add(label);
+        }
+    }
+
+    private void updateFooter() {
+        for (int i = 0; i < footerDayLabels.size() && i < weekDays.size(); i++) {
+            LocalDate day = weekDays.get(i);
+            double total = entries.stream()
+                    .mapToInt(entry -> entry.getDayHours().getOrDefault(day, 0))
+                    .sum();
+            Label label = footerDayLabels.get(i);
+            label.setText(formatHours(total));
+            setFooterValueStyle(label, total);
+        }
+    }
+
+    private static void setFooterValueStyle(Label label, double total) {
+        label.getStyleClass().removeAll("muted", "mid", "done", "over");
+        if (total <= 0) {
+            label.getStyleClass().add("muted");
+        } else if (total < WorkTimeService.MAX_DAILY_HOURS) {
+            label.getStyleClass().add("mid");
+        } else if (Double.compare(total, WorkTimeService.MAX_DAILY_HOURS) == 0) {
+            label.getStyleClass().add("done");
+        } else {
+            label.getStyleClass().add("over");
+        }
+    }
+
+    private static String formatHours(double value) {
+        return String.format(Locale.ROOT, "%.1f", value);
     }
 
     private void resizeColumns() {
@@ -157,7 +235,7 @@ public class WeekView {
             return;
         }
         int columnCount = table.getColumns().size();
-        double available = table.getWidth() - RESERVED_SCROLLBAR_WIDTH;
+        double available = table.getWidth();
         if (columnCount == 0 || available <= 0) {
             return;
         }
@@ -494,6 +572,7 @@ public class WeekView {
             totalLabel.setStyle("-fx-font-weight: bold; -fx-font-size: 14px; -fx-text-fill: #2196F3;");
         }
         totalLabel.setText(text);
+        updateFooter();
     }
 
     /** Красный заголовок при переработке + точки событий и общий тултип. */

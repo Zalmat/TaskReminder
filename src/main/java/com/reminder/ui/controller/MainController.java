@@ -44,6 +44,7 @@ import javafx.scene.control.TableColumn;
 import javafx.scene.control.TableView;
 import javafx.scene.control.TextArea;
 import javafx.scene.control.TextField;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
@@ -88,6 +89,7 @@ public class MainController {
     @FXML private TableColumn<WeekEntry, String> weekTypeColumn;
     @FXML private TableColumn<WeekEntry, String> weekCommentColumn;
     @FXML private TableColumn<WeekEntry, Integer> weekTotalColumn;
+    @FXML private GridPane weekFooter;
     @FXML private Button addButton;
     @FXML private Button loadYamlButton;
     @FXML private Button templateButton;
@@ -145,7 +147,8 @@ public class MainController {
         dayView.configure();
 
         weekView = new WeekView(weekTableView, weekProjectColumn, weekTaskColumn, weekTypeColumn,
-                weekCommentColumn, weekTotalColumn, weekTotalLabel, form, taskService, workTimeService, datePicker);
+                weekCommentColumn, weekTotalColumn, weekTotalLabel, weekFooter, form, taskService,
+                workTimeService, datePicker);
         weekView.configure();
 
         wireButtons();

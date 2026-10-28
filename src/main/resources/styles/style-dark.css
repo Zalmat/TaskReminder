@@ -63,6 +63,28 @@
     -fx-text-fill: white;
 }
 
+.week-footer {
+    -fx-background-color: #232323;
+    -fx-border-color: #3a3a3a transparent transparent transparent;
+    -fx-border-width: 1px 0 0 0;
+}
+
+.week-footer-value.muted {
+    -fx-text-fill: #777777;
+}
+
+.week-footer-value.mid {
+    -fx-text-fill: #f2c94c;
+}
+
+.week-footer-value.done {
+    -fx-text-fill: #66bb6a;
+}
+
+.week-footer-value.over {
+    -fx-text-fill: #ef5350;
+}
+
 .choice-box, .date-picker, .text-field, .text-area {
     -fx-background-color: #2b2b2b;
     -fx-border-color: #444444;
