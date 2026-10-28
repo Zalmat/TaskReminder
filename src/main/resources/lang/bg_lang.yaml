@@ -63,6 +63,7 @@ strings:
   column.hours: "Часове"
   column.comment: "Коментар"
   column.total: "Общо"
+  week.footer.total: "Общо часове по дни:"
   column.active: "Активно"
   column.daily: "Ежедневно"
 

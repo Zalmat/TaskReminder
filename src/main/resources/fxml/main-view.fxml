@@ -117,15 +117,20 @@
                     <Label text="%main.weekEditHint"
                            styleClass="hint" style="-fx-font-size: 11px;"/>
                 </HBox>
-                <TableView fx:id="weekTableView" editable="true" VBox.vgrow="ALWAYS">
-                    <columns>
-                        <TableColumn fx:id="weekProjectColumn" text="%column.project" prefWidth="120"/>
-                        <TableColumn fx:id="weekTaskColumn" text="%column.task" prefWidth="150"/>
-                        <TableColumn fx:id="weekTypeColumn" text="%column.typeWork" prefWidth="100"/>
-                        <TableColumn fx:id="weekCommentColumn" text="%column.comment" prefWidth="150"/>
-                        <TableColumn fx:id="weekTotalColumn" text="%column.total" prefWidth="70"/>
-                    </columns>
-                </TableView>
+                <VBox spacing="0" VBox.vgrow="ALWAYS">
+                    <TableView fx:id="weekTableView" editable="true" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="weekProjectColumn" text="%column.project" prefWidth="120"/>
+                            <TableColumn fx:id="weekTaskColumn" text="%column.task" prefWidth="150"/>
+                            <TableColumn fx:id="weekTypeColumn" text="%column.typeWork" prefWidth="100"/>
+                            <TableColumn fx:id="weekCommentColumn" text="%column.comment" prefWidth="150"/>
+                            <TableColumn fx:id="weekTotalColumn" text="%column.total" prefWidth="70"/>
+                        </columns>
+                    </TableView>
+                    <GridPane fx:id="weekFooter"
+                              minHeight="48.0" prefHeight="48.0" maxHeight="48.0"
+                              styleClass="week-footer"/>
+                </VBox>
             </VBox>
         </StackPane>
     </center>

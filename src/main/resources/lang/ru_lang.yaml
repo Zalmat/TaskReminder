@@ -63,6 +63,7 @@ strings:
   column.hours: "Часы"
   column.comment: "Комментарий"
   column.total: "Всего"
+  week.footer.total: "Всего часов в днях:"
   column.active: "Активно"
   column.daily: "Ежедневно"
 

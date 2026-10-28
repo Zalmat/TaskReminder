@@ -28,6 +28,22 @@
     -fx-alignment: CENTER_LEFT;
 }
 
+.week-table .scroll-bar:horizontal {
+    -fx-opacity: 0;
+    -fx-min-height: 0;
+    -fx-pref-height: 0;
+    -fx-max-height: 0;
+}
+
+.week-footer-label {
+    -fx-font-weight: bold;
+    -fx-padding: 0 6px;
+}
+
+.week-footer-value {
+    -fx-font-weight: bold;
+}
+
 .text-area {
     -fx-padding: 4px;
 }
